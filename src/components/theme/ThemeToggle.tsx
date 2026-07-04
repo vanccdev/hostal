@@ -20,7 +20,7 @@ export const ThemeToggle = () => {
           type="button"
           variant="outline"
           size="icon"
-          className="fixed right-4 top-4 z-50 rounded-full shadow-sm backdrop-blur md:right-6 md:top-6"
+          className="fixed bottom-4 right-4 z-50 rounded-full shadow-sm backdrop-blur md:bottom-6 md:right-6"
           aria-label="Cambiar tema"
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" aria-hidden="true" />

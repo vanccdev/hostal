@@ -29,7 +29,7 @@ export const assertRoomIsAvailable = async (
     .from("reservas")
     .select("id")
     .eq("habitacion_id", habitacionId)
-    .in("estado", ["pendiente", "confirmada", "reservada", "ocupada"])
+    .in("estado", ["pendiente_pago", "confirmada", "checkin"])
     .lt("fecha_ingreso", fechaSalida)
     .gt("fecha_salida", fechaIngreso)
     .limit(1);
@@ -61,36 +61,22 @@ export const assertRoomIsAvailable = async (
 
 export const calculateReservationPrice = async (
   supabase: SupabaseClient<Database>,
-  tarifaId: string | null,
-  habitacionId: string,
+  tarifaId: string,
   nights: number,
 ) => {
-  if (tarifaId) {
-    const { data: tarifa, error } = await supabase
-      .from("tarifas")
-      .select("precio_noche")
-      .eq("id", tarifaId)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (tarifa?.precio_noche !== undefined) {
-      return Number(tarifa.precio_noche) * nights;
-    }
-  }
-
-  const { data: habitacion, error } = await supabase
-    .from("habitaciones")
-    .select("precio_base")
-    .eq("id", habitacionId)
+  const { data: tarifa, error } = await supabase
+    .from("tarifas")
+    .select("precio_noche")
+    .eq("id", tarifaId)
     .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return Number(habitacion?.precio_base ?? 0) * nights;
-};
+  if (!tarifa) {
+    throw new Error("Selecciona una tarifa válida.");
+  }
 
+  return Number(tarifa.precio_noche) * nights;
+};

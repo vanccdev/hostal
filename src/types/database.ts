@@ -25,40 +25,62 @@ export type Huesped = {
   telefono: string | null;
   tipo_documento: string | null;
   numero_documento: string | null;
-  pais: string | null;
+  pais_origen: string | null;
   created_at?: string;
 };
 
 export type Habitacion = {
   id: string;
-  nombre?: string | null;
-  numero?: string | null;
-  tipo?: string | null;
-  capacidad?: number | null;
-  precio_base?: number | null;
-  estado?: string | null;
+  numero: string;
+  tipo: string;
+  piso: number;
+  capacidad_max: number;
   descripcion?: string | null;
   activa?: boolean | null;
+  created_at?: string;
+};
+
+export type ImgHabitacion = {
+  id: string;
+  habitacion_id: string;
+  url: string;
+  created_at: string;
 };
 
 export type Tarifa = {
   id: string;
-  nombre: string;
+  habitacion_tipo: string;
+  temporada: string;
   precio_noche: number;
+  moneda?: string | null;
+  vigente_desde: string;
+  vigente_hasta?: string | null;
   activa?: boolean | null;
+  created_by: string;
+  created_at?: string;
 };
 
 export type Reserva = {
   id: string;
+  codigo_reserva: string;
   huesped_id: string;
   habitacion_id: string;
-  tarifa_id: string | null;
+  tarifa_id: string;
   fecha_ingreso: string;
   fecha_salida: string;
   num_noches: number;
-  precio_total: number;
+  num_huespedes: number;
+  canal_origen: string;
   estado: string;
+  precio_total: number;
+  precio_ajustado: number | null;
+  motivo_ajuste: string | null;
+  notas_internas: string | null;
+  registrado_por: string;
+  checkin_at: string | null;
+  checkout_at: string | null;
   created_at?: string;
+  updated_at?: string;
 };
 
 export type GenericRow = {
@@ -100,16 +122,36 @@ export type Database = {
         Update: Partial<Habitacion>;
         Relationships: [];
       };
+      img_habitaciones: {
+        Row: ImgHabitacion;
+        Insert: Partial<ImgHabitacion> & Pick<ImgHabitacion, "habitacion_id" | "url">;
+        Update: Partial<Pick<ImgHabitacion, "habitacion_id" | "url">>;
+        Relationships: [];
+      };
       tarifas: {
         Row: Tarifa;
-        Insert: Partial<Tarifa> & Pick<Tarifa, "nombre" | "precio_noche">;
+        Insert: Partial<Tarifa> & Pick<Tarifa, "habitacion_tipo" | "temporada" | "precio_noche" | "vigente_desde" | "created_by">;
         Update: Partial<Tarifa>;
         Relationships: [];
       };
       reservas: {
         Row: Reserva;
         Insert: Partial<Reserva> &
-          Pick<Reserva, "huesped_id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida">;
+          Pick<
+            Reserva,
+            | "codigo_reserva"
+            | "huesped_id"
+            | "habitacion_id"
+            | "tarifa_id"
+            | "fecha_ingreso"
+            | "fecha_salida"
+            | "num_noches"
+            | "num_huespedes"
+            | "canal_origen"
+            | "estado"
+            | "precio_total"
+            | "registrado_por"
+          >;
         Update: Partial<Reserva>;
         Relationships: [];
       };

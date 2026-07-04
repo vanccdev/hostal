@@ -88,9 +88,9 @@ export const createClientAccountByStaff = async (
     nombre_completo: parsed.data.nombreCompleto,
     email: parsed.data.email,
     telefono: phone,
-    tipo_documento: parsed.data.tipoDocumento || null,
-    numero_documento: parsed.data.numeroDocumento || null,
-    pais: parsed.data.pais || null,
+    tipo_documento: parsed.data.tipoDocumento || "Otro",
+    numero_documento: parsed.data.numeroDocumento || `sd-${created.user.id.slice(0, 27)}`,
+    pais_origen: parsed.data.pais || null,
   });
 
   if (guestError) {
@@ -124,4 +124,3 @@ export const createClientAccountByStaff = async (
     },
   };
 };
-

@@ -64,25 +64,61 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
   const admin = createSupabaseAdminClient();
   const telefono = parsed.data.telefono ? normalizePhone(parsed.data.telefono) : null;
 
-  const { error: profileError } = await admin.from("usuarios").insert({
-    id: data.user.id,
-    nombre: parsed.data.nombre,
-    rol: "cliente",
-    activo: true,
-    must_change_password: false,
-  });
+  const { data: existingProfile, error: profileReadError } = await admin
+    .from("usuarios")
+    .select("id,rol,activo")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileReadError) {
+    return { ok: false, message: profileReadError.message };
+  }
+
+  if (existingProfile && existingProfile.rol !== "cliente") {
+    return { ok: false, message: "Ya existe una cuenta con ese email." };
+  }
+
+  const profileQuery = existingProfile
+    ? admin.from("usuarios").update({ nombre: parsed.data.nombre }).eq("id", data.user.id)
+    : admin.from("usuarios").insert({
+        id: data.user.id,
+        nombre: parsed.data.nombre,
+        rol: "cliente",
+        activo: true,
+        must_change_password: false,
+      });
+
+  const { error: profileError } = await profileQuery;
 
   if (profileError) {
     return { ok: false, message: profileError.message };
   }
 
-  const { error: guestError } = await admin.from("huespedes").insert({
+  const guestPayload = {
     usuario_id: data.user.id,
     nombre_completo: parsed.data.nombre,
     email: parsed.data.email,
     telefono,
-    numero_documento: parsed.data.documento || null,
-  });
+    tipo_documento: "Otro",
+    numero_documento: parsed.data.documento || `sd-${data.user.id.slice(0, 27)}`,
+    pais_origen: null,
+  };
+
+  const { data: existingGuest, error: guestReadError } = await admin
+    .from("huespedes")
+    .select("id")
+    .eq("usuario_id", data.user.id)
+    .maybeSingle();
+
+  if (guestReadError) {
+    return { ok: false, message: guestReadError.message };
+  }
+
+  const guestQuery = existingGuest
+    ? admin.from("huespedes").update(guestPayload).eq("id", existingGuest.id)
+    : admin.from("huespedes").insert(guestPayload);
+
+  const { error: guestError } = await guestQuery;
 
   if (guestError) {
     return { ok: false, message: guestError.message };

@@ -10,7 +10,7 @@ export default async function HuespedesPage() {
   const supabase = createSupabaseAdminClient();
   const { data } = await supabase
     .from("huespedes")
-    .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais")
+    .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais_origen")
     .order("nombre_completo");
 
   return (

@@ -7,8 +7,12 @@ export default async function NuevaReservaClientePage() {
   await requirePasswordReady();
   const supabase = createSupabaseAdminClient();
   const [{ data: habitaciones }, { data: tarifas }] = await Promise.all([
-    supabase.from("habitaciones").select("id,nombre,numero,tipo,capacidad,precio_base,estado,activa").order("numero"),
-    supabase.from("tarifas").select("id,nombre,precio_noche,activa").order("nombre"),
+    supabase.from("habitaciones").select("id,numero,tipo,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
+    supabase
+      .from("tarifas")
+      .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .eq("activa", true)
+      .order("habitacion_tipo"),
   ]);
 
   return (

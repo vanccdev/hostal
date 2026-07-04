@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
+    <main className="flex min-h-screen items-start justify-center px-4 py-6 md:items-center">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Ingresar</CardTitle>

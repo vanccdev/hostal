@@ -12,7 +12,9 @@ export default async function ReservasPage() {
   const supabase = createSupabaseAdminClient();
   const { data } = await supabase
     .from("reservas")
-    .select("id,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,precio_total,estado,created_at")
+    .select(
+      "id,codigo_reserva,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,num_huespedes,canal_origen,estado,precio_total,precio_ajustado,motivo_ajuste,notas_internas,registrado_por,checkin_at,checkout_at,created_at,updated_at",
+    )
     .order("created_at", { ascending: false });
 
   return (
@@ -35,6 +37,7 @@ export default async function ReservasPage() {
             data={data ?? []}
             empty="No hay reservas registradas."
             columns={[
+              { key: "codigo", header: "Código", render: (row) => row.codigo_reserva },
               { key: "ingreso", header: "Ingreso", render: (row) => row.fecha_ingreso },
               { key: "salida", header: "Salida", render: (row) => row.fecha_salida },
               { key: "noches", header: "Noches", render: (row) => row.num_noches },

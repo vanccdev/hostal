@@ -58,7 +58,7 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
             <option value="">Seleccionar habitación</option>
             {habitaciones.map((habitacion) => (
               <option key={habitacion.id} value={habitacion.id}>
-                {habitacion.numero ?? habitacion.nombre ?? habitacion.id} - {habitacion.estado ?? "sin estado"}
+                {habitacion.numero} - {habitacion.tipo}
               </option>
             ))}
           </select>
@@ -66,11 +66,11 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
         </div>
         <div className="space-y-2">
           <Label htmlFor="tarifaId">Tarifa</Label>
-          <select id="tarifaId" name="tarifaId" className={selectClassName}>
-            <option value="">Usar precio base</option>
+          <select id="tarifaId" name="tarifaId" className={selectClassName} required>
+            <option value="">Seleccionar tarifa</option>
             {tarifas.map((tarifa) => (
               <option key={tarifa.id} value={tarifa.id}>
-                {tarifa.nombre} - {tarifa.precio_noche}
+                {tarifa.habitacion_tipo} / {tarifa.temporada} - {tarifa.precio_noche}
               </option>
             ))}
           </select>

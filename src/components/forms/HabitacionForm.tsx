@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BedDouble } from "lucide-react";
+import { BedDouble, ImageUp } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { upsertHabitacionAction } from "@/app/actions/crud";
@@ -20,11 +20,9 @@ export const HabitacionForm = () => {
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
       numero: "",
-      nombre: "",
-      tipo: "",
-      capacidad: 1,
-      precioBase: 0,
-      estado: "disponible",
+      tipo: "individual",
+      piso: 1,
+      capacidadMax: 1,
       descripcion: "",
       activa: true,
     },
@@ -39,28 +37,35 @@ export const HabitacionForm = () => {
           <FormMessage state={state} field="numero" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="nombre">Nombre</Label>
-          <Input id="nombre" {...form.register("nombre")} />
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="tipo">Tipo</Label>
-          <Input id="tipo" {...form.register("tipo")} />
+          <select
+            id="tipo"
+            {...form.register("tipo")}
+            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          >
+            <option value="individual">Individual</option>
+            <option value="matrimonial">Matrimonial</option>
+            <option value="doble">Doble</option>
+            <option value="triple">Triple</option>
+            <option value="familiar">Familiar</option>
+          </select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="capacidad">Capacidad</Label>
-          <Input id="capacidad" type="number" min="1" {...form.register("capacidad")} />
+          <Label htmlFor="piso">Piso</Label>
+          <Input id="piso" type="number" min="1" {...form.register("piso")} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="precioBase">Precio base</Label>
-          <Input id="precioBase" type="number" min="0" step="0.01" {...form.register("precioBase")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="estado">Estado</Label>
-          <Input id="estado" {...form.register("estado")} />
+          <Label htmlFor="capacidadMax">Capacidad máxima</Label>
+          <Input id="capacidadMax" type="number" min="1" {...form.register("capacidadMax")} />
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="descripcion">Descripción</Label>
           <Textarea id="descripcion" {...form.register("descripcion")} />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="imagenes">Imágenes</Label>
+          <Input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
@@ -70,7 +75,11 @@ export const HabitacionForm = () => {
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
       <Button type="submit" disabled={pending}>
-        <BedDouble className="h-4 w-4" aria-hidden="true" />
+        {pending ? (
+          <ImageUp className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <BedDouble className="h-4 w-4" aria-hidden="true" />
+        )}
         Guardar habitación
       </Button>
     </form>

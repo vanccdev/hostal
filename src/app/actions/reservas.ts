@@ -12,6 +12,12 @@ import { reservaClienteSchema, reservaStaffSchema } from "@/schemas/reservas";
 import type { ActionState } from "@/app/actions/types";
 import { formValue, validationErrors } from "@/app/actions/helpers";
 
+const reservationCode = () => {
+  const date = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const suffix = crypto.randomUUID().slice(0, 5).toUpperCase();
+  return `R${date}${suffix}`;
+};
+
 export const createClientReservation = async (
   _state: ActionState,
   formData: FormData,
@@ -56,24 +62,23 @@ export const createClientReservation = async (
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
     );
-    const total = await calculateReservationPrice(
-      admin,
-      parsed.data.tarifaId || null,
-      parsed.data.habitacionId,
-      nights,
-    );
+    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, nights);
 
     const { data: reservation, error } = await admin
       .from("reservas")
       .insert({
+        codigo_reserva: reservationCode(),
         huesped_id: guest.id,
         habitacion_id: parsed.data.habitacionId,
-        tarifa_id: parsed.data.tarifaId || null,
+        tarifa_id: parsed.data.tarifaId,
         fecha_ingreso: parsed.data.fechaIngreso,
         fecha_salida: parsed.data.fechaSalida,
         num_noches: nights,
+        num_huespedes: 1,
+        canal_origen: "web",
         precio_total: total,
-        estado: "pendiente",
+        estado: "pendiente_pago",
+        registrado_por: currentUser.authUserId,
       })
       .select("id")
       .single();
@@ -137,24 +142,23 @@ export const createStaffReservation = async (
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
     );
-    const total = await calculateReservationPrice(
-      admin,
-      parsed.data.tarifaId || null,
-      parsed.data.habitacionId,
-      nights,
-    );
+    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, nights);
 
     const { data: reservation, error } = await admin
       .from("reservas")
       .insert({
+        codigo_reserva: reservationCode(),
         huesped_id: parsed.data.huespedId,
         habitacion_id: parsed.data.habitacionId,
-        tarifa_id: parsed.data.tarifaId || null,
+        tarifa_id: parsed.data.tarifaId,
         fecha_ingreso: parsed.data.fechaIngreso,
         fecha_salida: parsed.data.fechaSalida,
         num_noches: nights,
+        num_huespedes: 1,
+        canal_origen: "recepcion",
         precio_total: total,
-        estado: "pendiente",
+        estado: "pendiente_pago",
+        registrado_por: currentUser.authUserId,
       })
       .select("id")
       .single();
@@ -184,4 +188,3 @@ export const createStaffReservation = async (
   revalidatePath("/admin/reservas");
   redirect("/admin/reservas");
 };
-

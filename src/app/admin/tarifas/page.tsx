@@ -8,7 +8,10 @@ import type { Tarifa } from "@/types/database";
 export default async function TarifasPage() {
   await requireAdminModule("tarifas");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase.from("tarifas").select("id,nombre,precio_noche,activa").order("nombre");
+  const { data } = await supabase
+    .from("tarifas")
+    .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+    .order("habitacion_tipo");
 
   return (
     <section className="space-y-6">
@@ -33,8 +36,10 @@ export default async function TarifasPage() {
             data={data ?? []}
             empty="No hay tarifas registradas."
             columns={[
-              { key: "nombre", header: "Nombre", render: (row) => row.nombre },
+              { key: "tipo", header: "Tipo", render: (row) => row.habitacion_tipo },
+              { key: "temporada", header: "Temporada", render: (row) => row.temporada },
               { key: "precio", header: "Precio noche", render: (row) => row.precio_noche },
+              { key: "vigente", header: "Vigente desde", render: (row) => row.vigente_desde },
               { key: "activa", header: "Activa", render: (row) => (row.activa === false ? "No" : "Sí") },
             ]}
           />

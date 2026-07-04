@@ -4,7 +4,7 @@ export const getGuestForUser = async (userId: string) => {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("huespedes")
-    .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais")
+    .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais_origen")
     .eq("usuario_id", userId)
     .maybeSingle();
 
@@ -14,4 +14,3 @@ export const getGuestForUser = async (userId: string) => {
 
   return data;
 };
-

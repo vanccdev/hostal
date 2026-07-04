@@ -7,11 +7,15 @@ export default async function NuevaReservaAdminPage() {
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
   const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }] = await Promise.all([
-    supabase.from("habitaciones").select("id,nombre,numero,tipo,capacidad,precio_base,estado,activa").order("numero"),
-    supabase.from("tarifas").select("id,nombre,precio_noche,activa").order("nombre"),
+    supabase.from("habitaciones").select("id,numero,tipo,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
+    supabase
+      .from("tarifas")
+      .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .eq("activa", true)
+      .order("habitacion_tipo"),
     supabase
       .from("huespedes")
-      .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais")
+      .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais_origen")
       .order("nombre_completo"),
   ]);
 

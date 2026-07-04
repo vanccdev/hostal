@@ -18,6 +18,7 @@ export type AdminModule =
   | "notificaciones"
   | "configuracion"
   | "auditoria"
+  | "backups"
   | "usuarios";
 
 const permissions: Record<UserRole, AdminModule[]> = {
@@ -36,6 +37,7 @@ const permissions: Record<UserRole, AdminModule[]> = {
     "notificaciones",
     "configuracion",
     "auditoria",
+    "backups",
     "usuarios",
   ],
   recepcionista: [
@@ -63,4 +65,3 @@ export const isStaffRole = (role: UserRole) => staffRoles.includes(role as (type
 
 export const isManagementRole = (role: UserRole) =>
   managementRoles.includes(role as (typeof managementRoles)[number]);
-

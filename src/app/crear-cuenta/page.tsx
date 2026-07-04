@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SignupPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="flex min-h-screen items-start justify-center px-4 py-6 md:items-center md:py-10">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Crear cuenta</CardTitle>

@@ -56,7 +56,18 @@ export const ClienteStaffForm = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
-          <Input id="tipoDocumento" {...form.register("tipoDocumento")} />
+          <select
+            id="tipoDocumento"
+            {...form.register("tipoDocumento")}
+            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+          >
+            <option value="">Seleccionar</option>
+            <option value="CI">CI</option>
+            <option value="Pasaporte">Pasaporte</option>
+            <option value="DNI">DNI</option>
+            <option value="RUC">RUC</option>
+            <option value="Otro">Otro</option>
+          </select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="numeroDocumento">Número documento</Label>

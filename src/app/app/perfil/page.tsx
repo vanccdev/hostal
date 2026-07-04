@@ -20,7 +20,7 @@ export default async function PerfilPage() {
           <p>Email: {guest?.email ?? currentUser.email ?? "-"}</p>
           <p>Teléfono: {guest?.telefono ?? "-"}</p>
           <p>Documento: {guest?.numero_documento ?? "-"}</p>
-          <p>País: {guest?.pais ?? "-"}</p>
+          <p>País: {guest?.pais_origen ?? "-"}</p>
         </CardContent>
       </Card>
     </section>
