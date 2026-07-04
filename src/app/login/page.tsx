@@ -12,9 +12,9 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <LoginForm />
-          <p className="mt-4 text-center text-sm text-zinc-600">
+          <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
             ¿No tienes cuenta?{" "}
-            <Link href="/crear-cuenta" className="font-medium text-zinc-950 underline underline-offset-4">
+            <Link href="/crear-cuenta" className="font-medium text-zinc-950 underline underline-offset-4 dark:text-zinc-100">
               Crear cuenta
             </Link>
           </p>
@@ -23,4 +23,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

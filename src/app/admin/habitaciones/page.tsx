@@ -20,7 +20,7 @@ export default async function HabitacionesPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Habitaciones</h1>
-        <p className="text-sm text-zinc-600">CRUD inicial de habitaciones.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">CRUD inicial de habitaciones.</p>
       </div>
       <Card>
         <CardHeader>
@@ -51,4 +51,3 @@ export default async function HabitacionesPage() {
     </section>
   );
 }
-

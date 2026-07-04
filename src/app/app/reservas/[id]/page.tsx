@@ -30,7 +30,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Detalle de reserva</h1>
-        <p className="text-sm text-zinc-600">Reserva {reserva.id}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Reserva {reserva.id}</p>
       </div>
       <Card>
         <CardHeader>
@@ -50,4 +50,3 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
     </section>
   );
 }
-

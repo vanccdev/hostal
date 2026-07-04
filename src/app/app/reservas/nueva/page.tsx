@@ -15,7 +15,7 @@ export default async function NuevaReservaClientePage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Nueva reserva</h1>
-        <p className="text-sm text-zinc-600">La reserva se asociará automáticamente a tu cuenta.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">La reserva se asociará automáticamente a tu cuenta.</p>
       </div>
       <Card>
         <CardHeader>
@@ -28,4 +28,3 @@ export default async function NuevaReservaClientePage() {
     </section>
   );
 }
-

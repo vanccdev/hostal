@@ -24,7 +24,7 @@ export const GenericModulePage = async ({ title, description, module, table }: G
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        <p className="text-sm text-zinc-600">{description}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{description}</p>
       </div>
       <Card>
         <CardHeader>
@@ -49,4 +49,3 @@ export const GenericModulePage = async ({ title, description, module, table }: G
     </section>
   );
 };
-

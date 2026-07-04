@@ -10,7 +10,7 @@ export default async function PerfilPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Perfil</h1>
-        <p className="text-sm text-zinc-600">Datos asociados a tu cuenta.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Datos asociados a tu cuenta.</p>
       </div>
       <Card>
         <CardHeader>
@@ -26,4 +26,3 @@ export default async function PerfilPage() {
     </section>
   );
 }
-

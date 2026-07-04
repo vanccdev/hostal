@@ -23,7 +23,7 @@ export default async function UsuariosPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <p className="text-sm text-zinc-600">Admin gestiona todos; recepción solo clientes.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Admin gestiona todos; recepción solo clientes.</p>
       </div>
       <Card>
         <CardHeader>
@@ -60,4 +60,3 @@ export default async function UsuariosPage() {
     </section>
   );
 }
-

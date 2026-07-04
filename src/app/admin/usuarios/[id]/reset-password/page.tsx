@@ -22,7 +22,7 @@ export default async function ResetPasswordPage({ params }: { params: Promise<{ 
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Restablecer contraseña</h1>
-        <p className="text-sm text-zinc-600">{usuario.nombre}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{usuario.nombre}</p>
       </div>
       <Card>
         <CardHeader>
@@ -38,4 +38,3 @@ export default async function ResetPasswordPage({ params }: { params: Promise<{ 
     </section>
   );
 }
-

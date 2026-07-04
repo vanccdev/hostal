@@ -20,7 +20,7 @@ export default async function ReservasPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Reservas</h1>
-          <p className="text-sm text-zinc-600">Reservas creadas por clientes o personal.</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Reservas creadas por clientes o personal.</p>
         </div>
         <Button asChild>
           <Link href="/admin/reservas/nueva">Nueva reserva</Link>
@@ -47,4 +47,3 @@ export default async function ReservasPage() {
     </section>
   );
 }
-

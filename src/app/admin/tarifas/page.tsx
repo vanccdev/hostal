@@ -14,7 +14,7 @@ export default async function TarifasPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Tarifas</h1>
-        <p className="text-sm text-zinc-600">Módulo solo para admin.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Módulo solo para admin.</p>
       </div>
       <Card>
         <CardHeader>
@@ -43,4 +43,3 @@ export default async function TarifasPage() {
     </section>
   );
 }
-

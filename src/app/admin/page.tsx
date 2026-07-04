@@ -18,7 +18,7 @@ export default async function AdminPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Panel administrativo</h1>
-        <p className="text-sm text-zinc-600">Resumen operativo del hostal.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Resumen operativo del hostal.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {counts.map((item) => (
@@ -35,4 +35,3 @@ export default async function AdminPage() {
     </section>
   );
 }
-

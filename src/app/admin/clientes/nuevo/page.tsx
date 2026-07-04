@@ -9,7 +9,7 @@ export default async function NuevoClientePage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Crear cliente</h1>
-        <p className="text-sm text-zinc-600">Crea Auth, perfil y huésped con contraseña inicial igual al teléfono.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Crea Auth, perfil y huésped con contraseña inicial igual al teléfono.</p>
       </div>
       <Card>
         <CardHeader>
@@ -23,4 +23,3 @@ export default async function NuevoClientePage() {
     </section>
   );
 }
-

@@ -17,6 +17,9 @@ type ReservaFormProps = {
   huespedes?: Huesped[];
 };
 
+const selectClassName =
+  "h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-zinc-300";
+
 export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: ReservaFormProps) => {
   const action = mode === "cliente" ? createClientReservation : createStaffReservation;
   const [state, formAction, pending] = useActionState(action, initialActionState);
@@ -29,7 +32,7 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
           <select
             id="huespedId"
             name="huespedId"
-            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm"
+            className={selectClassName}
             required
           >
             <option value="">Seleccionar huésped</option>
@@ -49,7 +52,7 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
           <select
             id="habitacionId"
             name="habitacionId"
-            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm"
+            className={selectClassName}
             required
           >
             <option value="">Seleccionar habitación</option>
@@ -63,7 +66,7 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
         </div>
         <div className="space-y-2">
           <Label htmlFor="tarifaId">Tarifa</Label>
-          <select id="tarifaId" name="tarifaId" className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm">
+          <select id="tarifaId" name="tarifaId" className={selectClassName}>
             <option value="">Usar precio base</option>
             {tarifas.map((tarifa) => (
               <option key={tarifa.id} value={tarifa.id}>
@@ -91,4 +94,3 @@ export const ReservaForm = ({ mode, habitaciones, tarifas, huespedes = [] }: Res
     </form>
   );
 };
-

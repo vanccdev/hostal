@@ -17,7 +17,7 @@ export default async function HuespedesPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Huéspedes</h1>
-        <p className="text-sm text-zinc-600">Gestión de datos de huéspedes.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Gestión de datos de huéspedes.</p>
       </div>
       <Card>
         <CardHeader>
@@ -47,4 +47,3 @@ export default async function HuespedesPage() {
     </section>
   );
 }
-

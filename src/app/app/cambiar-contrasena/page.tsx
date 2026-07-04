@@ -9,7 +9,7 @@ export default async function CambiarContrasenaPage() {
     <section className="mx-auto max-w-xl space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Cambiar contraseña</h1>
-        <p className="text-sm text-zinc-600">Debes completar este cambio para usar el portal.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Debes completar este cambio para usar el portal.</p>
       </div>
       <Card>
         <CardHeader>
@@ -23,4 +23,3 @@ export default async function CambiarContrasenaPage() {
     </section>
   );
 }
-

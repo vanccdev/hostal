@@ -22,14 +22,22 @@ TableBody.displayName = "TableBody";
 
 export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn("border-b transition-colors hover:bg-zinc-50", className)} {...props} />
+    <tr
+      ref={ref}
+      className={cn("border-b border-zinc-200 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900", className)}
+      {...props}
+    />
   ),
 );
 TableRow.displayName = "TableRow";
 
 export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <th ref={ref} className={cn("h-11 px-4 text-left align-middle font-medium text-zinc-500", className)} {...props} />
+    <th
+      ref={ref}
+      className={cn("h-11 px-4 text-left align-middle font-medium text-zinc-500 dark:text-zinc-400", className)}
+      {...props}
+    />
   ),
 );
 TableHead.displayName = "TableHead";
@@ -38,4 +46,3 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttr
   ({ className, ...props }, ref) => <td ref={ref} className={cn("p-4 align-middle", className)} {...props} />,
 );
 TableCell.displayName = "TableCell";
-

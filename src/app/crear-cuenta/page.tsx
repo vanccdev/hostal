@@ -12,9 +12,9 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <SignupForm />
-          <p className="mt-4 text-center text-sm text-zinc-600">
+          <p className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400">
             ¿Ya tienes cuenta?{" "}
-            <Link href="/login" className="font-medium text-zinc-950 underline underline-offset-4">
+            <Link href="/login" className="font-medium text-zinc-950 underline underline-offset-4 dark:text-zinc-100">
               Ingresar
             </Link>
           </p>
@@ -23,4 +23,3 @@ export default function SignupPage() {
     </main>
   );
 }
-

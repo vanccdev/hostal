@@ -39,10 +39,10 @@ type AdminSidebarProps = {
 };
 
 export const AdminSidebar = ({ role }: AdminSidebarProps) => (
-  <aside className="border-r border-zinc-200 bg-white">
+  <aside className="border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
     <div className="px-5 py-4">
-      <p className="text-sm font-semibold text-zinc-950">Hostal Admin</p>
-      <p className="text-xs text-zinc-500">{role}</p>
+      <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Hostal Admin</p>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">{role}</p>
     </div>
     <nav aria-label="Administración" className="grid gap-1 px-3 pb-6">
       {items
@@ -53,7 +53,7 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
               {item.label}
@@ -63,4 +63,3 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => (
     </nav>
   </aside>
 );
-

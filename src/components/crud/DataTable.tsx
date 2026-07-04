@@ -24,7 +24,7 @@ export const DataTable = <T,>({ columns, data, empty }: DataTableProps<T>) => (
     <TableBody>
       {data.length === 0 ? (
         <TableRow>
-          <TableCell colSpan={columns.length} className="text-center text-zinc-500">
+          <TableCell colSpan={columns.length} className="text-center text-zinc-500 dark:text-zinc-400">
             {empty}
           </TableCell>
         </TableRow>
@@ -40,4 +40,3 @@ export const DataTable = <T,>({ columns, data, empty }: DataTableProps<T>) => (
     </TableBody>
   </Table>
 );
-
