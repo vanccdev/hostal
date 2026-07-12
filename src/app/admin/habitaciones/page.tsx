@@ -1,13 +1,14 @@
 import Image from "next/image";
-import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { HabitacionForm } from "@/components/forms/HabitacionForm";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
 import type { Habitacion, ImgHabitacion, Tarifa } from "@/types/database";
 
 type HabitacionConImagenes = Habitacion & {
@@ -15,10 +16,31 @@ type HabitacionConImagenes = Habitacion & {
   tarifa?: Pick<Tarifa, "precio_noche" | "temporada"> | null;
 };
 
-export default async function HabitacionesPage() {
+export default async function HabitacionesPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
   await requireAdminModule("habitaciones");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase.from("habitaciones").select("*").order("numero");
+  const searchableColumns = searchableColumnsByTable.habitaciones ?? [];
+  const sortableColumns = sortableColumnsByTable.habitaciones ?? [];
+  const tableQuery = parseTableQuery(await searchParams, {
+    defaultSort: "numero",
+    defaultDir: "asc",
+    searchableColumns,
+    sortableColumns,
+  });
+  let habitacionesQuery = supabase
+    .from("habitaciones")
+    .select("*", { count: "exact" })
+    .order(tableQuery.sort as "numero", { ascending: tableQuery.dir === "asc" })
+    .range(tableQuery.from, tableQuery.to);
+
+  if (tableQuery.q) {
+    habitacionesQuery =
+      tableQuery.qColumn === allColumnsValue
+        ? habitacionesQuery.or(orIlike(searchableColumns, tableQuery.q))
+        : habitacionesQuery.ilike(tableQuery.qColumn as "numero", ilikePattern(tableQuery.q));
+  }
+
+  const { data, count } = await habitacionesQuery;
 
   const habitacionIds = (data ?? []).map((habitacion) => habitacion.id);
   const tariffIds = (data ?? []).map((habitacion) => habitacion.tarifa_id).filter((id): id is string => Boolean(id));
@@ -100,6 +122,9 @@ export default async function HabitacionesPage() {
           <DataTable<HabitacionConImagenes>
             data={habitaciones}
             empty="No hay habitaciones registradas."
+            serverState={tableStateFromQuery(tableQuery, count ?? 0)}
+            searchableColumns={searchableColumns}
+            sortableColumns={sortableColumns}
             columns={[
               {
                 key: "fotos_preview",
@@ -131,12 +156,21 @@ export default async function HabitacionesPage() {
                 key: "acciones",
                 header: "Acciones",
                 render: (row) => (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/habitaciones/${row.id}/editar`}>
-                      <Pencil className="h-4 w-4" aria-hidden="true" />
-                      Editar
-                    </Link>
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm">
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                        Editar
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Editar habitación</DialogTitle>
+                        <DialogDescription>Actualiza la habitación sin salir del listado.</DialogDescription>
+                      </DialogHeader>
+                      <HabitacionForm habitacion={row} tarifas={availableTarifas ?? []} />
+                    </DialogContent>
+                  </Dialog>
                 ),
               },
             ]}

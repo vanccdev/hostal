@@ -57,6 +57,14 @@ Implementado:
   - Las tablas usan scroll horizontal para mostrar contenido completo.
   - `src/components/crud/table-columns.tsx` centraliza columnas del esquema real/local y formateo.
   - Listados principales y genericos muestran todas las columnas SQL disponibles mediante `select("*")` donde aplica.
+  - Las tablas usan paginacion server-side contra Supabase, no paginacion solo en cliente:
+    - `select("*", { count: "exact" })`
+    - `.range(from, to)`
+    - `.order(...)`
+    - `.ilike(...)` o `.or(...)` para busqueda por columna o global.
+  - `src/lib/table-server.ts` centraliza query params (`page`, `pageSize`, `q`, `qColumn`, `sort`, `dir`), columnas buscables/ordenables y estado de paginacion.
+  - `src/components/crud/DataTable.tsx` mantiene el wrapper server-side para renderizar celdas con `render(row)`.
+  - `src/components/crud/ClientDataTable.tsx` implementa la UI interactiva basada en TanStack Table/shadcn: busqueda, selector de columna, orden, visibilidad de columnas, filas por pagina y navegacion.
 - Flujo de reservas por cliente y por personal con presentacion visual tipo catalogo:
   - Tarjetas de habitaciones con imagen, capacidad, piso, tarifa por noche, estado y mini disponibilidad de 7 dias.
   - Panel de resumen con fechas, noches, tarifa y total.
@@ -88,8 +96,8 @@ Implementado:
 
 Pendiente o siguiente iteracion:
 
-- Validar nombres/tipos exactos de columnas contra la instancia Supabase local/self-hosted.
-- Ajustar tipos `src/types/database.ts` usando tipos generados desde Supabase cuando el esquema real este disponible.
+- Seguir validando nombres/tipos exactos de columnas contra la instancia Supabase local/self-hosted.
+- Comparar `src/types/database.ts` con tipos generados desde Supabase cuando el CLI este disponible.
 - Completar CRUD avanzado para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones, configuracion y usuarios.
 - Definir estrategia de backup programado en produccion y almacenamiento externo cifrado.
 - Implementar busqueda avanzada de cliente por nombre, email, telefono y documento en `/admin/reservas/nueva`.
@@ -161,7 +169,7 @@ Notas de esquema:
 - La relacion vigente es `public.habitaciones.tarifa_id`; `public.tarifas.habitacion_id` fue eliminado por `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
-- En la DB local, algunas columnas de `public.huespedes` pueden ser `NOT NULL` aunque los tipos actuales las marquen opcionales.
+- En la DB local, `public.huespedes.tipo_documento` y `public.huespedes.numero_documento` son `NOT NULL`; los tipos locales ya reflejan ese comportamiento.
 
 ## Desarrollo
 
@@ -226,6 +234,7 @@ Verificaciones recientes:
 
 - `pnpm lint` pasa.
 - `pnpm exec tsc --noEmit` pasa.
+- Tablas/listados actualizados para usar paginacion server-side con Supabase y UI de busqueda/orden/columnas/filas por pagina.
 - Supabase local verificado: `public.tarifas` ya no tiene `habitacion_id`; `public.habitaciones` tiene `tarifa_id`.
 - Supabase local verificado: `current_setting('TimeZone') = America/La_Paz`.
 - `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id` y tras configurar timezone.
@@ -323,6 +332,12 @@ La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de P
    - Guardar cambios desde la ruta `/editar`.
    - Debe actualizar el registro existente sin crear duplicados.
 
+9. Tablas con paginacion server-side:
+   - Ir a listados como `/admin/usuarios`, `/admin/habitaciones`, `/admin/huespedes`, `/admin/tarifas`, `/admin/reservas`, `/admin/auditoria` o modulos genericos.
+   - Cambiar filas por pagina y navegar paginas; debe actualizar query params y consultar Supabase con `range`.
+   - Buscar en todas las columnas o una columna especifica; debe resetear a pagina 1 y consultar Supabase con filtros.
+   - Ordenar desde encabezados; debe actualizar `sort`/`dir` y consultar Supabase.
+
 ## Seguridad
 
 - No usar `SUPABASE_SERVICE_ROLE_KEY` en frontend.
@@ -353,9 +368,9 @@ pnpm exec tsc --noEmit
 
 Siguiente paso recomendado:
 
-1. Generar tipos desde el esquema real/local.
-2. Ajustar `src/types/database.ts`.
-3. Probar auth y registros contra self-hosted.
-4. Probar subida real de imagenes desde `/admin/habitaciones` con una sesion `admin`.
-5. Cargar datos base para habitaciones/tarifas.
+1. Generar tipos desde el esquema real/local si se instala Supabase CLI y comparar con `src/types/database.ts`.
+2. Probar auth y registros contra self-hosted.
+3. Probar subida real de imagenes desde `/admin/habitaciones` con una sesion `admin`.
+4. Cargar datos base para habitaciones/tarifas.
+5. Probar tablas con volumen suficiente para validar paginacion/busqueda/orden server-side.
 6. Completar los CRUD secundarios y el flujo combinado de reserva admin con cliente nuevo.

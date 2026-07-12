@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Save } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { localISODate } from "@/lib/datetime";
 import { tarifaSchema } from "@/schemas/crud";
 import type { Tarifa } from "@/types/database";
@@ -23,6 +24,7 @@ type TarifaFormProps = {
 
 export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
   const [state, action, pending] = useActionState(upsertTarifaAction, initialActionState);
+  const [activa, setActiva] = useState(tarifa?.activa ?? true);
   const form = useForm<z.input<typeof tarifaSchema>>({
     resolver: zodResolver(tarifaSchema),
     defaultValues: {
@@ -93,10 +95,19 @@ export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
           />
         </div>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...form.register("activa")} defaultChecked={tarifa?.activa ?? true} />
-        Activa
-      </label>
+      <div className="flex items-center gap-3">
+        <input type="hidden" name="activa" value={activa ? "true" : "false"} />
+        <Switch
+          id="activa"
+          checked={activa}
+          onCheckedChange={(checked) => {
+            setActiva(checked);
+            form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
+          }}
+          aria-label="Cambiar estado activo de la tarifa"
+        />
+        <Label htmlFor="activa">Activa</Label>
+      </div>
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
       <Button type="submit" disabled={pending}>

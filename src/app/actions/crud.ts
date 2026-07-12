@@ -99,7 +99,7 @@ export const upsertHabitacionAction = async (
     piso: formValue(formData, "piso"),
     capacidadMax: formValue(formData, "capacidadMax"),
     descripcion: formValue(formData, "descripcion"),
-    activa: formData.get("activa") === "on",
+    activa: formData.get("activa") === "true",
   });
 
   if (!parsed.success) {
@@ -238,7 +238,7 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
     precioNoche: formValue(formData, "precioNoche"),
     vigenteDesde: formValue(formData, "vigenteDesde"),
     vigenteHasta: formValue(formData, "vigenteHasta"),
-    activa: formData.get("activa") === "on",
+    activa: formData.get("activa") === "true",
   });
 
   if (!parsed.success) {

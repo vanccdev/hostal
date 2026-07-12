@@ -5,12 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
 import type { Reserva } from "@/types/database";
 
-export default async function ReservasPage() {
+export default async function ReservasPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase.from("reservas").select("*").order("created_at", { ascending: false });
+  const searchableColumns = searchableColumnsByTable.reservas ?? [];
+  const sortableColumns = sortableColumnsByTable.reservas ?? [];
+  const tableQuery = parseTableQuery(await searchParams, {
+    defaultSort: "created_at",
+    defaultDir: "desc",
+    searchableColumns,
+    sortableColumns,
+  });
+  let query = supabase
+    .from("reservas")
+    .select("*", { count: "exact" })
+    .order(tableQuery.sort as "created_at", { ascending: tableQuery.dir === "asc" })
+    .range(tableQuery.from, tableQuery.to);
+
+  if (tableQuery.q) {
+    query =
+      tableQuery.qColumn === allColumnsValue
+        ? query.or(orIlike(searchableColumns, tableQuery.q))
+        : query.ilike(tableQuery.qColumn as "codigo_reserva", ilikePattern(tableQuery.q));
+  }
+
+  const { data, count } = await query;
   const reservas = data ?? [];
 
   return (
@@ -33,6 +55,9 @@ export default async function ReservasPage() {
             data={reservas}
             empty="No hay reservas registradas."
             columns={columnsForTable<Reserva>("reservas", reservas)}
+            serverState={tableStateFromQuery(tableQuery, count ?? 0)}
+            searchableColumns={searchableColumns}
+            sortableColumns={sortableColumns}
           />
         </CardContent>
       </Card>

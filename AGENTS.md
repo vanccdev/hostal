@@ -72,6 +72,11 @@ Ya existe una base funcional con:
   - `src/components/ui/table.tsx` evita saltos de linea en headers/celdas y usa scroll horizontal.
   - `src/components/crud/table-columns.tsx` centraliza columnas y formateo para mostrar todas las columnas del esquema real/local.
   - Listados de modulos principales y genericos usan `select("*")` cuando aplica para no ocultar columnas SQL.
+  - `src/components/crud/DataTable.tsx` renderiza celdas en servidor y delega la UI interactiva a `src/components/crud/ClientDataTable.tsx`.
+  - `src/lib/table-server.ts` centraliza parsing de query params, columnas buscables/ordenables y estado de paginacion.
+  - Las tablas administrativas y del portal cliente usan paginacion server-side con Supabase: `select("*", { count: "exact" })`, `.range(from, to)`, `.order(...)`, `.ilike(...)`/`.or(...)`.
+  - La UI de tablas permite buscar, elegir columna de busqueda, ordenar columnas, mostrar/ocultar columnas y cambiar filas por pagina usando query params (`page`, `pageSize`, `q`, `qColumn`, `sort`, `dir`).
+  - No volver a paginar tablas grandes solo en cliente trayendo todas las filas; la paginacion debe mantenerse en Supabase y la UI solo controla el estado.
 - Creacion de cuenta cliente por staff.
 - Reset de contrasena de cliente al telefono.
 - Eventos internos y webhooks base.
@@ -125,16 +130,16 @@ Validar esquema real/local y completar datos base:
    - `supabase/migrations/202607090001_add_habitacion_tarifa_id.sql`
    - `supabase/migrations/202607090002_set_lapaz_timezone.sql`
    - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`
-3. Generar tipos desde Supabase real si el CLI esta disponible.
-4. Reemplazar o ajustar `src/types/database.ts` con el esquema real.
-5. Probar home publica `/`, seleccion de fechas/habitacion sin sesion, login/registro con `next`, restauracion en `/app/reservas/nueva`, creacion de reserva cliente y creacion de cliente por staff.
-6. Probar subida de imagenes desde `/admin/habitaciones` con usuario `admin`.
-7. Probar edicion de habitaciones, huespedes y tarifas desde sus rutas `/editar`.
-8. Revisar columnas reales de `public.huespedes`; en la instancia local algunas columnas marcadas opcionales en `src/types/database.ts` pueden ser `NOT NULL`.
+3. Generar tipos desde Supabase real si el CLI esta disponible y comparar con `src/types/database.ts`.
+4. Probar home publica `/`, seleccion de fechas/habitacion sin sesion, login/registro con `next`, restauracion en `/app/reservas/nueva`, creacion de reserva cliente y creacion de cliente por staff.
+5. Probar subida de imagenes desde `/admin/habitaciones` con usuario `admin`.
+6. Probar edicion de habitaciones, huespedes y tarifas desde sus rutas `/editar`.
+7. Probar tablas con suficientes registros para validar paginacion server-side, busqueda, orden y cambio de filas por pagina.
+8. Revisar columnas reales de `public.huespedes`; en la instancia local `tipo_documento` y `numero_documento` son `NOT NULL`.
 
 ## Pendientes funcionales
 
-- Ajustar `src/types/database.ts` contra el esquema real/local generado.
+- Seguir comparando `src/types/database.ts` contra tipos generados si se instala Supabase CLI.
 - Busqueda avanzada de huesped/cliente en `/admin/reservas/nueva`.
 - Flujo combinado para crear cliente nuevo y reserva desde `/admin/reservas/nueva`.
 - Edicion real de perfil cliente.
@@ -169,4 +174,5 @@ Validar esquema real/local y completar datos base:
 - No perder la intencion de reserva publica al pasar por login/registro; usar `src/lib/reservation-intent.ts`.
 - Para selects de formularios, usar `src/components/ui/select.tsx` basado en shadcn/Radix; no usar `<select>` nativo.
 - Para fechas de formularios, usar `DatePickerField` con `Calendar` y `Popover`; no usar inputs nativos de fecha.
+- Para tablas/listados, mantener paginacion y filtrado en Supabase con `range`/`count`; no cargar todas las filas para filtrar o paginar en Next.js.
 - Si se modifica frontend responsive, verificar en viewport movil real o medir layout; no asumir solo por clases Tailwind.

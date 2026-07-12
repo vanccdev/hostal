@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BedDouble, ImageUp, Tag } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { habitacionSchema } from "@/schemas/crud";
 import type { Habitacion, Tarifa } from "@/types/database";
@@ -24,6 +25,7 @@ type HabitacionFormProps = {
 
 export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
+  const [activa, setActiva] = useState(habitacion?.activa ?? true);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
@@ -111,10 +113,19 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
           <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...form.register("activa")} defaultChecked={habitacion?.activa ?? true} />
-        Activa
-      </label>
+      <div className="flex items-center gap-3">
+        <input type="hidden" name="activa" value={activa ? "true" : "false"} />
+        <Switch
+          id="activa"
+          checked={activa}
+          onCheckedChange={(checked) => {
+            setActiva(checked);
+            form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
+          }}
+          aria-label="Cambiar estado activo de la habitación"
+        />
+        <Label htmlFor="activa">Activa</Label>
+      </div>
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
       <Button type="submit" disabled={pending || !hasTarifas}>

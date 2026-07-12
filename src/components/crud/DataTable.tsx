@@ -1,4 +1,6 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import * as React from "react";
+import { ClientDataTable, type RenderedColumn, type RenderedRow } from "@/components/crud/ClientDataTable";
+import type { TableServerState } from "@/lib/table-server";
 
 export type Column<T> = {
   key: string;
@@ -10,33 +12,112 @@ type DataTableProps<T> = {
   columns: Column<T>[];
   data: T[];
   empty: string;
+  serverState?: TableServerState;
+  searchableColumns?: string[];
+  sortableColumns?: string[];
 };
 
-export const DataTable = <T,>({ columns, data, empty }: DataTableProps<T>) => (
-  <Table>
-    <TableHeader>
-      <TableRow>
-        {columns.map((column) => (
-          <TableHead key={column.key}>{column.header}</TableHead>
-        ))}
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {data.length === 0 ? (
-        <TableRow>
-          <TableCell colSpan={columns.length} className="py-10 text-center font-medium text-[#717171] dark:text-[#b0b0b0]">
-            {empty}
-          </TableCell>
-        </TableRow>
-      ) : (
-        data.map((row, index) => (
-          <TableRow key={index}>
-            {columns.map((column) => (
-              <TableCell key={column.key}>{column.render(row)}</TableCell>
-            ))}
-          </TableRow>
-        ))
-      )}
-    </TableBody>
-  </Table>
-);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const valueByKey = <T,>(row: T, key: string) => {
+  if (!isRecord(row) || !(key in row)) {
+    return undefined;
+  }
+
+  return row[key];
+};
+
+const nodeToText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined || typeof node === "boolean") {
+    return "";
+  }
+
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(nodeToText).filter(Boolean).join(" ");
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return nodeToText(node.props.children);
+  }
+
+  return "";
+};
+
+const valueToText = (value: unknown, rendered: React.ReactNode): string => {
+  if (value === null || value === undefined) {
+    return nodeToText(rendered);
+  }
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => valueToText(item, "")).filter(Boolean).join(" ");
+  }
+
+  if (isRecord(value)) {
+    return Object.values(value)
+      .map((item) => valueToText(item, ""))
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  return nodeToText(rendered);
+};
+
+const rowId = <T,>(row: T, index: number) => {
+  if (isRecord(row) && typeof row.id === "string") {
+    return row.id;
+  }
+
+  return String(index);
+};
+
+export const DataTable = <T,>({
+  columns,
+  data,
+  empty,
+  serverState,
+  searchableColumns,
+  sortableColumns,
+}: DataTableProps<T>) => {
+  const renderedColumns: RenderedColumn[] = columns.map((column) => ({
+    key: column.key,
+    header: column.header,
+  }));
+
+  const renderedRows: RenderedRow[] = data.map((row, index) => ({
+    id: rowId(row, index),
+    cells: columns.map((column) => {
+      const rendered = column.render(row);
+      const rawValue = valueByKey(row, column.key);
+
+      return {
+        key: column.key,
+        content: rendered,
+        value: valueToText(rawValue, rendered),
+      };
+    }),
+  }));
+
+  return (
+    <ClientDataTable
+      columns={renderedColumns}
+      rows={renderedRows}
+      empty={empty}
+      serverState={serverState}
+      searchableColumns={searchableColumns}
+      sortableColumns={sortableColumns}
+    />
+  );
+};

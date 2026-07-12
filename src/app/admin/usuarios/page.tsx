@@ -6,18 +6,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
 import type { Usuario } from "@/types/database";
 
-export default async function UsuariosPage() {
+export default async function UsuariosPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
   const currentUser = await requireAdminModule("usuarios");
   const supabase = createSupabaseAdminClient();
-  let query = supabase.from("usuarios").select("*").order("created_at");
+  const searchableColumns = searchableColumnsByTable.usuarios ?? [];
+  const sortableColumns = sortableColumnsByTable.usuarios ?? [];
+  const tableQuery = parseTableQuery(await searchParams, {
+    defaultSort: "created_at",
+    defaultDir: "desc",
+    searchableColumns,
+    sortableColumns,
+  });
+  let query = supabase
+    .from("usuarios")
+    .select("*", { count: "exact" })
+    .order(tableQuery.sort as "created_at", { ascending: tableQuery.dir === "asc" })
+    .range(tableQuery.from, tableQuery.to);
 
   if (currentUser.profile!.rol === "recepcionista") {
     query = query.eq("rol", "cliente");
   }
 
-  const { data } = await query;
+  if (tableQuery.q) {
+    query =
+      tableQuery.qColumn === allColumnsValue
+        ? query.or(orIlike(searchableColumns, tableQuery.q))
+        : query.ilike(tableQuery.qColumn as "nombre", ilikePattern(tableQuery.q));
+  }
+
+  const { data, count } = await query;
   const usuarios = data ?? [];
 
   return (
@@ -34,6 +54,9 @@ export default async function UsuariosPage() {
           <DataTable<Usuario>
             data={usuarios}
             empty="No hay usuarios."
+            serverState={tableStateFromQuery(tableQuery, count ?? 0)}
+            searchableColumns={searchableColumns}
+            sortableColumns={sortableColumns}
             columns={[
               ...columnsForTable<Usuario>("usuarios", usuarios),
               {
