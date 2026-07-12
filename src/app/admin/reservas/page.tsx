@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
+import { userNamesByIdForRows } from "@/lib/table-user-references";
 import type { Reserva } from "@/types/database";
 
 export default async function ReservasPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
@@ -34,6 +35,7 @@ export default async function ReservasPage({ searchParams }: { searchParams: Pro
 
   const { data, count } = await query;
   const reservas = data ?? [];
+  const userNamesById = await userNamesByIdForRows(supabase, reservas);
 
   return (
     <section className="space-y-6">
@@ -54,7 +56,7 @@ export default async function ReservasPage({ searchParams }: { searchParams: Pro
           <DataTable<Reserva>
             data={reservas}
             empty="No hay reservas registradas."
-            columns={columnsForTable<Reserva>("reservas", reservas)}
+            columns={columnsForTable<Reserva>("reservas", reservas, { userNamesById })}
             serverState={tableStateFromQuery(tableQuery, count ?? 0)}
             searchableColumns={searchableColumns}
             sortableColumns={sortableColumns}

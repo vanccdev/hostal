@@ -1,9 +1,13 @@
 import type { Column } from "@/components/crud/DataTable";
 import { formatDate, formatDateTime } from "@/lib/datetime";
+import { userReferenceColumns } from "@/lib/table-user-references";
 import type { Database, GenericRow, Json } from "@/types/database";
 
 type TableName = keyof Database["public"]["Tables"];
 type RowRecord = Record<string, Json | undefined>;
+type ColumnsForTableOptions = {
+  userNamesById?: Record<string, string>;
+};
 
 const columnLabels: Record<string, string> = {
   id: "ID",
@@ -216,9 +220,13 @@ const dateTimeColumns = new Set([
 const formatColumnHeader = (key: string) =>
   columnLabels[key] ?? key.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-export const formatTableValue = (value: Json | undefined, key?: string) => {
+export const formatTableValue = (value: Json | undefined, key?: string, options?: ColumnsForTableOptions) => {
   if (value === null || value === undefined || value === "") {
     return "-";
+  }
+
+  if (typeof value === "string" && key && userReferenceColumns.has(key)) {
+    return options?.userNamesById?.[value] ?? value;
   }
 
   if (typeof value === "string" && key && dateColumns.has(key)) {
@@ -252,14 +260,18 @@ const rowKeys = <T extends RowRecord>(rows: T[]) => {
   return [...keys];
 };
 
-export const columnsForTable = <T extends RowRecord>(table: TableName, rows: T[] = []): Column<T>[] => {
+export const columnsForTable = <T extends RowRecord>(
+  table: TableName,
+  rows: T[] = [],
+  options?: ColumnsForTableOptions,
+): Column<T>[] => {
   const orderedKeys = [...(schemaColumns[table] ?? []), ...rowKeys(rows)];
   const uniqueKeys = [...new Set(orderedKeys)];
 
   return uniqueKeys.map((key) => ({
     key,
     header: formatColumnHeader(key),
-    render: (row) => formatTableValue(row[key], key),
+    render: (row) => formatTableValue(row[key], key, options),
   }));
 };
 

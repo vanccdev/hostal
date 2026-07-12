@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
+import { userNamesByIdForRows } from "@/lib/table-user-references";
 import type { GenericRow } from "@/types/database";
 
 export default async function AuditoriaPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
@@ -32,6 +33,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
 
   const { data, count } = await query;
   const rows = genericRows(data);
+  const userNamesById = await userNamesByIdForRows(supabase, rows);
 
   return (
     <section className="space-y-6">
@@ -47,7 +49,7 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Pr
           <DataTable<GenericRow>
             data={rows}
             empty="No hay registros de auditoría."
-            columns={columnsForTable<GenericRow>("audit_log", rows)}
+            columns={columnsForTable<GenericRow>("audit_log", rows, { userNamesById })}
             serverState={tableStateFromQuery(tableQuery, count ?? 0)}
             searchableColumns={searchableColumns}
             sortableColumns={sortableColumns}

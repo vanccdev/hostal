@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Building2, LogIn } from "lucide-react";
+import { ArrowRight, Building2, ExternalLink, LogIn, MapPin } from "lucide-react";
+import { HostalLocationMap } from "@/components/public/HostalLocationMap";
 import { PublicBookingCatalog } from "@/components/public/PublicBookingCatalog";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -56,6 +57,9 @@ export default async function Home() {
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
               <Link href="#habitaciones">Habitaciones</Link>
+            </Button>
+            <Button asChild variant="ghost" className="hidden sm:inline-flex">
+              <Link href="#ubicacion">Ubicación</Link>
             </Button>
             {accountPath ? (
               <Button asChild variant="outline">
@@ -117,6 +121,33 @@ export default async function Home() {
         bloqueos={bloqueos ?? []}
         continueHref={continueHref}
       />
+
+      <section id="ubicacion" className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.9fr_1.4fr] lg:px-8 lg:py-14">
+        <div className="space-y-4">
+          <BadgeLike>Ubicación</BadgeLike>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-semibold tracking-normal text-[#222222] dark:text-zinc-100">Estamos en Plaza, Camargo.</h2>
+            <p className="max-w-xl text-base leading-7 text-[#717171] dark:text-[#b0b0b0]">
+              Encuéntranos cerca del centro de Camargo para llegar fácil antes del check-in o moverte a pie por la zona.
+            </p>
+          </div>
+          <div className="space-y-2 rounded-2xl border border-[#dddddd] bg-white p-4 text-sm shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+            <p className="flex items-center gap-2 font-semibold text-[#222222] dark:text-zinc-100">
+              <MapPin className="h-4 w-4 text-[#ff385c]" aria-hidden="true" />
+              Hostal Plaza
+            </p>
+            <p className="text-[#717171] dark:text-[#b0b0b0]">Camargo, Chuquisaca</p>
+            <p className="font-mono text-xs text-[#717171] dark:text-[#b0b0b0]">-20.641224228393003, -65.20948944626011</p>
+            <Button asChild variant="outline" className="mt-3 w-full justify-center rounded-md sm:w-auto">
+              <Link href="https://maps.app.goo.gl/AbQxFxgTE6t16oDo7" target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                Ver en Google Maps
+              </Link>
+            </Button>
+          </div>
+        </div>
+        <HostalLocationMap />
+      </section>
     </main>
   );
 }

@@ -227,32 +227,39 @@ export const ReservaForm = ({
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="fechaIngreso">Ingreso</Label>
-          <DatePickerField
-            id="fechaIngreso"
-            name="fechaIngreso"
-            value={fechaIngreso}
-            onChange={setFechaIngreso}
-            placeholder="Seleccionar ingreso"
-            disablePast
-            required
-          />
-          <FormMessage state={state} field="fechaIngreso" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="fechaSalida">Salida</Label>
-          <DatePickerField
-            id="fechaSalida"
-            name="fechaSalida"
-            value={fechaSalida}
-            onChange={setFechaSalida}
-            placeholder="Seleccionar salida"
-            disablePast
-            required
-          />
-          <FormMessage state={state} field="fechaSalida" />
+      <div className="max-w-2xl space-y-2">
+        <Label>Fechas</Label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="fechaIngreso" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+              Ingreso
+            </Label>
+            <DatePickerField
+              id="fechaIngreso"
+              name="fechaIngreso"
+              value={fechaIngreso}
+              onChange={setFechaIngreso}
+              placeholder="Seleccionar ingreso"
+              disablePast
+              required
+            />
+            <FormMessage state={state} field="fechaIngreso" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fechaSalida" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+              Salida
+            </Label>
+            <DatePickerField
+              id="fechaSalida"
+              name="fechaSalida"
+              value={fechaSalida}
+              onChange={setFechaSalida}
+              placeholder="Seleccionar salida"
+              disablePast
+              required
+            />
+            <FormMessage state={state} field="fechaSalida" />
+          </div>
         </div>
       </div>
 

@@ -32,7 +32,8 @@ export const Calendar = ({ className, classNames, showOutsideDays = true, locale
       day: "relative flex h-9 w-9 items-center justify-center p-0 text-center text-sm",
       day_button:
         "h-9 w-9 rounded-full text-sm font-medium transition-colors hover:bg-[#fff1f3] focus:outline-none focus:ring-2 focus:ring-[#ff385c] dark:hover:bg-[#2b2b2b]",
-      selected: "[&>button]:bg-[#ff385c] [&>button]:text-white [&>button]:hover:bg-[#e31c5f]",
+      selected:
+        "[&>button]:!bg-[#ff385c] [&>button]:!text-white [&>button]:hover:!bg-[#e31c5f] [&>button]:hover:!text-white [&>button]:focus:!bg-[#e31c5f] [&>button]:focus:!text-white",
       today: "[&>button]:border [&>button]:border-[#ff385c]",
       outside: "text-[#b0b0b0] opacity-50 dark:text-[#717171]",
       disabled: "text-[#b0b0b0] opacity-50 dark:text-[#717171]",

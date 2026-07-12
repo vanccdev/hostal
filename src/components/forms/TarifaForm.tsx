@@ -76,37 +76,53 @@ export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
           <Input id="precioNoche" type="number" min="0" step="0.01" {...form.register("precioNoche")} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="vigenteDesde">Vigente desde</Label>
-          <DatePickerField
-            id="vigenteDesde"
-            name="vigenteDesde"
-            defaultValue={tarifa?.vigente_desde ?? localISODate()}
-            placeholder="Seleccionar inicio"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vigenteHasta">Vigente hasta</Label>
-          <DatePickerField
-            id="vigenteHasta"
-            name="vigenteHasta"
-            defaultValue={tarifa?.vigente_hasta ?? ""}
-            placeholder="Sin fecha final"
-          />
+          <Label>Vigencia</Label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="vigenteDesde" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                Desde
+              </Label>
+              <DatePickerField
+                id="vigenteDesde"
+                name="vigenteDesde"
+                defaultValue={tarifa?.vigente_desde ?? localISODate()}
+                placeholder="Inicio"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vigenteHasta" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                Hasta
+              </Label>
+              <DatePickerField
+                id="vigenteHasta"
+                name="vigenteHasta"
+                defaultValue={tarifa?.vigente_hasta ?? ""}
+                placeholder="Sin final"
+              />
+            </div>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <input type="hidden" name="activa" value={activa ? "true" : "false"} />
-        <Switch
-          id="activa"
-          checked={activa}
-          onCheckedChange={(checked) => {
-            setActiva(checked);
-            form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
-          }}
-          aria-label="Cambiar estado activo de la tarifa"
-        />
-        <Label htmlFor="activa">Activa</Label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dddddd] bg-white p-3 dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+          <input type="hidden" name="activa" value={activa ? "true" : "false"} />
+          <div className="space-y-1">
+            <Label htmlFor="activa">Estado de la tarifa</Label>
+            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+              {activa ? "Activa para asignar." : "Inactiva para nuevas asignaciones."}
+            </p>
+          </div>
+          <Switch
+            id="activa"
+            checked={activa}
+            onCheckedChange={(checked) => {
+              setActiva(checked);
+              form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
+            }}
+            aria-label="Cambiar estado activo de la tarifa"
+          />
+        </div>
       </div>
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}

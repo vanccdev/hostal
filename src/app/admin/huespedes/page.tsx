@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
+import { userNamesByIdForRows } from "@/lib/table-user-references";
 import type { Huesped } from "@/types/database";
 
 export default async function HuespedesPage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
@@ -36,6 +37,7 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
 
   const { data, count } = await query;
   const huespedes = data ?? [];
+  const userNamesById = await userNamesByIdForRows(supabase, huespedes);
 
   return (
     <section className="space-y-6">
@@ -63,7 +65,7 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
             searchableColumns={searchableColumns}
             sortableColumns={sortableColumns}
             columns={[
-              ...columnsForTable<Huesped>("huespedes", huespedes),
+              ...columnsForTable<Huesped>("huespedes", huespedes, { userNamesById }),
               {
                 key: "acciones",
                 header: "Acciones",

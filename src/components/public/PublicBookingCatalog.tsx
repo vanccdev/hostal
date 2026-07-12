@@ -156,28 +156,37 @@ export const PublicBookingCatalog = ({
   return (
     <section id="habitaciones" className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-[#dddddd] bg-white p-4 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
-        <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,34rem)_auto] md:items-end md:justify-between">
           <div className="space-y-2">
-            <Label htmlFor="publicFechaIngreso">Ingreso</Label>
-            <DatePickerField
-              id="publicFechaIngreso"
-              name="publicFechaIngreso"
-              value={fechaIngreso}
-              onChange={setFechaIngreso}
-              placeholder="Seleccionar ingreso"
-              disablePast
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="publicFechaSalida">Salida</Label>
-            <DatePickerField
-              id="publicFechaSalida"
-              name="publicFechaSalida"
-              value={fechaSalida}
-              onChange={setFechaSalida}
-              placeholder="Seleccionar salida"
-              disablePast
-            />
+            <Label>Fechas</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="publicFechaIngreso" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                  Ingreso
+                </Label>
+                <DatePickerField
+                  id="publicFechaIngreso"
+                  name="publicFechaIngreso"
+                  value={fechaIngreso}
+                  onChange={setFechaIngreso}
+                  placeholder="Seleccionar ingreso"
+                  disablePast
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="publicFechaSalida" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                  Salida
+                </Label>
+                <DatePickerField
+                  id="publicFechaSalida"
+                  name="publicFechaSalida"
+                  value={fechaSalida}
+                  onChange={setFechaSalida}
+                  placeholder="Seleccionar salida"
+                  disablePast
+                />
+              </div>
+            </div>
           </div>
           <Button type="button" className="h-12" disabled={!canContinue} onClick={continueReservation}>
             <CalendarDays className="h-4 w-4" aria-hidden="true" />

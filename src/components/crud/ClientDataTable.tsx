@@ -304,13 +304,15 @@ export const ClientDataTable = ({
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
                 .map((column) => (
-                  <div
-                    key={column.id}
-                    className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm outline-none"
-                  >
-                    <Label htmlFor={`column-${column.id}`} className="font-medium">
-                      {columnLabel(columns, column.id)}
-                    </Label>
+                  <div key={column.id} className="flex items-center justify-between gap-3 rounded-md px-2 py-2 text-sm outline-none">
+                    <div className="min-w-0 space-y-0.5">
+                      <Label htmlFor={`column-${column.id}`} className="block truncate font-medium">
+                        {columnLabel(columns, column.id)}
+                      </Label>
+                      <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+                        {column.getIsVisible() ? "Visible" : "Oculta"}
+                      </p>
+                    </div>
                     <Switch
                       id={`column-${column.id}`}
                       checked={column.getIsVisible()}

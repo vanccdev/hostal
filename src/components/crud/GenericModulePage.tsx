@@ -13,6 +13,7 @@ import {
   tableStateFromQuery,
   type TableQueryInput,
 } from "@/lib/table-server";
+import { userNamesByIdForRows } from "@/lib/table-user-references";
 import type { Database, GenericRow } from "@/types/database";
 
 type TableName = keyof Database["public"]["Tables"];
@@ -51,6 +52,7 @@ export const GenericModulePage = async ({ title, description, module, table, sea
 
   const { data, count } = await query;
   const rows = genericRows(data);
+  const userNamesById = await userNamesByIdForRows(supabase, rows);
 
   return (
     <section className="space-y-6">
@@ -66,7 +68,7 @@ export const GenericModulePage = async ({ title, description, module, table, sea
           <DataTable<GenericRow>
             data={rows}
             empty="No hay registros."
-            columns={columnsForTable<GenericRow>(table, rows)}
+            columns={columnsForTable<GenericRow>(table, rows, { userNamesById })}
             serverState={tableStateFromQuery(tableQuery, count ?? 0)}
             searchableColumns={searchableColumns}
             sortableColumns={sortableColumns}

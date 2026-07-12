@@ -113,18 +113,25 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
           <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <input type="hidden" name="activa" value={activa ? "true" : "false"} />
-        <Switch
-          id="activa"
-          checked={activa}
-          onCheckedChange={(checked) => {
-            setActiva(checked);
-            form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
-          }}
-          aria-label="Cambiar estado activo de la habitación"
-        />
-        <Label htmlFor="activa">Activa</Label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dddddd] bg-white p-3 dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+          <input type="hidden" name="activa" value={activa ? "true" : "false"} />
+          <div className="space-y-1">
+            <Label htmlFor="activa">Estado de la habitación</Label>
+            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+              {activa ? "Activa para reservas." : "Inactiva para nuevas reservas."}
+            </p>
+          </div>
+          <Switch
+            id="activa"
+            checked={activa}
+            onCheckedChange={(checked) => {
+              setActiva(checked);
+              form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
+            }}
+            aria-label="Cambiar estado activo de la habitación"
+          />
+        </div>
       </div>
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}

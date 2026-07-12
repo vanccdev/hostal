@@ -7,6 +7,7 @@ import { requirePasswordReady } from "@/lib/auth/require-role";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
+import { userNamesByIdForRows } from "@/lib/table-user-references";
 import type { Reserva } from "@/types/database";
 
 export default async function ReservasClientePage({ searchParams }: { searchParams: Promise<TableQueryInput> }) {
@@ -39,6 +40,7 @@ export default async function ReservasClientePage({ searchParams }: { searchPara
 
   const { data, count } = query ? await query : { data: [], count: 0 };
   const reservas = data ?? [];
+  const userNamesById = await userNamesByIdForRows(supabase, reservas);
 
   return (
     <section className="space-y-6">
@@ -63,7 +65,7 @@ export default async function ReservasClientePage({ searchParams }: { searchPara
             searchableColumns={searchableColumns}
             sortableColumns={sortableColumns}
             columns={[
-              ...columnsForTable<Reserva>("reservas", reservas),
+              ...columnsForTable<Reserva>("reservas", reservas, { userNamesById }),
               {
                 key: "detalle",
                 header: "Detalle",
