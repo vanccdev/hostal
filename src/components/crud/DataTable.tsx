@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-type Column<T> = {
+export type Column<T> = {
   key: string;
   header: string;
   render: (row: T) => React.ReactNode;
@@ -24,7 +24,7 @@ export const DataTable = <T,>({ columns, data, empty }: DataTableProps<T>) => (
     <TableBody>
       {data.length === 0 ? (
         <TableRow>
-          <TableCell colSpan={columns.length} className="text-center text-zinc-500 dark:text-zinc-400">
+          <TableCell colSpan={columns.length} className="py-10 text-center font-medium text-[#717171] dark:text-[#b0b0b0]">
             {empty}
           </TableCell>
         </TableRow>

@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
 
-export const LoginForm = () => {
+type LoginFormProps = {
+  nextPath?: string;
+};
+
+export const LoginForm = ({ nextPath }: LoginFormProps) => {
   const [state, action, pending] = useActionState(loginAction, initialActionState);
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -24,6 +28,7 @@ export const LoginForm = () => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      {nextPath ? <input name="next" type="hidden" value={nextPath} readOnly /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
@@ -42,4 +47,3 @@ export const LoginForm = () => {
     </form>
   );
 };
-

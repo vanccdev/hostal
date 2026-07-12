@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DataTable } from "@/components/crud/DataTable";
-import { Badge } from "@/components/ui/badge";
+import { columnsForTable } from "@/components/crud/table-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
@@ -10,12 +10,8 @@ import type { Reserva } from "@/types/database";
 export default async function ReservasPage() {
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("reservas")
-    .select(
-      "id,codigo_reserva,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,num_huespedes,canal_origen,estado,precio_total,precio_ajustado,motivo_ajuste,notas_internas,registrado_por,checkin_at,checkout_at,created_at,updated_at",
-    )
-    .order("created_at", { ascending: false });
+  const { data } = await supabase.from("reservas").select("*").order("created_at", { ascending: false });
+  const reservas = data ?? [];
 
   return (
     <section className="space-y-6">
@@ -34,16 +30,9 @@ export default async function ReservasPage() {
         </CardHeader>
         <CardContent>
           <DataTable<Reserva>
-            data={data ?? []}
+            data={reservas}
             empty="No hay reservas registradas."
-            columns={[
-              { key: "codigo", header: "Código", render: (row) => row.codigo_reserva },
-              { key: "ingreso", header: "Ingreso", render: (row) => row.fecha_ingreso },
-              { key: "salida", header: "Salida", render: (row) => row.fecha_salida },
-              { key: "noches", header: "Noches", render: (row) => row.num_noches },
-              { key: "total", header: "Total", render: (row) => row.precio_total },
-              { key: "estado", header: "Estado", render: (row) => <Badge variant="secondary">{row.estado}</Badge> },
-            ]}
+            columns={columnsForTable<Reserva>("reservas", reservas)}
           />
         </CardContent>
       </Card>

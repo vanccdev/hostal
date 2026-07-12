@@ -12,7 +12,11 @@ import { Label } from "@/components/ui/label";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { signupSchema, type SignupInput } from "@/schemas/auth";
 
-export const SignupForm = () => {
+type SignupFormProps = {
+  nextPath?: string;
+};
+
+export const SignupForm = ({ nextPath }: SignupFormProps) => {
   const [state, action, pending] = useActionState(signupAction, initialActionState);
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema),
@@ -27,6 +31,7 @@ export const SignupForm = () => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      {nextPath ? <input name="next" type="hidden" value={nextPath} readOnly /> : null}
       <div className="space-y-2">
         <Label htmlFor="nombre">Nombre</Label>
         <Input id="nombre" autoComplete="name" {...form.register("nombre")} />

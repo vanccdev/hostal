@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { clienteStaffSchema, type ClienteStaffInput } from "@/schemas/clientes";
 
 export const ClienteStaffForm = () => {
@@ -56,18 +57,19 @@ export const ClienteStaffForm = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
-          <select
-            id="tipoDocumento"
-            {...form.register("tipoDocumento")}
-            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-          >
-            <option value="">Seleccionar</option>
-            <option value="CI">CI</option>
-            <option value="Pasaporte">Pasaporte</option>
-            <option value="DNI">DNI</option>
-            <option value="RUC">RUC</option>
-            <option value="Otro">Otro</option>
-          </select>
+          <Select name="tipoDocumento" defaultValue="__none">
+            <SelectTrigger id="tipoDocumento">
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">Seleccionar</SelectItem>
+              <SelectItem value="CI">CI</SelectItem>
+              <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+              <SelectItem value="DNI">DNI</SelectItem>
+              <SelectItem value="RUC">RUC</SelectItem>
+              <SelectItem value="Otro">Otro</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="numeroDocumento">Número documento</Label>

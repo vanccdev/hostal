@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
-import { Badge } from "@/components/ui/badge";
+import { columnsForTable } from "@/components/crud/table-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
@@ -11,13 +11,14 @@ import type { Usuario } from "@/types/database";
 export default async function UsuariosPage() {
   const currentUser = await requireAdminModule("usuarios");
   const supabase = createSupabaseAdminClient();
-  let query = supabase.from("usuarios").select("id,nombre,rol,activo,created_at,must_change_password").order("created_at");
+  let query = supabase.from("usuarios").select("*").order("created_at");
 
   if (currentUser.profile!.rol === "recepcionista") {
     query = query.eq("rol", "cliente");
   }
 
   const { data } = await query;
+  const usuarios = data ?? [];
 
   return (
     <section className="space-y-6">
@@ -31,13 +32,10 @@ export default async function UsuariosPage() {
         </CardHeader>
         <CardContent>
           <DataTable<Usuario>
-            data={data ?? []}
+            data={usuarios}
             empty="No hay usuarios."
             columns={[
-              { key: "nombre", header: "Nombre", render: (row) => row.nombre },
-              { key: "rol", header: "Rol", render: (row) => <Badge variant="outline">{row.rol}</Badge> },
-              { key: "activo", header: "Activo", render: (row) => (row.activo ? "Sí" : "No") },
-              { key: "password", header: "Cambio pendiente", render: (row) => (row.must_change_password ? "Sí" : "No") },
+              ...columnsForTable<Usuario>("usuarios", usuarios),
               {
                 key: "acciones",
                 header: "Acciones",

@@ -93,6 +93,7 @@ export const upsertHabitacionAction = async (
 
   const parsed = habitacionSchema.safeParse({
     id: formValue(formData, "id") || undefined,
+    tarifaId: formValue(formData, "tarifaId"),
     numero: formValue(formData, "numero"),
     tipo: formValue(formData, "tipo"),
     piso: formValue(formData, "piso"),
@@ -113,9 +114,28 @@ export const upsertHabitacionAction = async (
   }
 
   const admin = createSupabaseAdminClient();
+  const { data: selectedTarifa, error: selectedTarifaError } = await admin
+    .from("tarifas")
+    .select("id,habitacion_tipo,activa")
+    .eq("id", parsed.data.tarifaId)
+    .maybeSingle();
+
+  if (selectedTarifaError || !selectedTarifa) {
+    return { ok: false, message: selectedTarifaError?.message ?? "Selecciona una tarifa válida." };
+  }
+
+  if (selectedTarifa.activa === false) {
+    return { ok: false, message: "La tarifa seleccionada no está activa." };
+  }
+
+  if (selectedTarifa.habitacion_tipo !== parsed.data.tipo) {
+    return { ok: false, message: "La tarifa seleccionada no corresponde al tipo de habitación." };
+  }
+
   const payload = {
     numero: parsed.data.numero,
     tipo: parsed.data.tipo,
+    tarifa_id: parsed.data.tarifaId,
     piso: parsed.data.piso,
     capacidad_max: parsed.data.capacidadMax,
     descripcion: parsed.data.descripcion || null,
@@ -147,6 +167,10 @@ export const upsertHabitacionAction = async (
   }
 
   revalidatePath("/admin/habitaciones");
+  revalidatePath("/admin/tarifas");
+  if (parsed.data.id) {
+    revalidatePath(`/admin/habitaciones/${parsed.data.id}/editar`);
+  }
   return {
     ok: true,
     message: imageFiles.length > 0 ? "Habitación guardada con imágenes." : "Habitación guardada.",
@@ -194,6 +218,9 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
   }
 
   revalidatePath("/admin/huespedes");
+  if (parsed.data.id) {
+    revalidatePath(`/admin/huespedes/${parsed.data.id}/editar`);
+  }
   return { ok: true, message: "Huésped guardado." };
 };
 
@@ -239,5 +266,8 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
   }
 
   revalidatePath("/admin/tarifas");
+  if (parsed.data.id) {
+    revalidatePath(`/admin/tarifas/${parsed.data.id}/editar`);
+  }
   return { ok: true, message: "Tarifa guardada." };
 };

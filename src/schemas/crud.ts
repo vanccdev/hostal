@@ -4,6 +4,7 @@ const tipoDocumentoSchema = z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"]).op
 
 export const habitacionSchema = z.object({
   id: z.uuid().optional(),
+  tarifaId: z.uuid("Selecciona una tarifa"),
   numero: z.string().min(1, "Ingresa un número o nombre"),
   tipo: z.enum(["individual", "matrimonial", "doble", "triple", "familiar"]),
   piso: z.coerce.number().int().positive("Piso inválido"),

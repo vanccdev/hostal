@@ -1,4 +1,5 @@
 import { DataTable } from "@/components/crud/DataTable";
+import { columnsForTable, genericRows } from "@/components/crud/table-columns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -8,6 +9,7 @@ export default async function AuditoriaPage() {
   await requireAdminModule("auditoria");
   const supabase = createSupabaseAdminClient();
   const { data } = await supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(100);
+  const rows = genericRows(data);
 
   return (
     <section className="space-y-6">
@@ -21,13 +23,9 @@ export default async function AuditoriaPage() {
         </CardHeader>
         <CardContent>
           <DataTable<GenericRow>
-            data={(data ?? []) as GenericRow[]}
+            data={rows}
             empty="No hay registros de auditoría."
-            columns={[
-              { key: "accion", header: "Acción", render: (row) => String(row.accion ?? "-") },
-              { key: "entidad", header: "Entidad", render: (row) => String(row.entidad ?? "-") },
-              { key: "created", header: "Fecha", render: (row) => String(row.created_at ?? "-") },
-            ]}
+            columns={columnsForTable<GenericRow>("audit_log", rows)}
           />
         </CardContent>
       </Card>

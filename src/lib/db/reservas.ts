@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { localISODate } from "@/lib/datetime";
 import type { Database } from "@/types/database";
 
 export const differenceInNights = (fechaIngreso: string, fechaSalida: string) => {
@@ -10,6 +11,10 @@ export const differenceInNights = (fechaIngreso: string, fechaSalida: string) =>
 };
 
 export const assertReservationDates = (fechaIngreso: string, fechaSalida: string) => {
+  if (fechaIngreso < localISODate()) {
+    throw new Error("La fecha de ingreso no puede ser anterior a hoy.");
+  }
+
   const nights = differenceInNights(fechaIngreso, fechaSalida);
 
   if (nights <= 0) {
@@ -62,20 +67,49 @@ export const assertRoomIsAvailable = async (
 export const calculateReservationPrice = async (
   supabase: SupabaseClient<Database>,
   tarifaId: string,
+  habitacionId: string,
   nights: number,
 ) => {
-  const { data: tarifa, error } = await supabase
-    .from("tarifas")
-    .select("precio_noche")
-    .eq("id", tarifaId)
-    .maybeSingle();
+  const [{ data: habitacion, error: habitacionError }, { data: tarifa, error: tarifaError }] =
+    await Promise.all([
+      supabase.from("habitaciones").select("tipo,tarifa_id,activa").eq("id", habitacionId).maybeSingle(),
+      supabase
+        .from("tarifas")
+        .select("habitacion_tipo,precio_noche,activa")
+        .eq("id", tarifaId)
+        .maybeSingle(),
+    ]);
 
-  if (error) {
-    throw new Error(error.message);
+  if (habitacionError) {
+    throw new Error(habitacionError.message);
+  }
+
+  if (tarifaError) {
+    throw new Error(tarifaError.message);
+  }
+
+  if (!habitacion) {
+    throw new Error("Selecciona una habitación válida.");
+  }
+
+  if (habitacion.activa === false) {
+    throw new Error("La habitación seleccionada no está activa.");
   }
 
   if (!tarifa) {
     throw new Error("Selecciona una tarifa válida.");
+  }
+
+  if (tarifa.activa === false) {
+    throw new Error("La tarifa seleccionada no está activa.");
+  }
+
+  if (habitacion.tarifa_id && habitacion.tarifa_id !== tarifaId) {
+    throw new Error("La tarifa seleccionada no corresponde a la habitación.");
+  }
+
+  if (!habitacion.tarifa_id && tarifa.habitacion_tipo !== habitacion.tipo) {
+    throw new Error("La tarifa seleccionada no corresponde a la habitación.");
   }
 
   return Number(tarifa.precio_noche) * nights;

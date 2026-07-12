@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { assertReservationDates, assertRoomIsAvailable, calculateReservationPrice } from "@/lib/db/reservas";
 import { writeAuditLog } from "@/lib/db/audit";
+import { localISODate } from "@/lib/datetime";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { isManagementRole } from "@/lib/permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -13,7 +14,7 @@ import type { ActionState } from "@/app/actions/types";
 import { formValue, validationErrors } from "@/app/actions/helpers";
 
 const reservationCode = () => {
-  const date = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+  const date = localISODate().slice(2).replace(/-/g, "");
   const suffix = crypto.randomUUID().slice(0, 5).toUpperCase();
   return `R${date}${suffix}`;
 };
@@ -62,7 +63,7 @@ export const createClientReservation = async (
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
     );
-    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, nights);
+    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, parsed.data.habitacionId, nights);
 
     const { data: reservation, error } = await admin
       .from("reservas")
@@ -142,7 +143,7 @@ export const createStaffReservation = async (
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
     );
-    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, nights);
+    const total = await calculateReservationPrice(admin, parsed.data.tarifaId, parsed.data.habitacionId, nights);
 
     const { data: reservation, error } = await admin
       .from("reservas")

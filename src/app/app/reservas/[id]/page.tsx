@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
+import { formatDate } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -35,7 +36,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
       <Card>
         <CardHeader>
           <CardTitle>
-            {reserva.fecha_ingreso} a {reserva.fecha_salida}
+            {formatDate(reserva.fecha_ingreso)} a {formatDate(reserva.fecha_salida)}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm sm:grid-cols-2">

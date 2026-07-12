@@ -1,4 +1,5 @@
 import { DataTable } from "@/components/crud/DataTable";
+import { columnsForTable, genericRows } from "@/components/crud/table-columns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { getGuestForUser } from "@/lib/db/current-guest";
@@ -22,7 +23,7 @@ export const ClientGenericPage = async ({ title, description, table, filterBy }:
   const { data } = filterValue
     ? await supabase.from(table).select("*").eq(filterBy as "id", filterValue).limit(100)
     : { data: [] };
-  const rows = (data ?? []) as GenericRow[];
+  const rows = genericRows(data);
 
   return (
     <section className="space-y-6">
@@ -38,15 +39,7 @@ export const ClientGenericPage = async ({ title, description, table, filterBy }:
           <DataTable<GenericRow>
             data={rows}
             empty="No hay registros."
-            columns={[
-              { key: "id", header: "ID", render: (row) => row.id },
-              { key: "created", header: "Fecha", render: (row) => String(row.created_at ?? "-") },
-              {
-                key: "data",
-                header: "Datos",
-                render: (row) => <span className="line-clamp-2">{JSON.stringify(row)}</span>,
-              },
-            ]}
+            columns={columnsForTable<GenericRow>(table, rows)}
           />
         </CardContent>
       </Card>

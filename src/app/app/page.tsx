@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
+import { formatDate } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -23,7 +24,7 @@ export default async function ClientDashboardPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Hola, {currentUser.profile?.nombre}</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">Portal de cliente.</p>
+          <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">Portal de cliente.</p>
         </div>
         <Button asChild>
           <Link href="/app/reservas/nueva">Nueva reserva</Link>
@@ -35,15 +36,15 @@ export default async function ClientDashboardPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {(reservations ?? []).length === 0 ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">No tienes reservas registradas.</p>
+            <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">No tienes reservas registradas.</p>
           ) : (
             reservations?.map((reservation) => (
               <Link
                 key={reservation.id}
                 href={`/app/reservas/${reservation.id}`}
-                className="block rounded-md border border-zinc-200 p-3 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+                className="block rounded-2xl border border-[#dddddd] bg-white p-4 text-sm font-medium text-[#222222] transition hover:border-[#ff385c] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100"
               >
-                {reservation.fecha_ingreso} a {reservation.fecha_salida} · {reservation.estado}
+                {formatDate(reservation.fecha_ingreso)} a {formatDate(reservation.fecha_salida)} · {reservation.estado}
               </Link>
             ))
           )}

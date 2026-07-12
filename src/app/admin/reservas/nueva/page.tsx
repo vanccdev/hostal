@@ -6,8 +6,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 export default async function NuevaReservaAdminPage() {
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
-  const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }] = await Promise.all([
-    supabase.from("habitaciones").select("id,numero,tipo,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
+  const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }, { data: reservas }, { data: bloqueos }] = await Promise.all([
+    supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
     supabase
       .from("tarifas")
       .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
@@ -15,9 +15,23 @@ export default async function NuevaReservaAdminPage() {
       .order("habitacion_tipo"),
     supabase
       .from("huespedes")
-      .select("id,usuario_id,nombre_completo,email,telefono,tipo_documento,numero_documento,pais_origen")
+      .select("*")
       .order("nombre_completo"),
+    supabase
+      .from("reservas")
+      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado")
+      .in("estado", ["pendiente_pago", "confirmada", "checkin"]),
+    supabase.from("bloqueos_fechas").select("id,habitacion_id,fecha_inicio,fecha_fin"),
   ]);
+  const habitacionIds = (habitaciones ?? []).map((habitacion) => habitacion.id);
+  const { data: imagenes } =
+    habitacionIds.length > 0
+      ? await supabase
+          .from("img_habitaciones")
+          .select("id,habitacion_id,url")
+          .in("habitacion_id", habitacionIds)
+          .order("created_at")
+      : { data: [] };
 
   return (
     <section className="space-y-6">
@@ -35,6 +49,9 @@ export default async function NuevaReservaAdminPage() {
             habitaciones={habitaciones ?? []}
             tarifas={tarifas ?? []}
             huespedes={huespedes ?? []}
+            imagenes={imagenes ?? []}
+            reservas={reservas ?? []}
+            bloqueos={bloqueos ?? []}
           />
         </CardContent>
       </Card>

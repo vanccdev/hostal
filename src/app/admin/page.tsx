@@ -3,6 +3,12 @@ import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const tables = ["habitaciones", "huespedes", "reservas", "usuarios"] as const;
+const labels: Record<(typeof tables)[number], string> = {
+  habitaciones: "Habitaciones",
+  huespedes: "Huéspedes",
+  reservas: "Reservas",
+  usuarios: "Usuarios",
+};
 
 export default async function AdminPage() {
   await requireAdminModule("dashboard");
@@ -18,16 +24,16 @@ export default async function AdminPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Panel administrativo</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Resumen operativo del hostal.</p>
+        <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">Resumen operativo del hostal.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {counts.map((item) => (
-          <Card key={item.table}>
+          <Card key={item.table} className="overflow-hidden">
             <CardHeader>
-              <CardTitle className="capitalize">{item.table.replace("_", " ")}</CardTitle>
+              <CardTitle>{labels[item.table]}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-semibold">{item.count}</p>
+              <p className="text-4xl font-bold text-[#ff385c]">{item.count}</p>
             </CardContent>
           </Card>
         ))}

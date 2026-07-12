@@ -1,5 +1,9 @@
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
+import { columnsForTable } from "@/components/crud/table-columns";
 import { TarifaForm } from "@/components/forms/TarifaForm";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -8,10 +12,8 @@ import type { Tarifa } from "@/types/database";
 export default async function TarifasPage() {
   await requireAdminModule("tarifas");
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("tarifas")
-    .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
-    .order("habitacion_tipo");
+  const { data } = await supabase.from("tarifas").select("*").order("habitacion_tipo");
+  const tarifas = data ?? [];
 
   return (
     <section className="space-y-6">
@@ -33,14 +35,22 @@ export default async function TarifasPage() {
         </CardHeader>
         <CardContent>
           <DataTable<Tarifa>
-            data={data ?? []}
+            data={tarifas}
             empty="No hay tarifas registradas."
             columns={[
-              { key: "tipo", header: "Tipo", render: (row) => row.habitacion_tipo },
-              { key: "temporada", header: "Temporada", render: (row) => row.temporada },
-              { key: "precio", header: "Precio noche", render: (row) => row.precio_noche },
-              { key: "vigente", header: "Vigente desde", render: (row) => row.vigente_desde },
-              { key: "activa", header: "Activa", render: (row) => (row.activa === false ? "No" : "Sí") },
+              ...columnsForTable<Tarifa>("tarifas", tarifas),
+              {
+                key: "acciones",
+                header: "Acciones",
+                render: (row) => (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/tarifas/${row.id}/editar`}>
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      Editar
+                    </Link>
+                  </Button>
+                ),
+              },
             ]}
           />
         </CardContent>

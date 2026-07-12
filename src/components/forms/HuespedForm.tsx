@@ -10,24 +10,32 @@ import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { huespedSchema, type HuespedInput } from "@/schemas/crud";
+import type { Huesped } from "@/types/database";
 
-export const HuespedForm = () => {
+type HuespedFormProps = {
+  huesped?: Huesped;
+};
+
+export const HuespedForm = ({ huesped }: HuespedFormProps) => {
   const [state, action, pending] = useActionState(upsertHuespedAction, initialActionState);
   const form = useForm<HuespedInput>({
     resolver: zodResolver(huespedSchema),
     defaultValues: {
-      nombreCompleto: "",
-      email: "",
-      telefono: "",
-      tipoDocumento: "",
-      numeroDocumento: "",
-      pais: "",
+      id: huesped?.id,
+      nombreCompleto: huesped?.nombre_completo ?? "",
+      email: huesped?.email ?? "",
+      telefono: huesped?.telefono ?? "",
+      tipoDocumento: (huesped?.tipo_documento as HuespedInput["tipoDocumento"]) ?? "",
+      numeroDocumento: huesped?.numero_documento ?? "",
+      pais: huesped?.pais_origen ?? "",
     },
   });
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      {huesped ? <input type="hidden" value={huesped.id} {...form.register("id")} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="nombreCompleto">Nombre completo</Label>
@@ -44,18 +52,19 @@ export const HuespedForm = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
-          <select
-            id="tipoDocumento"
-            {...form.register("tipoDocumento")}
-            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-          >
-            <option value="">Seleccionar</option>
-            <option value="CI">CI</option>
-            <option value="Pasaporte">Pasaporte</option>
-            <option value="DNI">DNI</option>
-            <option value="RUC">RUC</option>
-            <option value="Otro">Otro</option>
-          </select>
+          <Select name="tipoDocumento" defaultValue={huesped?.tipo_documento ?? "__none"}>
+            <SelectTrigger id="tipoDocumento">
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">Seleccionar</SelectItem>
+              <SelectItem value="CI">CI</SelectItem>
+              <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+              <SelectItem value="DNI">DNI</SelectItem>
+              <SelectItem value="RUC">RUC</SelectItem>
+              <SelectItem value="Otro">Otro</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="numeroDocumento">Número documento</Label>
@@ -70,7 +79,7 @@ export const HuespedForm = () => {
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" aria-hidden="true" />
-        Guardar huésped
+        {huesped ? "Actualizar huésped" : "Guardar huésped"}
       </Button>
     </form>
   );

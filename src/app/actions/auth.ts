@@ -10,6 +10,15 @@ import { normalizePhone } from "@/lib/phone";
 import { changePasswordSchema, loginSchema, signupSchema } from "@/schemas/auth";
 import type { ActionState } from "@/app/actions/types";
 import { formValue, validationErrors } from "@/app/actions/helpers";
+import { isStaffRole } from "@/lib/permissions";
+
+const safeNextPath = (value: string | null) => {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
+};
 
 export const loginAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
   const parsed = loginSchema.safeParse({
@@ -29,6 +38,19 @@ export const loginAction = async (_state: ActionState, formData: FormData): Prom
   }
 
   const currentUser = await getCurrentUser();
+  const nextPath = safeNextPath(formValue(formData, "next"));
+  const profile = currentUser?.profile ?? null;
+
+  if (nextPath && profile?.activo) {
+    if (profile.rol === "cliente" && !profile.must_change_password && nextPath.startsWith("/app")) {
+      redirect(nextPath);
+    }
+
+    if (isStaffRole(profile.rol) && nextPath.startsWith("/admin")) {
+      redirect(nextPath);
+    }
+  }
+
   return redirectByRole(currentUser?.profile ?? null);
 };
 
@@ -99,7 +121,7 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
     nombre_completo: parsed.data.nombre,
     email: parsed.data.email,
     telefono,
-    tipo_documento: "Otro",
+    tipo_documento: "Otro" as const,
     numero_documento: parsed.data.documento || `sd-${data.user.id.slice(0, 27)}`,
     pais_origen: null,
   };
@@ -124,13 +146,14 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
     return { ok: false, message: guestError.message };
   }
 
-  redirect("/app");
+  const nextPath = safeNextPath(formValue(formData, "next"));
+  redirect(nextPath?.startsWith("/app") ? nextPath : "/app");
 };
 
 export const logoutAction = async () => {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/");
 };
 
 export const changePasswordAction = async (

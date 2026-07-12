@@ -4,23 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-zinc-300",
+  "inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff385c] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-offset-[#151515]",
   {
     variants: {
       variant: {
-        default: "bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300",
-        destructive: "bg-red-600 text-white hover:bg-red-700",
+        default: "bg-[#ff385c] text-white shadow-[0_6px_18px_rgba(255,56,92,0.28)] hover:bg-[#e31c5f]",
+        destructive: "bg-red-600 text-white shadow-[0_6px_18px_rgba(220,38,38,0.22)] hover:bg-red-700",
         outline:
-          "border border-zinc-200 bg-white text-zinc-950 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900",
-        secondary: "bg-zinc-100 text-zinc-950 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700",
-        ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-900",
-        link: "h-auto px-0 py-0 text-zinc-950 underline-offset-4 hover:underline dark:text-zinc-100",
+          "border border-[#dddddd] bg-white text-[#222222] hover:border-[#222222] hover:bg-white dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100 dark:hover:border-zinc-200",
+        secondary: "bg-[#f7f7f7] text-[#222222] hover:bg-[#ebebeb] dark:bg-[#2b2b2b] dark:text-zinc-100 dark:hover:bg-[#333333]",
+        ghost: "text-[#222222] hover:bg-[#f7f7f7] dark:text-zinc-100 dark:hover:bg-[#2b2b2b]",
+        link: "h-auto rounded-none px-0 py-0 text-[#222222] underline-offset-4 hover:underline dark:text-zinc-100",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10 px-0",
+        default: "h-11 px-5 py-2",
+        sm: "h-9 px-4",
+        lg: "h-12 px-8",
+        icon: "h-11 w-11 px-0",
       },
     },
     defaultVariants: {

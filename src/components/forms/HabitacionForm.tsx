@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BedDouble, ImageUp } from "lucide-react";
+import { BedDouble, ImageUp, Tag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { upsertHabitacionAction } from "@/app/actions/crud";
@@ -11,25 +12,36 @@ import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { habitacionSchema } from "@/schemas/crud";
+import type { Habitacion, Tarifa } from "@/types/database";
 
-export const HabitacionForm = () => {
+type HabitacionFormProps = {
+  habitacion?: Habitacion;
+  tarifas: Tarifa[];
+};
+
+export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
-      numero: "",
-      tipo: "individual",
-      piso: 1,
-      capacidadMax: 1,
-      descripcion: "",
-      activa: true,
+      id: habitacion?.id,
+      tarifaId: habitacion?.tarifa_id ?? undefined,
+      numero: habitacion?.numero ?? "",
+      tipo: (habitacion?.tipo as z.input<typeof habitacionSchema>["tipo"]) ?? "individual",
+      piso: habitacion?.piso ?? 1,
+      capacidadMax: habitacion?.capacidad_max ?? 1,
+      descripcion: habitacion?.descripcion ?? "",
+      activa: habitacion?.activa ?? true,
     },
   });
+  const hasTarifas = tarifas.length > 0;
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      {habitacion ? <input type="hidden" value={habitacion.id} {...form.register("id")} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="numero">Número</Label>
@@ -38,17 +50,18 @@ export const HabitacionForm = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipo">Tipo</Label>
-          <select
-            id="tipo"
-            {...form.register("tipo")}
-            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-          >
-            <option value="individual">Individual</option>
-            <option value="matrimonial">Matrimonial</option>
-            <option value="doble">Doble</option>
-            <option value="triple">Triple</option>
-            <option value="familiar">Familiar</option>
-          </select>
+          <Select name="tipo" defaultValue={habitacion?.tipo ?? "individual"}>
+            <SelectTrigger id="tipo">
+              <SelectValue placeholder="Seleccionar tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="individual">Individual</SelectItem>
+              <SelectItem value="matrimonial">Matrimonial</SelectItem>
+              <SelectItem value="doble">Doble</SelectItem>
+              <SelectItem value="triple">Triple</SelectItem>
+              <SelectItem value="familiar">Familiar</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="piso">Piso</Label>
@@ -63,24 +76,54 @@ export const HabitacionForm = () => {
           <Textarea id="descripcion" {...form.register("descripcion")} />
         </div>
         <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="tarifaId">Tarifa asociada</Label>
+          {hasTarifas ? (
+            <Select name="tarifaId" defaultValue={habitacion?.tarifa_id ?? undefined}>
+              <SelectTrigger id="tarifaId">
+                <SelectValue placeholder="Seleccionar tarifa" />
+              </SelectTrigger>
+              <SelectContent>
+                {tarifas.map((availableTarifa) => (
+                  <SelectItem key={availableTarifa.id} value={availableTarifa.id}>
+                    {availableTarifa.habitacion_tipo} / {availableTarifa.temporada} - {availableTarifa.precio_noche}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="rounded-2xl border border-[#dddddd] bg-[#f7f7f7] p-4 dark:border-[#3a3a3a] dark:bg-[#242424]">
+              <p className="text-sm font-medium text-[#717171] dark:text-[#b0b0b0]">
+                Primero crea una tarifa para poder asociarla a la habitación.
+              </p>
+              <Button asChild variant="outline" className="mt-3">
+                <Link href="/admin/tarifas">
+                  <Tag className="h-4 w-4" aria-hidden="true" />
+                  Ir a tarifas
+                </Link>
+              </Button>
+            </div>
+          )}
+          <FormMessage state={state} field="tarifaId" />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="imagenes">Imágenes</Label>
           <Input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
+          <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...form.register("activa")} defaultChecked />
+        <input type="checkbox" {...form.register("activa")} defaultChecked={habitacion?.activa ?? true} />
         Activa
       </label>
       <FormMessage state={state} />
       {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending || !hasTarifas}>
         {pending ? (
           <ImageUp className="h-4 w-4" aria-hidden="true" />
         ) : (
           <BedDouble className="h-4 w-4" aria-hidden="true" />
         )}
-        Guardar habitación
+        {habitacion ? "Actualizar habitación" : "Guardar habitación"}
       </Button>
     </form>
   );

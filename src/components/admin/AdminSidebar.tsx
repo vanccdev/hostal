@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Banknote,
@@ -48,28 +49,34 @@ type AdminSidebarProps = {
 
 export const AdminSidebar = ({ role }: AdminSidebarProps) => {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const visibleItems = items.filter((item) => canAccessAdminModule(role, item.module));
 
   const renderNav = (closeOnSelect: boolean) => (
     <nav aria-label="Administración" className="grid gap-1">
       {visibleItems.map((item) => {
         const Icon = item.icon;
+        const active = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
             onClick={closeOnSelect ? () => setOpen(false) : undefined}
-            className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+            className={`flex min-h-11 items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              active
+                ? "bg-[#fff1f3] text-[#ff385c] dark:bg-[#3a1f27] dark:text-[#ff8ca1]"
+                : "text-[#717171] hover:bg-[#f7f7f7] hover:text-[#222222] dark:text-[#b0b0b0] dark:hover:bg-[#2b2b2b] dark:hover:text-zinc-100"
+            }`}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="truncate">{item.label}</span>
           </Link>
         );
       })}
-      <form action={logoutAction} className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+      <form action={logoutAction} className="mt-3 border-t border-[#ebebeb] pt-3 dark:border-[#333333]">
         <button
           type="submit"
-          className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+          className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-left text-sm font-semibold text-[#717171] transition-colors hover:bg-[#f7f7f7] hover:text-[#222222] dark:text-[#b0b0b0] dark:hover:bg-[#2b2b2b] dark:hover:text-zinc-100"
         >
           <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">Salir</span>
@@ -79,23 +86,23 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
   );
 
   return (
-    <aside className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 md:min-h-screen md:border-b-0 md:border-r">
+    <aside className="border-b border-[#dddddd] bg-white dark:border-[#3a3a3a] dark:bg-[#1f1f1f] md:min-h-screen md:border-b-0 md:border-r">
       <div className="md:hidden">
         <button
           type="button"
-          className="flex h-14 w-full items-center justify-between gap-3 px-4 text-left"
+          className="flex h-16 w-full items-center justify-between gap-3 px-4 text-left"
           onClick={() => setOpen((currentOpen) => !currentOpen)}
           aria-expanded={open}
           aria-controls="admin-mobile-nav"
         >
           <div>
-            <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Hostal Admin</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">{role}</p>
+            <p className="text-sm font-bold text-[#ff385c]">Hostal Admin</p>
+            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">{role}</p>
           </div>
           {open ? (
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Cerrar</span>
+            <span className="text-sm font-semibold text-[#222222] dark:text-zinc-100">Cerrar</span>
           ) : (
-            <Menu className="h-5 w-5 text-zinc-700 dark:text-zinc-300" aria-hidden="true" />
+            <Menu className="h-5 w-5 text-[#222222] dark:text-zinc-100" aria-hidden="true" />
           )}
         </button>
         {open ? (
@@ -106,11 +113,11 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
       </div>
 
       <div className="sticky top-0 hidden max-h-screen overflow-y-auto md:block">
-        <div className="px-5 py-4">
-          <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-100">Hostal Admin</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">{role}</p>
+        <div className="px-6 py-6">
+          <p className="text-lg font-bold text-[#ff385c]">Hostal Admin</p>
+          <p className="text-xs font-semibold uppercase text-[#717171] dark:text-[#b0b0b0]">{role}</p>
         </div>
-        <div className="px-3 pb-6">{renderNav(false)}</div>
+        <div className="px-4 pb-6">{renderNav(false)}</div>
       </div>
     </aside>
   );

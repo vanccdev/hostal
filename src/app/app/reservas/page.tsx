@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DataTable } from "@/components/crud/DataTable";
-import { Badge } from "@/components/ui/badge";
+import { columnsForTable } from "@/components/crud/table-columns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
@@ -15,12 +15,11 @@ export default async function ReservasClientePage() {
   const { data } = guest
     ? await supabase
         .from("reservas")
-        .select(
-          "id,codigo_reserva,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,num_huespedes,canal_origen,estado,precio_total,precio_ajustado,motivo_ajuste,notas_internas,registrado_por,checkin_at,checkout_at,created_at,updated_at",
-        )
+        .select("*")
         .eq("huesped_id", guest.id)
         .order("created_at", { ascending: false })
     : { data: [] };
+  const reservas = data ?? [];
 
   return (
     <section className="space-y-6">
@@ -39,14 +38,10 @@ export default async function ReservasClientePage() {
         </CardHeader>
         <CardContent>
           <DataTable<Reserva>
-            data={data ?? []}
+            data={reservas}
             empty="No tienes reservas."
             columns={[
-              { key: "codigo", header: "Código", render: (row) => row.codigo_reserva },
-              { key: "ingreso", header: "Ingreso", render: (row) => row.fecha_ingreso },
-              { key: "salida", header: "Salida", render: (row) => row.fecha_salida },
-              { key: "total", header: "Total", render: (row) => row.precio_total },
-              { key: "estado", header: "Estado", render: (row) => <Badge variant="secondary">{row.estado}</Badge> },
+              ...columnsForTable<Reserva>("reservas", reservas),
               {
                 key: "detalle",
                 header: "Detalle",

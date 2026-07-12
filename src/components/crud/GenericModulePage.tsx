@@ -1,4 +1,5 @@
 import { DataTable } from "@/components/crud/DataTable";
+import { columnsForTable, genericRows } from "@/components/crud/table-columns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import type { AdminModule } from "@/lib/permissions";
@@ -18,7 +19,7 @@ export const GenericModulePage = async ({ title, description, module, table }: G
   await requireAdminModule(module);
   const supabase = createSupabaseAdminClient();
   const { data } = await supabase.from(table).select("*").limit(100);
-  const rows = (data ?? []) as GenericRow[];
+  const rows = genericRows(data);
 
   return (
     <section className="space-y-6">
@@ -34,15 +35,7 @@ export const GenericModulePage = async ({ title, description, module, table }: G
           <DataTable<GenericRow>
             data={rows}
             empty="No hay registros."
-            columns={[
-              { key: "id", header: "ID", render: (row) => row.id },
-              { key: "created", header: "Fecha", render: (row) => String(row.created_at ?? "-") },
-              {
-                key: "data",
-                header: "Datos",
-                render: (row) => <span className="line-clamp-2">{JSON.stringify(row)}</span>,
-              },
-            ]}
+            columns={columnsForTable<GenericRow>(table, rows)}
           />
         </CardContent>
       </Card>
