@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const safeNextPath = (value: string | string[] | undefined) => {
@@ -24,7 +25,7 @@ export default async function LoginPage({
     <main className="flex min-h-screen items-start justify-center bg-[#f7f7f7] px-4 py-6 dark:bg-[#151515] md:items-center">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <p className="text-sm font-bold text-[#ff385c]">Hostal</p>
+          <BrandLogo />
           <CardTitle>Ingresar</CardTitle>
           <CardDescription>Accede al sistema de gestión del hostal.</CardDescription>
         </CardHeader>

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Building2, ExternalLink, LogIn, MapPin } from "lucide-react";
+import { ArrowRight, ExternalLink, LogIn, MapPin } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HostalLocationMap } from "@/components/public/HostalLocationMap";
+import { HostalPhotoShowcase } from "@/components/public/HostalPhotoShowcase";
 import { PublicBookingCatalog } from "@/components/public/PublicBookingCatalog";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -49,10 +51,7 @@ export default async function Home() {
       <header className="sticky top-0 z-30 border-b border-[#dddddd] bg-white/95 backdrop-blur dark:border-[#3a3a3a] dark:bg-[#151515]/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ff385c] text-white">
-              <Building2 className="h-4 w-4" aria-hidden="true" />
-            </span>
-            Hostal
+            <BrandLogo imageClassName="h-9 w-9" />
           </Link>
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
@@ -112,6 +111,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <HostalPhotoShowcase />
 
       <PublicBookingCatalog
         habitaciones={habitaciones ?? []}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -95,9 +96,14 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
           aria-expanded={open}
           aria-controls="admin-mobile-nav"
         >
-          <div>
-            <p className="text-sm font-bold text-[#ff385c]">Hostal Admin</p>
-            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+          <div className="flex items-center gap-3">
+            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#153f2a]">
+              <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="40px" className="object-cover" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-[#ff385c]">Hostal Admin</p>
+              <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+            </div>
           </div>
           {open ? (
             <span className="text-sm font-semibold text-[#222222] dark:text-zinc-100">Cerrar</span>
@@ -113,9 +119,14 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
       </div>
 
       <div className="sticky top-0 hidden max-h-screen overflow-y-auto md:block">
-        <div className="px-6 py-6">
-          <p className="text-lg font-bold text-[#ff385c]">Hostal Admin</p>
-          <p className="text-xs font-semibold uppercase text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+        <div className="flex items-center gap-3 px-6 py-6">
+          <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-[#153f2a]">
+            <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="44px" className="object-cover" />
+          </span>
+          <div>
+            <p className="text-lg font-bold text-[#ff385c]">Hostal Admin</p>
+            <p className="text-xs font-semibold uppercase text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+          </div>
         </div>
         <div className="px-4 pb-6">{renderNav(false)}</div>
       </div>

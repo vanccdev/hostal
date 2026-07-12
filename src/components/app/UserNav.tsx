@@ -1,5 +1,6 @@
  "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, CalendarDays, CreditCard, Home, LogOut, Menu, User } from "lucide-react";
@@ -26,8 +27,11 @@ export const UserNav = () => {
   return (
     <header className="sticky top-0 z-40 border-b border-[#dddddd] bg-white/95 backdrop-blur dark:border-[#3a3a3a] dark:bg-[#1f1f1f]/95">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
-        <Link href="/app" className="text-lg font-bold text-[#ff385c]">
-          Hostal
+        <Link href="/app" className="flex items-center gap-2 text-lg font-bold text-[#ff385c]">
+          <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#153f2a]">
+            <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="36px" className="object-cover" />
+          </span>
+          <span>Hostal</span>
         </Link>
         <nav aria-label="Portal cliente" className="hidden items-center gap-1 md:flex">
           {items.map((item) => {

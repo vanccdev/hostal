@@ -4,8 +4,13 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hostal",
-  description: "Sistema de gestión de hostal",
+  title: "Hostal Plaza Camargo",
+  description: "Reservas y gestión del Hostal Plaza en Camargo",
+  icons: {
+    icon: "/icono.jpg",
+    shortcut: "/icono.jpg",
+    apple: "/icono.jpg",
+  },
 };
 
 export default function RootLayout({
