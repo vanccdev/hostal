@@ -133,11 +133,11 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
                   const image = row.img_habitaciones?.[0];
 
                   if (!image) {
-                    return <span className="text-sm text-[#717171] dark:text-[#b0b0b0]">Sin imagen</span>;
+                    return <span className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin imagen</span>;
                   }
 
                   return (
-                    <div className="relative h-16 w-24 overflow-hidden rounded-2xl border border-[#dddddd] bg-[#f7f7f7] dark:border-[#3a3a3a] dark:bg-[#242424]">
+                    <div className="relative h-16 w-24 overflow-hidden rounded-2xl border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23]">
                       <Image
                         src={image.url}
                         alt={`Habitación ${row.numero}`}

@@ -65,8 +65,8 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
             onClick={closeOnSelect ? () => setOpen(false) : undefined}
             className={`flex min-h-11 items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
               active
-                ? "bg-[#fff1f3] text-[#ff385c] dark:bg-[#3a1f27] dark:text-[#ff8ca1]"
-                : "text-[#717171] hover:bg-[#f7f7f7] hover:text-[#222222] dark:text-[#b0b0b0] dark:hover:bg-[#2b2b2b] dark:hover:text-zinc-100"
+                ? "bg-[#f4ecd8] text-[#c7a35a] dark:bg-[#2b2618] dark:text-[#e8d59a]"
+                : "text-[#66736a] hover:bg-[#f6f1e6] hover:text-[#18221b] dark:text-[#b7c0b4] dark:hover:bg-[#223229] dark:hover:text-zinc-100"
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -74,10 +74,10 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
           </Link>
         );
       })}
-      <form action={logoutAction} className="mt-3 border-t border-[#ebebeb] pt-3 dark:border-[#333333]">
+      <form action={logoutAction} className="mt-3 border-t border-[#ece4d4] pt-3 dark:border-[#2a3b31]">
         <button
           type="submit"
-          className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-left text-sm font-semibold text-[#717171] transition-colors hover:bg-[#f7f7f7] hover:text-[#222222] dark:text-[#b0b0b0] dark:hover:bg-[#2b2b2b] dark:hover:text-zinc-100"
+          className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-left text-sm font-semibold text-[#66736a] transition-colors hover:bg-[#f6f1e6] hover:text-[#18221b] dark:text-[#b7c0b4] dark:hover:bg-[#223229] dark:hover:text-zinc-100"
         >
           <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">Salir</span>
@@ -87,7 +87,7 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
   );
 
   return (
-    <aside className="border-b border-[#dddddd] bg-white dark:border-[#3a3a3a] dark:bg-[#1f1f1f] md:min-h-screen md:border-b-0 md:border-r">
+    <aside className="border-b border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d] md:min-h-screen md:border-b-0 md:border-r">
       <div className="md:hidden">
         <button
           type="button"
@@ -101,14 +101,14 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
               <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="40px" className="object-cover" />
             </span>
             <div>
-              <p className="text-sm font-bold text-[#ff385c]">Hostal Admin</p>
-              <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+              <p className="text-sm font-bold text-[#c7a35a]">Hostal Admin</p>
+              <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">{role}</p>
             </div>
           </div>
           {open ? (
-            <span className="text-sm font-semibold text-[#222222] dark:text-zinc-100">Cerrar</span>
+            <span className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Cerrar</span>
           ) : (
-            <Menu className="h-5 w-5 text-[#222222] dark:text-zinc-100" aria-hidden="true" />
+            <Menu className="h-5 w-5 text-[#18221b] dark:text-zinc-100" aria-hidden="true" />
           )}
         </button>
         {open ? (
@@ -124,8 +124,8 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
             <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="44px" className="object-cover" />
           </span>
           <div>
-            <p className="text-lg font-bold text-[#ff385c]">Hostal Admin</p>
-            <p className="text-xs font-semibold uppercase text-[#717171] dark:text-[#b0b0b0]">{role}</p>
+            <p className="text-lg font-bold text-[#c7a35a]">Hostal Admin</p>
+            <p className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">{role}</p>
           </div>
         </div>
         <div className="px-4 pb-6">{renderNav(false)}</div>

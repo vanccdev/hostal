@@ -16,7 +16,7 @@ export const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-[#dddddd] bg-white px-4 py-2 text-sm text-[#222222] outline-none transition-shadow placeholder:text-[#717171] focus:border-[#ff385c] focus:ring-4 focus:ring-[#ff385c]/15 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-[#717171] dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100 dark:data-[placeholder]:text-[#b0b0b0]",
+      "flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-[#d8d4c8] bg-white px-4 py-2 text-sm text-[#18221b] outline-none transition-shadow placeholder:text-[#66736a] focus:border-[#c7a35a] focus:ring-4 focus:ring-[#c7a35a]/15 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-[#66736a] dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100 dark:data-[placeholder]:text-[#b7c0b4]",
       className,
     )}
     {...props}
@@ -65,7 +65,7 @@ export const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-32 overflow-hidden rounded-2xl border border-[#dddddd] bg-white text-[#222222] shadow-[0_12px_32px_rgba(0,0,0,0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100",
+        "relative z-50 max-h-96 min-w-32 overflow-hidden rounded-2xl border border-[#d8d4c8] bg-white text-[#18221b] shadow-[0_12px_32px_rgba(0,0,0,0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className,
@@ -100,7 +100,7 @@ export const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:bg-[#fff1f3] focus:text-[#222222] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-[#2b2b2b] dark:focus:text-zinc-100",
+      "relative flex w-full cursor-default select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:bg-[#f4ecd8] focus:text-[#18221b] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-[#223229] dark:focus:text-zinc-100",
       className,
     )}
     {...props}
@@ -119,6 +119,6 @@ export const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
 >(({ className, ...props }, ref) => (
-  <SelectPrimitive.Separator ref={ref} className={cn("-mx-2 my-2 h-px bg-[#ebebeb] dark:bg-[#333333]", className)} {...props} />
+  <SelectPrimitive.Separator ref={ref} className={cn("-mx-2 my-2 h-px bg-[#ece4d4] dark:bg-[#2a3b31]", className)} {...props} />
 ));
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;

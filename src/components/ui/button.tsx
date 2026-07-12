@@ -4,17 +4,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff385c] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-offset-[#151515]",
+  "inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:focus-visible:ring-offset-[#101a14]",
   {
     variants: {
       variant: {
-        default: "bg-[#ff385c] text-white shadow-[0_6px_18px_rgba(255,56,92,0.28)] hover:bg-[#e31c5f]",
+        default: "bg-[#c7a35a] text-[#102317] shadow-[0_6px_18px_rgba(199,163,90,0.28)] hover:bg-[#a9822f] hover:text-white",
         destructive: "bg-red-600 text-white shadow-[0_6px_18px_rgba(220,38,38,0.22)] hover:bg-red-700",
         outline:
-          "border border-[#dddddd] bg-white text-[#222222] hover:border-[#222222] hover:bg-white dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100 dark:hover:border-zinc-200",
-        secondary: "bg-[#f7f7f7] text-[#222222] hover:bg-[#ebebeb] dark:bg-[#2b2b2b] dark:text-zinc-100 dark:hover:bg-[#333333]",
-        ghost: "text-[#222222] hover:bg-[#f7f7f7] dark:text-zinc-100 dark:hover:bg-[#2b2b2b]",
-        link: "h-auto rounded-none px-0 py-0 text-[#222222] underline-offset-4 hover:underline dark:text-zinc-100",
+          "border border-[#d8d4c8] bg-white text-[#18221b] hover:border-[#18221b] hover:bg-white dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100 dark:hover:border-zinc-200",
+        secondary: "bg-[#f6f1e6] text-[#18221b] hover:bg-[#ece4d4] dark:bg-[#223229] dark:text-zinc-100 dark:hover:bg-[#2a3b31]",
+        ghost: "text-[#18221b] hover:bg-[#f6f1e6] dark:text-zinc-100 dark:hover:bg-[#223229]",
+        link: "h-auto rounded-none px-0 py-0 text-[#18221b] underline-offset-4 hover:underline dark:text-zinc-100",
       },
       size: {
         default: "h-11 px-5 py-2",

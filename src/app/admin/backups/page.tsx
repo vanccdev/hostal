@@ -10,7 +10,7 @@ export default async function BackupsPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Backups</h1>
-        <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
           Descargas administrativas y guías para migración completa de Supabase.
         </p>
       </div>
@@ -60,7 +60,7 @@ export default async function BackupsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="rounded-2xl border border-[#dddddd] bg-[#f7f7f7] p-4 text-sm dark:border-[#3a3a3a] dark:bg-[#242424]">
+          <div className="rounded-2xl border border-[#d8d4c8] bg-[#f6f1e6] p-4 text-sm dark:border-[#314237] dark:bg-[#1d2c23]">
             <div className="mb-2 flex items-center gap-2 font-medium">
               <Terminal className="h-4 w-4" aria-hidden="true" />
               Comandos

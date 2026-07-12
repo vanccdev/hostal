@@ -260,7 +260,7 @@ export const ClientDataTable = ({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <form className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px_auto] lg:w-[660px]" onSubmit={applyServerSearch}>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#717171] dark:text-[#b0b0b0]" aria-hidden="true" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a] dark:text-[#b7c0b4]" aria-hidden="true" />
             <Input
               value={columnSearch}
               onChange={(event) => updateSearch(event.target.value)}
@@ -287,7 +287,7 @@ export const ClientDataTable = ({
         </form>
 
         <div className="flex items-center justify-between gap-3 lg:justify-end">
-          <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">
+          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
             {filteredCount} de {totalCount} filas
           </p>
           <DropdownMenu>
@@ -309,7 +309,7 @@ export const ClientDataTable = ({
                       <Label htmlFor={`column-${column.id}`} className="block truncate font-medium">
                         {columnLabel(columns, column.id)}
                       </Label>
-                      <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+                      <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
                         {column.getIsVisible() ? "Visible" : "Oculta"}
                       </p>
                     </div>
@@ -341,7 +341,7 @@ export const ClientDataTable = ({
         <TableBody>
           {visibleRows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={Math.max(table.getVisibleFlatColumns().length, 1)} className="py-10 text-center font-medium text-[#717171] dark:text-[#b0b0b0]">
+              <TableCell colSpan={Math.max(table.getVisibleFlatColumns().length, 1)} className="py-10 text-center font-medium text-[#66736a] dark:text-[#b7c0b4]">
                 {empty}
               </TableCell>
             </TableRow>
@@ -359,7 +359,7 @@ export const ClientDataTable = ({
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-[#222222] dark:text-zinc-100">Filas por página</span>
+          <span className="text-sm font-medium text-[#18221b] dark:text-zinc-100">Filas por página</span>
           <Select
             value={`${serverState?.pageSize ?? table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
@@ -385,7 +385,7 @@ export const ClientDataTable = ({
         </div>
 
         <div className="flex items-center justify-between gap-3 md:justify-end">
-          <p className="min-w-28 text-sm font-medium text-[#222222] dark:text-zinc-100">
+          <p className="min-w-28 text-sm font-medium text-[#18221b] dark:text-zinc-100">
             Página {pageCount === 0 ? 0 : serverState?.page ?? table.getState().pagination.pageIndex + 1} de {pageCount}
           </p>
           <div className="flex items-center gap-2">

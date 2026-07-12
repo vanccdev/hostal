@@ -22,7 +22,7 @@ export default async function SignupPage({
   const nextPath = safeNextPath(params.next);
 
   return (
-    <main className="flex min-h-screen items-start justify-center bg-[#f7f7f7] px-4 py-6 dark:bg-[#151515] md:items-center md:py-10">
+    <main className="flex min-h-screen items-start justify-center bg-[#f6f1e6] px-4 py-6 dark:bg-[#101a14] md:items-center md:py-10">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <BrandLogo />
@@ -31,11 +31,11 @@ export default async function SignupPage({
         </CardHeader>
         <CardContent>
           <SignupForm nextPath={nextPath} />
-          <p className="mt-4 text-center text-sm text-[#717171] dark:text-[#b0b0b0]">
+          <p className="mt-4 text-center text-sm text-[#66736a] dark:text-[#b7c0b4]">
             ¿Ya tienes cuenta?{" "}
             <Link
               href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
-              className="font-semibold text-[#222222] underline underline-offset-4 dark:text-zinc-100"
+              className="font-semibold text-[#18221b] underline underline-offset-4 dark:text-zinc-100"
             >
               Ingresar
             </Link>

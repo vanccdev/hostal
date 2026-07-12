@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BedDouble, ImageUp, Tag } from "lucide-react";
+import { BedDouble, ImagePlus, ImageUp, Tag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { upsertHabitacionAction } from "@/app/actions/crud";
@@ -26,6 +26,8 @@ type HabitacionFormProps = {
 export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
   const [activa, setActiva] = useState(habitacion?.activa ?? true);
+  const [imageCount, setImageCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
@@ -93,8 +95,8 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
               </SelectContent>
             </Select>
           ) : (
-            <div className="rounded-2xl border border-[#dddddd] bg-[#f7f7f7] p-4 dark:border-[#3a3a3a] dark:bg-[#242424]">
-              <p className="text-sm font-medium text-[#717171] dark:text-[#b0b0b0]">
+            <div className="rounded-2xl border border-[#d8d4c8] bg-[#f6f1e6] p-4 dark:border-[#314237] dark:bg-[#1d2c23]">
+              <p className="text-sm font-medium text-[#66736a] dark:text-[#b7c0b4]">
                 Primero crea una tarifa para poder asociarla a la habitación.
               </p>
               <Button asChild variant="outline" className="mt-3">
@@ -109,16 +111,54 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="imagenes">Imágenes</Label>
-          <Input id="imagenes" name="imagenes" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple />
-          <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
+          <label
+            htmlFor="imagenes"
+            className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-6 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
+            onDragOver={(event) => {
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+
+              if (!fileInputRef.current || event.dataTransfer.files.length === 0) {
+                return;
+              }
+
+              fileInputRef.current.files = event.dataTransfer.files;
+              setImageCount(event.dataTransfer.files.length);
+            }}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c7a35a] text-[#102317]">
+              <ImagePlus className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="space-y-1">
+              <span className="block text-sm font-semibold text-[#18221b] dark:text-zinc-100">
+                Arrastra imágenes aquí o haz clic para seleccionar
+              </span>
+              <span className="block text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+                {imageCount > 0 ? `${imageCount} imagen${imageCount === 1 ? "" : "es"} seleccionada${imageCount === 1 ? "" : "s"}` : "Puedes subir varias imágenes a la vez."}
+              </span>
+            </span>
+          </label>
+          <Input
+            ref={fileInputRef}
+            id="imagenes"
+            name="imagenes"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            className="sr-only"
+            onChange={(event) => setImageCount(event.currentTarget.files?.length ?? 0)}
+          />
+          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dddddd] bg-white p-3 dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
           <input type="hidden" name="activa" value={activa ? "true" : "false"} />
           <div className="space-y-1">
             <Label htmlFor="activa">Estado de la habitación</Label>
-            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+            <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
               {activa ? "Activa para reservas." : "Inactiva para nuevas reservas."}
             </p>
           </div>

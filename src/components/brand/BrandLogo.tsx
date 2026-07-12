@@ -18,6 +18,6 @@ export const BrandLogo = ({
     <span className={cn("relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#153f2a]", imageClassName)}>
       <Image src="/icono.jpg" alt="Hostal Plaza Camargo" fill sizes="40px" className="object-cover" priority />
     </span>
-    {showText ? <span className="font-semibold text-[#222222] dark:text-zinc-100">{text}</span> : null}
+    {showText ? <span className="font-semibold text-[#18221b] dark:text-zinc-100">{text}</span> : null}
   </span>
 );

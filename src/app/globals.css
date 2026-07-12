@@ -4,14 +4,34 @@
 
 :root {
   color-scheme: light;
-  --background: #f7f7f7;
-  --foreground: #222222;
-  --airbnb-coral: #ff385c;
-  --airbnb-coral-dark: #e31c5f;
-  --airbnb-ink: #222222;
-  --airbnb-muted: #717171;
-  --airbnb-border: #dddddd;
-  --airbnb-panel: #ffffff;
+  --hostal-green-950: #102317;
+  --hostal-green-900: #153322;
+  --hostal-green-800: #1f402d;
+  --hostal-green-700: #244330;
+  --hostal-green-600: #315c41;
+  --hostal-sage-500: #6f8b73;
+  --hostal-gold-700: #a9822f;
+  --hostal-gold-600: #c7a35a;
+  --hostal-gold-300: #e8d59a;
+  --hostal-cream-100: #f6f1e6;
+  --hostal-cream-200: #ece4d4;
+  --hostal-border: #d8d4c8;
+  --background: var(--hostal-cream-100);
+  --foreground: #18221b;
+  --panel: #fffdf7;
+  --muted: #66736a;
+  --border: var(--hostal-border);
+  --primary: var(--hostal-gold-600);
+  --primary-hover: var(--hostal-gold-700);
+  --primary-foreground: #18221b;
+  --accent-soft: #f4ecd8;
+  --accent-soft-foreground: #6d5728;
+  --airbnb-coral: var(--primary);
+  --airbnb-coral-dark: var(--primary-hover);
+  --airbnb-ink: var(--foreground);
+  --airbnb-muted: var(--muted);
+  --airbnb-border: var(--border);
+  --airbnb-panel: var(--panel);
 }
 
 @theme inline {
@@ -23,11 +43,19 @@
 
 .dark {
   color-scheme: dark;
-  --background: #151515;
-  --foreground: #f7f7f7;
-  --airbnb-panel: #1f1f1f;
-  --airbnb-border: #3a3a3a;
-  --airbnb-muted: #b0b0b0;
+  --background: #101a14;
+  --foreground: #f6f1e6;
+  --panel: #18251d;
+  --muted: #b7c0b4;
+  --border: #314237;
+  --primary: #e8d59a;
+  --primary-hover: #c7a35a;
+  --primary-foreground: #102317;
+  --accent-soft: #2b2618;
+  --accent-soft-foreground: #e8d59a;
+  --airbnb-panel: var(--panel);
+  --airbnb-border: var(--border);
+  --airbnb-muted: var(--muted);
 }
 
 body {
@@ -38,7 +66,7 @@ body {
 }
 
 ::selection {
-  background: rgba(255, 56, 92, 0.18);
+  background: rgba(199, 163, 90, 0.24);
   color: var(--foreground);
 }
 
@@ -58,15 +86,23 @@ select {
 }
 
 select:focus-visible {
-  border-color: var(--airbnb-coral);
-  box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.18);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(199, 163, 90, 0.20);
 }
 
 input[type="checkbox"] {
-  accent-color: var(--airbnb-coral);
+  accent-color: var(--primary);
 }
 
 h1 {
   color: var(--foreground);
   letter-spacing: 0;
+}
+
+a {
+  text-underline-offset: 4px;
+}
+
+:focus-visible {
+  outline-color: var(--primary);
 }

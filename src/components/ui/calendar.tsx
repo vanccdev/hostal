@@ -21,22 +21,22 @@ export const Calendar = ({ className, classNames, showOutsideDays = true, locale
       caption_label: "text-sm font-semibold capitalize",
       nav: "absolute inset-x-0 top-4 flex items-center justify-between px-4",
       button_previous:
-        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dddddd] bg-white text-[#222222] hover:border-[#222222] dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100",
+        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8d4c8] bg-white text-[#18221b] hover:border-[#18221b] dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100",
       button_next:
-        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dddddd] bg-white text-[#222222] hover:border-[#222222] dark:border-[#3a3a3a] dark:bg-[#1f1f1f] dark:text-zinc-100",
+        "inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#d8d4c8] bg-white text-[#18221b] hover:border-[#18221b] dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100",
       month_grid: "w-full table-fixed border-collapse",
       weekdays: "grid grid-cols-7",
-      weekday: "h-8 text-center text-[0.8rem] font-semibold text-[#717171] dark:text-[#b0b0b0]",
+      weekday: "h-8 text-center text-[0.8rem] font-semibold text-[#66736a] dark:text-[#b7c0b4]",
       weeks: "grid gap-1",
       week: "grid grid-cols-7 gap-1",
       day: "relative flex h-9 w-9 items-center justify-center p-0 text-center text-sm",
       day_button:
-        "h-9 w-9 rounded-full text-sm font-medium transition-colors hover:bg-[#fff1f3] focus:outline-none focus:ring-2 focus:ring-[#ff385c] dark:hover:bg-[#2b2b2b]",
+        "h-9 w-9 rounded-full text-sm font-medium transition-colors hover:bg-[#f4ecd8] focus:outline-none focus:ring-2 focus:ring-[#c7a35a] dark:hover:bg-[#223229]",
       selected:
-        "[&>button]:!bg-[#ff385c] [&>button]:!text-white [&>button]:hover:!bg-[#e31c5f] [&>button]:hover:!text-white [&>button]:focus:!bg-[#e31c5f] [&>button]:focus:!text-white",
-      today: "[&>button]:border [&>button]:border-[#ff385c]",
-      outside: "text-[#b0b0b0] opacity-50 dark:text-[#717171]",
-      disabled: "text-[#b0b0b0] opacity-50 dark:text-[#717171]",
+        "[&>button]:!bg-[#c7a35a] [&>button]:!text-[#102317] [&>button]:hover:!bg-[#a9822f] [&>button]:hover:!text-white [&>button]:focus:!bg-[#a9822f] [&>button]:focus:!text-white",
+      today: "[&>button]:border [&>button]:border-[#c7a35a]",
+      outside: "text-[#b7c0b4] opacity-50 dark:text-[#66736a]",
+      disabled: "text-[#b7c0b4] opacity-50 dark:text-[#66736a]",
       hidden: "invisible",
       ...classNames,
     }}

@@ -24,7 +24,7 @@ export default async function AdminPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Panel administrativo</h1>
-        <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">Resumen operativo del hostal.</p>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Resumen operativo del hostal.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {counts.map((item) => (
@@ -33,7 +33,7 @@ export default async function AdminPage() {
               <CardTitle>{labels[item.table]}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-[#ff385c]">{item.count}</p>
+              <p className="text-4xl font-bold text-[#c7a35a]">{item.count}</p>
             </CardContent>
           </Card>
         ))}

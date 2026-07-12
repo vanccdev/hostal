@@ -56,8 +56,8 @@ export const DatePickerField = ({
       <Popover>
         <PopoverTrigger asChild>
           <Button type="button" variant="outline" className="h-12 w-full justify-start px-4 text-left font-medium">
-            <CalendarIcon className="h-4 w-4 text-[#ff385c]" aria-hidden="true" />
-            {labelFromDate(selectedDate) ?? <span className="text-[#717171] dark:text-[#b0b0b0]">{placeholder}</span>}
+            <CalendarIcon className="h-4 w-4 text-[#c7a35a]" aria-hidden="true" />
+            {labelFromDate(selectedDate) ?? <span className="text-[#66736a] dark:text-[#b7c0b4]">{placeholder}</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" collisionPadding={16} className="w-[min(20rem,calc(100vw-2rem))] overflow-hidden">

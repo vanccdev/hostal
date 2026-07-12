@@ -79,7 +79,7 @@ export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
           <Label>Vigencia</Label>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="vigenteDesde" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+              <Label htmlFor="vigenteDesde" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                 Desde
               </Label>
               <DatePickerField
@@ -91,7 +91,7 @@ export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vigenteHasta" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+              <Label htmlFor="vigenteHasta" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                 Hasta
               </Label>
               <DatePickerField
@@ -105,11 +105,11 @@ export const TarifaForm = ({ tarifa }: TarifaFormProps) => {
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#dddddd] bg-white p-3 dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
           <input type="hidden" name="activa" value={activa ? "true" : "false"} />
           <div className="space-y-1">
             <Label htmlFor="activa">Estado de la tarifa</Label>
-            <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">
+            <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
               {activa ? "Activa para asignar." : "Inactiva para nuevas asignaciones."}
             </p>
           </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BedDouble, CalendarDays, ImageIcon, LogIn, Users } from "lucide-react";
+import { BedDouble, CalendarDays, ImageIcon, Users } from "lucide-react";
 import { DatePickerField } from "@/components/forms/DatePickerField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,13 +154,13 @@ export const PublicBookingCatalog = ({
 
   return (
     <section id="habitaciones" className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="rounded-2xl border border-[#dddddd] bg-white p-4 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+      <div className="rounded-2xl border border-[#d8d4c8] bg-white p-4 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
         <div className="grid gap-4 md:grid-cols-[minmax(0,34rem)_auto] md:items-end md:justify-between">
           <div className="space-y-2">
             <Label>Fechas</Label>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="publicFechaIngreso" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                <Label htmlFor="publicFechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                   Ingreso
                 </Label>
                 <DatePickerField
@@ -174,7 +173,7 @@ export const PublicBookingCatalog = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="publicFechaSalida" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+                <Label htmlFor="publicFechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                   Salida
                 </Label>
                 <DatePickerField
@@ -197,8 +196,8 @@ export const PublicBookingCatalog = ({
 
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-2xl font-semibold text-[#222222] dark:text-zinc-100">Habitaciones</h2>
-          <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">
+          <h2 className="text-2xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones</h2>
+          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
             Revisa fotos, tarifas y disponibilidad antes de iniciar sesión.
           </p>
         </div>
@@ -223,11 +222,11 @@ export const PublicBookingCatalog = ({
               disabled={disabled}
               onClick={() => setHabitacionId(habitacion.id)}
               className={cn(
-                "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff385c] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1f1f1f]",
-                selected ? "border-[#ff385c] ring-2 ring-[#ff385c]" : "border-[#dddddd] dark:border-[#3a3a3a]",
+                "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
+                selected ? "border-[#c7a35a] ring-2 ring-[#c7a35a]" : "border-[#d8d4c8] dark:border-[#314237]",
               )}
             >
-              <div className="relative aspect-[4/3] bg-[#f7f7f7] dark:bg-[#242424]">
+              <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
                 {image ? (
                   <Image
                     src={image.url}
@@ -239,7 +238,7 @@ export const PublicBookingCatalog = ({
                     unoptimized
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[#717171] dark:text-[#b0b0b0]">
+                  <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
                     <ImageIcon className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
@@ -254,20 +253,20 @@ export const PublicBookingCatalog = ({
               <div className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-semibold text-[#222222] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
-                    <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">{habitacion.tipo}</p>
+                    <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
+                    <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.tipo}</p>
                   </div>
                   {tarifa ? (
                     <div className="text-right">
-                      <p className="font-semibold text-[#222222] dark:text-zinc-100">
+                      <p className="font-semibold text-[#18221b] dark:text-zinc-100">
                         {tarifa.precio_noche} {tarifa.moneda}
                       </p>
-                      <p className="text-xs text-[#717171] dark:text-[#b0b0b0]">noche</p>
+                      <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">noche</p>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs text-[#717171] dark:text-[#b0b0b0]">
+                <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
                     {habitacion.capacidad_max} huéspedes
@@ -279,7 +278,7 @@ export const PublicBookingCatalog = ({
                 </div>
 
                 {habitacion.descripcion ? (
-                  <p className="line-clamp-2 min-h-10 text-sm text-[#717171] dark:text-[#b0b0b0]">{habitacion.descripcion}</p>
+                  <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
                 ) : null}
 
                 <div className="grid grid-cols-7 gap-1">
@@ -305,31 +304,6 @@ export const PublicBookingCatalog = ({
         })}
       </div>
 
-      <div className="sticky bottom-4 z-20 rounded-2xl border border-[#dddddd] bg-white p-4 shadow-[0_12px_34px_rgba(0,0,0,0.14)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm">
-            <p className="font-semibold text-[#222222] dark:text-zinc-100">
-              {selectedRoom ? `Habitación ${selectedRoom.numero} · ${selectedRoom.tipo}` : "Selecciona una habitación"}
-            </p>
-            <p className="text-[#717171] dark:text-[#b0b0b0]">
-              {selectedTarifa && nights > 0
-                ? `${Number(selectedTarifa.precio_noche) * nights} ${selectedTarifa.moneda} total · ${nights} noches`
-                : "El inicio de sesión se pedirá recién al confirmar."}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button asChild variant="outline">
-              <Link href="/login">
-                <LogIn className="h-4 w-4" aria-hidden="true" />
-                Iniciar sesión
-              </Link>
-            </Button>
-            <Button type="button" disabled={!canContinue} onClick={continueReservation}>
-              Reservar ahora
-            </Button>
-          </div>
-        </div>
-      </div>
     </section>
   );
 };

@@ -32,7 +32,7 @@ export const HostalLocationMap = () => {
       new Style({
         image: new CircleStyle({
           radius: 8,
-          fill: new Fill({ color: "#ff385c" }),
+          fill: new Fill({ color: "#c7a35a" }),
           stroke: new Stroke({ color: "#ffffff", width: 3 }),
         }),
       }),
@@ -63,11 +63,11 @@ export const HostalLocationMap = () => {
   }, []);
 
   return (
-    <div className="relative min-h-[22rem] overflow-hidden rounded-2xl border border-[#dddddd] bg-[#ebebeb] dark:border-[#3a3a3a] dark:bg-[#242424]">
+    <div className="relative min-h-[22rem] overflow-hidden rounded-2xl border border-[#d8d4c8] bg-[#ece4d4] dark:border-[#314237] dark:bg-[#1d2c23]">
       <div ref={mapElementRef} className="absolute inset-0" aria-label="Mapa de ubicación del hostal en Camargo" />
-      <div className="pointer-events-none absolute left-4 top-4 rounded-xl bg-white/95 px-4 py-3 shadow-[0_8px_28px_rgba(0,0,0,0.16)] backdrop-blur dark:bg-[#1f1f1f]/95">
-        <p className="text-sm font-semibold text-[#222222] dark:text-zinc-100">Hostal Plaza</p>
-        <p className="text-xs font-medium text-[#717171] dark:text-[#b0b0b0]">Camargo, Chuquisaca</p>
+      <div className="pointer-events-none absolute left-4 top-4 rounded-xl bg-white/95 px-4 py-3 shadow-[0_8px_28px_rgba(0,0,0,0.16)] backdrop-blur dark:bg-[#18251d]/95">
+        <p className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Hostal Plaza</p>
+        <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">Camargo, Chuquisaca</p>
       </div>
     </div>
   );

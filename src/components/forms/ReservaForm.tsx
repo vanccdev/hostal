@@ -231,7 +231,7 @@ export const ReservaForm = ({
         <Label>Fechas</Label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="fechaIngreso" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+            <Label htmlFor="fechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
               Ingreso
             </Label>
             <DatePickerField
@@ -246,7 +246,7 @@ export const ReservaForm = ({
             <FormMessage state={state} field="fechaIngreso" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="fechaSalida" className="text-xs text-[#717171] dark:text-[#b0b0b0]">
+            <Label htmlFor="fechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
               Salida
             </Label>
             <DatePickerField
@@ -270,8 +270,8 @@ export const ReservaForm = ({
         <div className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-[#222222] dark:text-zinc-100">Habitaciones disponibles</h2>
-              <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">
+              <h2 className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones disponibles</h2>
+              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
                 Elige fechas y selecciona una habitación para completar la reserva.
               </p>
             </div>
@@ -296,13 +296,13 @@ export const ReservaForm = ({
                   disabled={disabled}
                   onClick={() => setHabitacionId(habitacion.id)}
                   className={cn(
-                    "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff385c] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#1f1f1f]",
+                    "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
                     selected
-                      ? "border-[#ff385c] ring-2 ring-[#ff385c]"
-                      : "border-[#dddddd] dark:border-[#3a3a3a]",
+                      ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
+                      : "border-[#d8d4c8] dark:border-[#314237]",
                   )}
                 >
-                  <div className="relative aspect-[4/3] bg-[#f7f7f7] dark:bg-[#242424]">
+                  <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
                     {image ? (
                       <Image
                         src={image.url}
@@ -314,7 +314,7 @@ export const ReservaForm = ({
                         unoptimized
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-[#717171] dark:text-[#b0b0b0]">
+                      <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
                         <ImageIcon className="h-8 w-8" aria-hidden="true" />
                       </div>
                     )}
@@ -329,15 +329,15 @@ export const ReservaForm = ({
                   <div className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-[#222222] dark:text-zinc-100">
+                        <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">
                           Habitación {habitacion.numero}
                         </h3>
-                        <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">{habitacion.tipo}</p>
+                        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.tipo}</p>
                       </div>
-                      {selected ? <CheckCircle2 className="h-5 w-5 text-[#ff385c]" aria-hidden="true" /> : null}
+                      {selected ? <CheckCircle2 className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" /> : null}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs text-[#717171] dark:text-[#b0b0b0]">
+                    <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
                       <span className="inline-flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" aria-hidden="true" />
                         {habitacion.capacidad_max} huéspedes
@@ -349,19 +349,19 @@ export const ReservaForm = ({
                     </div>
 
                     {habitacion.descripcion ? (
-                      <p className="line-clamp-2 min-h-10 text-sm text-[#717171] dark:text-[#b0b0b0]">{habitacion.descripcion}</p>
+                      <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
                     ) : null}
 
                     <div className="flex items-end justify-between gap-3">
                       {tarifa ? (
                         <div>
-                          <p className="text-lg font-semibold text-[#222222] dark:text-zinc-100">
+                          <p className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">
                             {tarifa.precio_noche} {tarifa.moneda}
                           </p>
-                          <p className="text-xs text-[#717171] dark:text-[#b0b0b0]">por noche · {tarifa.temporada}</p>
+                          <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">por noche · {tarifa.temporada}</p>
                         </div>
                       ) : (
-                        <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">Sin tarifa activa</p>
+                        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin tarifa activa</p>
                       )}
                     </div>
 
@@ -392,42 +392,42 @@ export const ReservaForm = ({
           <FormMessage state={state} field="tarifaId" />
         </div>
 
-        <aside className="h-fit rounded-2xl border border-[#dddddd] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+        <aside className="h-fit rounded-2xl border border-[#d8d4c8] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-[#222222] dark:text-zinc-100">Resumen</h2>
-              <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">La tarifa se asigna automáticamente.</p>
+              <h2 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">Resumen</h2>
+              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">La tarifa se asigna automáticamente.</p>
             </div>
 
-            <div className="space-y-3 rounded-xl border border-[#dddddd] p-4 text-sm dark:border-[#3a3a3a]">
+            <div className="space-y-3 rounded-xl border border-[#d8d4c8] p-4 text-sm dark:border-[#314237]">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#717171] dark:text-[#b0b0b0]">Habitación</span>
-                <span className="font-semibold text-[#222222] dark:text-zinc-100">
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Habitación</span>
+                <span className="font-semibold text-[#18221b] dark:text-zinc-100">
                   {selectedRoom ? `${selectedRoom.numero} · ${selectedRoom.tipo}` : "Pendiente"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#717171] dark:text-[#b0b0b0]">Fechas</span>
-                <span className="text-right font-semibold text-[#222222] dark:text-zinc-100">
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Fechas</span>
+                <span className="text-right font-semibold text-[#18221b] dark:text-zinc-100">
                   {fechaIngreso && fechaSalida ? `${formatDate(fechaIngreso)} - ${formatDate(fechaSalida)}` : "Pendiente"}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#717171] dark:text-[#b0b0b0]">Noches</span>
-                <span className="font-semibold text-[#222222] dark:text-zinc-100">{nights || "-"}</span>
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Noches</span>
+                <span className="font-semibold text-[#18221b] dark:text-zinc-100">{nights || "-"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#717171] dark:text-[#b0b0b0]">Tarifa</span>
-                <span className="font-semibold text-[#222222] dark:text-zinc-100">
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Tarifa</span>
+                <span className="font-semibold text-[#18221b] dark:text-zinc-100">
                   {selectedTarifa ? `${selectedTarifa.precio_noche} ${selectedTarifa.moneda}` : "Pendiente"}
                 </span>
               </div>
             </div>
 
             {selectedTarifa && nights > 0 ? (
-              <div className="flex items-center justify-between border-t border-[#dddddd] pt-4 dark:border-[#3a3a3a]">
-                <span className="font-semibold text-[#222222] dark:text-zinc-100">Total</span>
-                <span className="text-xl font-semibold text-[#222222] dark:text-zinc-100">
+              <div className="flex items-center justify-between border-t border-[#d8d4c8] pt-4 dark:border-[#314237]">
+                <span className="font-semibold text-[#18221b] dark:text-zinc-100">Total</span>
+                <span className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">
                   {Number(selectedTarifa.precio_noche) * nights} {selectedTarifa.moneda}
                 </span>
               </div>
@@ -448,7 +448,7 @@ export const ReservaForm = ({
             ) : null}
 
             {selectedRoom && !selectedTarifa ? (
-              <div className="rounded-xl bg-[#fff1f3] p-3 text-sm text-[#b0133e] dark:bg-[#3a1f27] dark:text-[#ffb3c0]">
+              <div className="rounded-xl bg-[#f4ecd8] p-3 text-sm text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
                 {mode === "staff" ? (
                   <>
                     Esta habitación no tiene tarifa activa.{" "}

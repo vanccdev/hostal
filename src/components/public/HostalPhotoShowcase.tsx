@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Camera, MapPin, Sparkles } from "lucide-react";
+import { InteriorPhotoCarousel } from "@/components/public/InteriorPhotoCarousel";
 
 const insidePhotos = [
   {
@@ -86,31 +87,31 @@ export const HostalPhotoShowcase = () => (
   <section className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
     <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div className="space-y-3">
-        <p className="inline-flex items-center gap-2 rounded-full bg-[#fff1f3] px-3 py-1 text-sm font-semibold text-[#b0133e] dark:bg-[#3a1f27] dark:text-[#ffb3c0]">
+        <p className="inline-flex items-center gap-2 rounded-full bg-[#f4ecd8] px-3 py-1 text-sm font-semibold text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
           <Camera className="h-4 w-4" aria-hidden="true" />
           Conoce el hostal
         </p>
         <div className="space-y-2">
-          <h2 className="text-3xl font-semibold tracking-normal text-[#222222] dark:text-zinc-100">
+          <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">
             Espacios para descansar, compartir y descubrir Camargo.
           </h2>
-          <p className="max-w-2xl text-base leading-7 text-[#717171] dark:text-[#b0b0b0]">
+          <p className="max-w-2xl text-base leading-7 text-[#66736a] dark:text-[#b7c0b4]">
             Más que una habitación: ambientes interiores con carácter, desayuno, patio y lugares cercanos para visitar durante tu estadía.
           </p>
         </div>
       </div>
-      <div className="rounded-2xl border border-[#dddddd] bg-white p-4 text-sm shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
-        <p className="flex items-center gap-2 font-semibold text-[#222222] dark:text-zinc-100">
-          <Sparkles className="h-4 w-4 text-[#ff385c]" aria-hidden="true" />
+      <div className="rounded-2xl border border-[#d8d4c8] bg-white p-4 text-sm shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
+        <p className="flex items-center gap-2 font-semibold text-[#18221b] dark:text-zinc-100">
+          <Sparkles className="h-4 w-4 text-[#c7a35a]" aria-hidden="true" />
           Interior + ciudad
         </p>
-        <p className="mt-1 text-[#717171] dark:text-[#b0b0b0]">Una vista rápida de lo que el huésped encuentra dentro y fuera.</p>
+        <p className="mt-1 text-[#66736a] dark:text-[#b7c0b4]">Una vista rápida de lo que el huésped encuentra dentro y fuera.</p>
       </div>
     </div>
 
     <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-      <article className="group grid h-full overflow-hidden rounded-2xl border border-[#dddddd] bg-white shadow-[0_10px_34px_rgba(0,0,0,0.10)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f] lg:grid-rows-[auto_1fr]">
-        <div className="relative aspect-[16/10] bg-[#ebebeb] dark:bg-[#242424]">
+      <article className="group grid h-full overflow-hidden rounded-2xl border border-[#d8d4c8] bg-white shadow-[0_10px_34px_rgba(0,0,0,0.10)] dark:border-[#314237] dark:bg-[#18251d] lg:grid-rows-[auto_1fr]">
+        <div className="relative aspect-[16/10] bg-[#ece4d4] dark:bg-[#1d2c23]">
           <Image
             src="/dentro-hostal/vista1.jpg"
             alt="Vista desde el interior del Hostal Plaza hacia los cerros de Camargo"
@@ -121,13 +122,13 @@ export const HostalPhotoShowcase = () => (
         </div>
         <div className="grid h-full gap-5 p-5 lg:grid-cols-[1fr_3fr]">
           <div className="flex flex-col justify-center space-y-2">
-            <p className="text-sm font-semibold uppercase text-[#ff385c]">Desde el hostal</p>
-            <h3 className="text-2xl font-semibold text-[#222222] dark:text-zinc-100">Vistas, patio y descanso con identidad local.</h3>
-            <p className="text-sm leading-6 text-[#717171] dark:text-[#b0b0b0]">
+            <p className="text-sm font-semibold uppercase text-[#c7a35a]">Desde el hostal</p>
+            <h3 className="text-2xl font-semibold text-[#18221b] dark:text-zinc-100">Vistas, patio y descanso con identidad local.</h3>
+            <p className="text-sm leading-6 text-[#66736a] dark:text-[#b7c0b4]">
               El hostal combina detalles tradicionales, vegetación y vistas abiertas de Camargo para que la estadía se sienta cercana y tranquila.
             </p>
           </div>
-          <div className="relative min-h-64 overflow-hidden rounded-xl bg-[#ebebeb] dark:bg-[#242424] lg:min-h-full">
+          <div className="relative min-h-64 overflow-hidden rounded-xl bg-[#ece4d4] dark:bg-[#1d2c23] lg:min-h-full">
             <Image
               src="/dentro-hostal/llegando al hostal.jpg"
               alt="Llegada al Hostal Plaza con balcones, vegetación y pasillos interiores"
@@ -146,18 +147,16 @@ export const HostalPhotoShowcase = () => (
       </div>
     </div>
 
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      {[insidePhotos[0], ...insidePhotos.slice(3, 5), ...insidePhotos.slice(9)].map((photo) => (
-        <PhotoCard key={photo.src} {...photo} />
-      ))}
-    </div>
+    <InteriorPhotoCarousel
+      photos={[insidePhotos[0], ...insidePhotos.slice(3, 5), ...insidePhotos.slice(9)]}
+    />
 
-    <div className="space-y-4 rounded-2xl border border-[#dddddd] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
+    <div className="space-y-4 rounded-2xl border border-[#d8d4c8] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
       <div className="flex items-center gap-2">
-        <MapPin className="h-5 w-5 text-[#ff385c]" aria-hidden="true" />
+        <MapPin className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" />
         <div>
-          <h3 className="text-xl font-semibold text-[#222222] dark:text-zinc-100">Camargo alrededor del hostal</h3>
-          <p className="text-sm text-[#717171] dark:text-[#b0b0b0]">Lugares para visitar y reconocer la ciudad durante tu estadía.</p>
+          <h3 className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">Camargo alrededor del hostal</h3>
+          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Lugares para visitar y reconocer la ciudad durante tu estadía.</p>
         </div>
       </div>
       <div className="grid gap-5 md:grid-cols-4">
@@ -178,8 +177,8 @@ type PhotoCardProps = {
 };
 
 const PhotoCard = ({ src, title, description, compact, priority }: PhotoCardProps) => (
-  <article className="group overflow-hidden rounded-2xl border border-[#dddddd] bg-white dark:border-[#3a3a3a] dark:bg-[#1f1f1f]">
-    <div className={`relative bg-[#ebebeb] dark:bg-[#242424] ${compact ? "aspect-[4/3]" : "aspect-square"}`}>
+  <article className="group overflow-hidden rounded-2xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]">
+    <div className={`relative bg-[#ece4d4] dark:bg-[#1d2c23] ${compact ? "aspect-[4/3]" : "aspect-square"}`}>
       <Image
         src={src}
         alt={`${title}: ${description}`}
@@ -190,8 +189,8 @@ const PhotoCard = ({ src, title, description, compact, priority }: PhotoCardProp
       />
     </div>
     <div className="space-y-1.5 p-4">
-      <h3 className="font-semibold text-[#222222] dark:text-zinc-100">{title}</h3>
-      <p className="text-sm leading-5 text-[#717171] dark:text-[#b0b0b0]">{description}</p>
+      <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">{title}</h3>
+      <p className="text-sm leading-5 text-[#66736a] dark:text-[#b7c0b4]">{description}</p>
     </div>
   </article>
 );
