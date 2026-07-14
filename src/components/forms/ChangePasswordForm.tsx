@@ -6,6 +6,7 @@ import { KeyRound } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { changePasswordAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ export const ChangePasswordForm = () => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      <ActionToast state={state} successTitle="Contraseña actualizada" errorTitle="No se pudo cambiar la contraseña" />
       <div className="space-y-2">
         <Label htmlFor="password">Nueva contraseña</Label>
         <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
@@ -36,4 +38,3 @@ export const ChangePasswordForm = () => {
     </form>
   );
 };
-

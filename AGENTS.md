@@ -44,12 +44,14 @@ Ya existe una base funcional con:
   - Huespedes: `/admin/huespedes/[id]/editar`.
   - Tarifas: `/admin/tarifas/[id]/editar`.
   - Los formularios `HabitacionForm`, `HuespedForm` y `TarifaForm` aceptan datos iniciales y usan el mismo `upsert` con `id` oculto.
+  - Los listados principales editan desde `Dialog` shadcn para no navegar a otra pagina al editar una fila.
 - Gestion de habitaciones con carga de multiples imagenes:
   - Formulario en `src/components/forms/HabitacionForm.tsx`.
   - Server Action en `src/app/actions/crud.ts`.
   - Bucket publico Supabase Storage `habitaciones`.
   - Tabla `public.img_habitaciones` para guardar solo URLs asociadas a `public.habitaciones`.
   - El listado de `/admin/habitaciones` muestra miniatura de la primera imagen y conteo de fotos.
+  - El formulario tiene zona visual para arrastrar y seleccionar imagenes; la carga sigue siendo server-side.
 - Reservas por cliente y por staff.
 - Logica actual de tarifas/reservas:
   - La relacion vigente es `public.habitaciones.tarifa_id -> public.tarifas.id`.
@@ -58,10 +60,14 @@ Ya existe una base funcional con:
   - El CRUD de tarifas vive en `/admin/tarifas`; no crear campos de precio/temporada dentro del formulario de habitacion.
   - Al crear/editar habitacion se selecciona una tarifa existente para asociarla; si no hay tarifas disponibles, el formulario ofrece ir a `/admin/tarifas`.
   - `upsertHabitacionAction` valida la tarifa seleccionada y guarda `public.habitaciones.tarifa_id`.
-  - Al crear/editar tarifa desde `/admin/tarifas`, solo se define tipo, temporada, vigencia, precio y estado; la asociacion se hace desde habitaciones.
-  - En reserva no se selecciona tarifa manualmente; se selecciona habitacion y la tarifa activa asociada se deriva implicitamente.
-  - El servidor valida que `tarifa_id` corresponda a la habitacion antes de calcular precio/insertar reserva.
-  - Como fallback, si una habitacion no tiene `tarifa_id`, la UI/servidor pueden usar una tarifa activa por `habitacion_tipo`.
+  - Al crear/editar tarifa desde `/admin/tarifas`, se define tipo, temporada, vigencia, precio, peso y estado; la asociacion se hace desde habitaciones.
+  - `public.tarifas.peso` es `smallint NOT NULL DEFAULT 0` y solo permite `0`, `1`, `2`, `3`.
+  - El peso resuelve solapamientos: si varias tarifas del mismo tipo estan vigentes el mismo dia, gana el peso mas alto; si empata, gana la vigencia mas reciente y luego la tarifa creada mas recientemente.
+  - Supabase impide duplicar tarifas activas con el mismo `habitacion_tipo + temporada + peso` mediante el indice unico parcial `tarifas_tipo_temporada_peso_activa_uidx`.
+  - `upsertTarifaAction` valida antes de guardar que no exista otra tarifa activa con el mismo tipo, temporada y peso, y devuelve un mensaje claro para cambiar el peso.
+  - En reserva no se selecciona tarifa manualmente; se selecciona habitacion y la tarifa actual se deriva por fecha local actual (`America/La_Paz`), tipo de habitacion, vigencia y peso.
+  - El helper central es `src/lib/tarifas.ts` (`selectTarifaActualParaHabitacion`).
+  - El servidor valida que el `tarifa_id` enviado sea la tarifa vigente/prioritaria de hoy antes de calcular precio/insertar reserva.
   - `ReservaForm` y `PublicBookingCatalog` muestran habitaciones como tarjetas visuales con imagen, capacidad, tarifa por noche, mini disponibilidad de 7 dias y estado ocupada/disponible.
   - Fechas pasadas se bloquean con `DatePickerField`/`Calendar` y tambien se validan en `src/lib/db/reservas.ts`.
   - Habitaciones con reservas `pendiente_pago`, `confirmada`, `checkin` o bloqueos superpuestos se muestran/no permiten seleccion para ese rango.
@@ -96,6 +102,7 @@ Ya existe una base funcional con:
 - Se aplicaron cambios locales de tarifas:
   - `supabase/migrations/202607090001_add_habitacion_tarifa_id.sql` agrega `public.habitaciones.tarifa_id`.
   - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql` elimina `public.tarifas.habitacion_id`.
+  - `supabase/migrations/202607120001_add_tarifas_peso.sql` agrega `public.tarifas.peso`, constraint de valores `0..3`, indices de prioridad/vigencia y el indice unico parcial para no repetir `habitacion_tipo + temporada + peso` en tarifas activas.
   - Se migro 1 asignacion antigua desde `tarifas.habitacion_id` hacia `habitaciones.tarifa_id`.
 - Se aplico `supabase/migrations/202607090002_set_lapaz_timezone.sql` en DB local:
   - `ALTER DATABASE postgres SET timezone TO 'America/La_Paz'`.
@@ -108,6 +115,19 @@ Ya existe una base funcional con:
   - `ThemeProvider` en `src/components/theme/ThemeProvider.tsx`
   - `ThemeToggle` con opciones `Claro`, `Oscuro`, `Sistema`
   - `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`
+- Estilos globales actualizados con paleta basada en el icono oficial del hostal (`public/icono.jpg`), usando tonos verdes, dorados y neutros calidos.
+- Componentes interactivos recientes:
+  - `src/components/ui/dialog.tsx` para edicion en modales.
+  - `src/components/ui/switch.tsx` para estados booleanos con `Label` visible.
+  - `src/components/ui/carousel.tsx` con autoplay para galerias.
+  - `src/components/ui/sonner.tsx` para notificaciones toast globales.
+  - `src/components/forms/ActionToast.tsx` conecta respuestas `ActionState` de Server Actions con Sonner para exitos, errores generales y validaciones.
+  - `src/components/forms/DatePickerField.tsx` mantiene contraste correcto en hover dark mode.
+- Home publica mejorada:
+  - Usa el icono del hostal en marca/metadatos.
+  - Muestra mapa OpenLayers con coordenadas del Hostal Plaza en Camargo: `-20.641224228393003, -65.20948944626011`.
+  - Incluye link externo de Google Maps: `https://maps.app.goo.gl/AbQxFxgTE6t16oDo7`.
+  - Usa imagenes de `public/dentro-hostal` y `public/en-camargo` con galeria/carrusel y descripciones.
 - Navbar responsive:
   - Home publica tiene nav superior con boton de iniciar sesion o acceso a cuenta si ya hay sesion.
   - Portal cliente (`src/components/app/UserNav.tsx`) usa menu movil con `DropdownMenu`.
@@ -130,6 +150,7 @@ Validar esquema real/local y completar datos base:
    - `supabase/migrations/202607090001_add_habitacion_tarifa_id.sql`
    - `supabase/migrations/202607090002_set_lapaz_timezone.sql`
    - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`
+   - `supabase/migrations/202607120001_add_tarifas_peso.sql`
 3. Generar tipos desde Supabase real si el CLI esta disponible y comparar con `src/types/database.ts`.
 4. Probar home publica `/`, seleccion de fechas/habitacion sin sesion, login/registro con `next`, restauracion en `/app/reservas/nueva`, creacion de reserva cliente y creacion de cliente por staff.
 5. Probar subida de imagenes desde `/admin/habitaciones` con usuario `admin`.
@@ -168,6 +189,7 @@ Validar esquema real/local y completar datos base:
 - Para imagenes de habitaciones, validar MIME `image/jpeg`, `image/png`, `image/webp`, `image/gif` y limite de 5 MB por archivo.
 - Al crear o editar habitaciones, solo seleccionar una tarifa existente; no recrear el CRUD de tarifas dentro de habitaciones.
 - Al crear o editar tarifas, no asociarlas a habitaciones; la asociacion vive en `habitaciones.tarifa_id`.
+- Al crear o editar tarifas activas, no permitir repetir el mismo `habitacion_tipo + temporada + peso`; si se necesita otra tarifa para la misma temporada, usar otro peso o desactivar la anterior.
 - No reintroducir `tarifas.habitacion_id`; esa columna fue eliminada.
 - Al crear reservas, mantener validacion server-side de compatibilidad tarifa/habitacion; no confiar solo en el filtrado del formulario cliente.
 - La reserva publica debe permitir explorar sin sesion, pero la insercion real solo ocurre en rutas protegidas despues de login/registro.

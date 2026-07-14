@@ -1,13 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useRef, useState } from "react";
+import { type DragEvent, useActionState, useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BedDouble, ImagePlus, ImageUp, Tag } from "lucide-react";
+import { BedDouble, ImagePlus, ImageUp, Tag, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { upsertHabitacionAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,13 +23,25 @@ import type { Habitacion, Tarifa } from "@/types/database";
 type HabitacionFormProps = {
   habitacion?: Habitacion;
   tarifas: Tarifa[];
+  onSuccess?: () => void;
 };
 
-export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => {
+type ImagePreview = {
+  id: string;
+  file: File;
+  name: string;
+  url: string;
+};
+
+export const HabitacionForm = ({ habitacion, tarifas, onSuccess }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
+  const initialTipo = (habitacion?.tipo as z.input<typeof habitacionSchema>["tipo"]) ?? "individual";
+  const [selectedTipo, setSelectedTipo] = useState<z.input<typeof habitacionSchema>["tipo"]>(initialTipo);
+  const [selectedTarifaId, setSelectedTarifaId] = useState(habitacion?.tarifa_id ?? "");
   const [activa, setActiva] = useState(habitacion?.activa ?? true);
-  const [imageCount, setImageCount] = useState(0);
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const imagePreviewsRef = useRef<ImagePreview[]>([]);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
@@ -42,9 +56,102 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
     },
   });
   const hasTarifas = tarifas.length > 0;
+  const imageCount = imagePreviews.length;
+
+  useEffect(() => {
+    return () => {
+      for (const preview of imagePreviewsRef.current) {
+        URL.revokeObjectURL(preview.url);
+      }
+    };
+  }, []);
+
+  const setPreviewState = (nextPreviews: ImagePreview[]) => {
+    imagePreviewsRef.current = nextPreviews;
+    setImagePreviews(nextPreviews);
+  };
+
+  const syncFileInput = (files: File[]) => {
+    if (!fileInputRef.current) {
+      return;
+    }
+
+    const dataTransfer = new DataTransfer();
+
+    for (const file of files) {
+      dataTransfer.items.add(file);
+    }
+
+    fileInputRef.current.files = dataTransfer.files;
+  };
+
+  const replaceImageSelection = (files: File[]) => {
+    for (const preview of imagePreviewsRef.current) {
+      URL.revokeObjectURL(preview.url);
+    }
+
+    const selectedFiles = files.filter((file) => file.size > 0);
+    const nextPreviews = selectedFiles.map((file, index) => ({
+      id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
+      file,
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }));
+
+    syncFileInput(selectedFiles);
+    setPreviewState(nextPreviews);
+  };
+
+  const removeImagePreview = (id: string) => {
+    const removedPreview = imagePreviewsRef.current.find((preview) => preview.id === id);
+    const nextPreviews = imagePreviewsRef.current.filter((preview) => preview.id !== id);
+
+    if (removedPreview) {
+      URL.revokeObjectURL(removedPreview.url);
+    }
+
+    syncFileInput(nextPreviews.map((preview) => preview.file));
+    setPreviewState(nextPreviews);
+  };
+
+  const clearImageInput = () => {
+    for (const preview of imagePreviewsRef.current) {
+      URL.revokeObjectURL(preview.url);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    setPreviewState([]);
+  };
+
+  const handleSuccess = () => {
+    clearImageInput();
+    onSuccess?.();
+  };
+
+  const handleImageDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const files = Array.from(event.dataTransfer.files);
+
+    if (files.length === 0) {
+      return;
+    }
+
+    replaceImageSelection(files);
+  };
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      <ActionToast
+        state={state}
+        successTitle={habitacion ? "Habitación actualizada" : "Habitación creada"}
+        errorTitle="No se pudo guardar la habitación"
+        onSuccess={handleSuccess}
+      />
       {habitacion ? <input type="hidden" value={habitacion.id} {...form.register("id")} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -54,14 +161,22 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipo">Tipo</Label>
-          <Select name="tipo" defaultValue={habitacion?.tipo ?? "individual"}>
+          <Select
+            name="tipo"
+            value={selectedTipo}
+            onValueChange={(value) => {
+              const nextTipo = value as z.input<typeof habitacionSchema>["tipo"];
+              setSelectedTipo(nextTipo);
+              form.setValue("tipo", nextTipo, { shouldDirty: true, shouldValidate: true });
+            }}
+          >
             <SelectTrigger id="tipo">
               <SelectValue placeholder="Seleccionar tipo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="individual">Individual</SelectItem>
               <SelectItem value="matrimonial">Matrimonial</SelectItem>
-              <SelectItem value="doble">Doble</SelectItem>
+              <SelectItem value="individual doble">Individual doble</SelectItem>
               <SelectItem value="triple">Triple</SelectItem>
               <SelectItem value="familiar">Familiar</SelectItem>
             </SelectContent>
@@ -82,14 +197,22 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="tarifaId">Tarifa asociada</Label>
           {hasTarifas ? (
-            <Select name="tarifaId" defaultValue={habitacion?.tarifa_id ?? undefined}>
+            <Select
+              name="tarifaId"
+              value={selectedTarifaId || undefined}
+              onValueChange={(value) => {
+                setSelectedTarifaId(value);
+                form.setValue("tarifaId", value, { shouldDirty: true, shouldValidate: true });
+              }}
+            >
               <SelectTrigger id="tarifaId">
                 <SelectValue placeholder="Seleccionar tarifa" />
               </SelectTrigger>
               <SelectContent>
                 {tarifas.map((availableTarifa) => (
                   <SelectItem key={availableTarifa.id} value={availableTarifa.id}>
-                    {availableTarifa.habitacion_tipo} / {availableTarifa.temporada} - {availableTarifa.precio_noche}
+                    {availableTarifa.habitacion_tipo} / {availableTarifa.temporada} - {availableTarifa.precio_noche} · peso{" "}
+                    {availableTarifa.peso}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -109,24 +232,17 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
           )}
           <FormMessage state={state} field="tarifaId" />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div
+          className="space-y-2 sm:col-span-2"
+          onDragOver={(event) => {
+            event.preventDefault();
+          }}
+          onDrop={handleImageDrop}
+        >
           <Label htmlFor="imagenes">Imágenes</Label>
           <label
             htmlFor="imagenes"
             className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-6 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
-            onDragOver={(event) => {
-              event.preventDefault();
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-
-              if (!fileInputRef.current || event.dataTransfer.files.length === 0) {
-                return;
-              }
-
-              fileInputRef.current.files = event.dataTransfer.files;
-              setImageCount(event.dataTransfer.files.length);
-            }}
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c7a35a] text-[#102317]">
               <ImagePlus className="h-5 w-5" aria-hidden="true" />
@@ -148,8 +264,42 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
             accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             className="sr-only"
-            onChange={(event) => setImageCount(event.currentTarget.files?.length ?? 0)}
+            onChange={(event) => replaceImageSelection(Array.from(event.currentTarget.files ?? []))}
           />
+          {imagePreviews.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {imagePreviews.map((preview, index) => (
+                <div
+                  key={`${preview.name}-${preview.url}`}
+                  className="relative overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]"
+                >
+                  <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                    <Image
+                      src={preview.url}
+                      alt={`Vista previa ${index + 1}: ${preview.name}`}
+                      fill
+                      sizes="(min-width: 1024px) 180px, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <p className="truncate px-3 py-2 text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+                    {preview.name}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 h-8 w-8 rounded-full bg-black/60 text-white hover:bg-black/75 hover:text-white"
+                    onClick={() => removeImagePreview(preview.id)}
+                    aria-label={`Quitar ${preview.name}`}
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
         </div>
       </div>
@@ -173,8 +323,6 @@ export const HabitacionForm = ({ habitacion, tarifas }: HabitacionFormProps) => 
           />
         </div>
       </div>
-      <FormMessage state={state} />
-      {state.ok ? <p className="text-sm text-emerald-700">{state.message}</p> : null}
       <Button type="submit" disabled={pending || !hasTarifas}>
         {pending ? (
           <ImageUp className="h-4 w-4" aria-hidden="true" />

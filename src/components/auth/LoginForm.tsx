@@ -6,10 +6,11 @@ import { LogIn } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { loginAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
+import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormMessage } from "@/components/forms/FormMessage";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
 
 type LoginFormProps = {
@@ -28,6 +29,7 @@ export const LoginForm = ({ nextPath }: LoginFormProps) => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      <ActionToast state={state} errorTitle="No se pudo iniciar sesión" />
       {nextPath ? <input name="next" type="hidden" value={nextPath} readOnly /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>

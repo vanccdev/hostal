@@ -6,6 +6,7 @@ import { UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { createClientAccountByStaff } from "@/app/actions/clientes";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export const ClienteStaffForm = () => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      <ActionToast state={state} successTitle="Cliente creado" errorTitle="No se pudo crear el cliente" />
       {state.ok ? (
         <Alert>
           <AlertTitle>{state.message}</AlertTitle>

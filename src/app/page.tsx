@@ -31,7 +31,7 @@ export default async function Home() {
     supabase
       .from("tarifas")
       .select(
-        "id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at",
+        "id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at",
       )
       .eq("activa", true)
       .order("habitacion_tipo"),
@@ -69,10 +69,10 @@ export default async function Home() {
           </Link>
           <nav className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link href="#habitaciones">Habitaciones</Link>
+              <a href="#habitaciones">Habitaciones</a>
             </Button>
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link href="#ubicacion">Ubicación</Link>
+              <a href="#ubicacion">Ubicación</a>
             </Button>
             {accountPath ? (
               <Button asChild variant="outline">
@@ -104,10 +104,10 @@ export default async function Home() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
-              <Link href="#habitaciones">
+              <a href="#habitaciones">
                 Ver habitaciones
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              </a>
             </Button>
             <Button asChild size="lg" variant="outline">
               <Link href="/login">
@@ -143,7 +143,7 @@ export default async function Home() {
       />
       <section
         id="ubicacion"
-        className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.9fr_1.4fr] lg:px-8 lg:py-14"
+        className="mx-auto grid max-w-7xl scroll-mt-20 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.9fr_1.4fr] lg:px-8 lg:py-14"
       >
         <div className="space-y-4">
           <BadgeLike>Ubicación</BadgeLike>

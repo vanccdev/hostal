@@ -18,7 +18,7 @@ export default async function EditarHabitacionPage({ params }: { params: Promise
       .maybeSingle(),
     supabase
       .from("tarifas")
-      .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
       .eq("activa", true)
       .order("habitacion_tipo"),
   ]);

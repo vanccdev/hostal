@@ -96,7 +96,7 @@ export const sortableColumnsByTable: Partial<Record<TableName, string[]>> = {
   usuarios: ["nombre", "rol", "activo", "created_at", "must_change_password"],
   huespedes: ["nombre_completo", "tipo_documento", "numero_documento", "pais_origen", "telefono", "email", "created_at", "updated_at"],
   habitaciones: ["numero", "tipo", "piso", "capacidad_max", "activa", "created_at"],
-  tarifas: ["habitacion_tipo", "temporada", "precio_noche", "vigente_desde", "vigente_hasta", "activa", "created_at"],
+  tarifas: ["habitacion_tipo", "temporada", "precio_noche", "peso", "vigente_desde", "vigente_hasta", "activa", "created_at"],
   reservas: ["codigo_reserva", "fecha_ingreso", "fecha_salida", "num_noches", "num_huespedes", "estado", "precio_total", "created_at"],
   audit_log: ["accion", "tabla_afectada", "created_at"],
   transacciones: ["monto", "metodo_pago", "estado_verificacion", "tipo", "created_at"],

@@ -6,10 +6,11 @@ import { UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { signupAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
+import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormMessage } from "@/components/forms/FormMessage";
 import { signupSchema, type SignupInput } from "@/schemas/auth";
 
 type SignupFormProps = {
@@ -31,6 +32,7 @@ export const SignupForm = ({ nextPath }: SignupFormProps) => {
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+      <ActionToast state={state} successTitle="Cuenta creada" errorTitle="No se pudo crear la cuenta" />
       {nextPath ? <input name="next" type="hidden" value={nextPath} readOnly /> : null}
       <div className="space-y-2">
         <Label htmlFor="nombre">Nombre</Label>

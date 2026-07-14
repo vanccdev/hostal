@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { localISODate } from "@/lib/datetime";
+import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import type { Database } from "@/types/database";
 
 export const differenceInNights = (fechaIngreso: string, fechaSalida: string) => {
@@ -72,10 +73,10 @@ export const calculateReservationPrice = async (
 ) => {
   const [{ data: habitacion, error: habitacionError }, { data: tarifa, error: tarifaError }] =
     await Promise.all([
-      supabase.from("habitaciones").select("tipo,tarifa_id,activa").eq("id", habitacionId).maybeSingle(),
+      supabase.from("habitaciones").select("tipo,activa").eq("id", habitacionId).maybeSingle(),
       supabase
         .from("tarifas")
-        .select("habitacion_tipo,precio_noche,activa")
+        .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
         .eq("id", tarifaId)
         .maybeSingle(),
     ]);
@@ -104,12 +105,24 @@ export const calculateReservationPrice = async (
     throw new Error("La tarifa seleccionada no está activa.");
   }
 
-  if (habitacion.tarifa_id && habitacion.tarifa_id !== tarifaId) {
+  if (tarifa.habitacion_tipo !== habitacion.tipo) {
     throw new Error("La tarifa seleccionada no corresponde a la habitación.");
   }
 
-  if (!habitacion.tarifa_id && tarifa.habitacion_tipo !== habitacion.tipo) {
-    throw new Error("La tarifa seleccionada no corresponde a la habitación.");
+  const { data: tarifasVigentes, error: tarifasVigentesError } = await supabase
+    .from("tarifas")
+    .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+    .eq("habitacion_tipo", habitacion.tipo)
+    .eq("activa", true);
+
+  if (tarifasVigentesError) {
+    throw new Error(tarifasVigentesError.message);
+  }
+
+  const currentTarifa = selectTarifaActualParaHabitacion(habitacion, tarifasVigentes ?? []);
+
+  if (!currentTarifa || currentTarifa.id !== tarifaId) {
+    throw new Error("La tarifa seleccionada no es la tarifa vigente para hoy.");
   }
 
   return Number(tarifa.precio_noche) * nights;

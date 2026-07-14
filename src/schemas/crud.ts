@@ -6,7 +6,7 @@ export const habitacionSchema = z.object({
   id: z.uuid().optional(),
   tarifaId: z.uuid("Selecciona una tarifa"),
   numero: z.string().min(1, "Ingresa un número o nombre"),
-  tipo: z.enum(["individual", "matrimonial", "doble", "triple", "familiar"]),
+  tipo: z.enum(["individual", "matrimonial", "individual doble", "triple", "familiar"]),
   piso: z.coerce.number().int().positive("Piso inválido"),
   capacidadMax: z.coerce.number().int().positive("Capacidad inválida"),
   descripcion: z.string().optional(),
@@ -25,9 +25,10 @@ export const huespedSchema = z.object({
 
 export const tarifaSchema = z.object({
   id: z.uuid().optional(),
-  habitacionTipo: z.enum(["individual", "matrimonial", "doble", "triple", "familiar"]),
+  habitacionTipo: z.enum(["individual", "matrimonial", "individual doble", "triple", "familiar"]),
   temporada: z.enum(["alta", "baja", "normal"]),
   precioNoche: z.coerce.number().nonnegative("Precio inválido"),
+  peso: z.coerce.number().int().min(0, "Peso inválido").max(3, "Peso inválido").default(0),
   vigenteDesde: z.iso.date("Fecha inválida"),
   vigenteHasta: z.iso.date("Fecha inválida").optional().or(z.literal("")),
   activa: z.coerce.boolean().default(true),

@@ -1,14 +1,13 @@
 import Image from "next/image";
-import { Pencil } from "lucide-react";
 import { HabitacionForm } from "@/components/forms/HabitacionForm";
+import { HabitacionEditDialog } from "@/components/forms/HabitacionEditDialog";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
+import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import type { Habitacion, ImgHabitacion, Tarifa } from "@/types/database";
 
 type HabitacionConImagenes = Habitacion & {
@@ -43,7 +42,6 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
   const { data, count } = await habitacionesQuery;
 
   const habitacionIds = (data ?? []).map((habitacion) => habitacion.id);
-  const tariffIds = (data ?? []).map((habitacion) => habitacion.tarifa_id).filter((id): id is string => Boolean(id));
   const [{ data: imagenes }, { data: tarifas }, { data: availableTarifas }] =
     habitacionIds.length > 0
       ? await Promise.all([
@@ -54,13 +52,12 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
             .order("created_at"),
           supabase
             .from("tarifas")
-            .select("id,temporada,precio_noche,activa,created_at")
-            .in("id", tariffIds.length > 0 ? tariffIds : ["00000000-0000-0000-0000-000000000000"])
+            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
-            .order("created_at", { ascending: false }),
+            .order("peso", { ascending: false }),
           supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
             .order("habitacion_tipo"),
         ])
@@ -69,13 +66,12 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
           Promise.resolve({ data: [] }),
           supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
             .order("habitacion_tipo"),
         ]);
   const imagesByRoom = new Map<string, Pick<ImgHabitacion, "id" | "url">[]>();
   const tariffsByRoom = new Map<string, Pick<Tarifa, "precio_noche" | "temporada">>();
-  const tariffsById = new Map((tarifas ?? []).map((tarifa) => [tarifa.id, tarifa]));
 
   for (const image of imagenes ?? []) {
     const currentImages = imagesByRoom.get(image.habitacion_id) ?? [];
@@ -84,7 +80,7 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
   }
 
   for (const habitacion of data ?? []) {
-    const tarifa = habitacion.tarifa_id ? tariffsById.get(habitacion.tarifa_id) : null;
+    const tarifa = selectTarifaActualParaHabitacion(habitacion, tarifas ?? []);
 
     if (tarifa) {
       tariffsByRoom.set(habitacion.id, {
@@ -155,23 +151,7 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
               {
                 key: "acciones",
                 header: "Acciones",
-                render: (row) => (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="sm">
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                        Editar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Editar habitación</DialogTitle>
-                        <DialogDescription>Actualiza la habitación sin salir del listado.</DialogDescription>
-                      </DialogHeader>
-                      <HabitacionForm habitacion={row} tarifas={availableTarifas ?? []} />
-                    </DialogContent>
-                  </Dialog>
-                ),
+                render: (row) => <HabitacionEditDialog habitacion={row} tarifas={availableTarifas ?? []} />,
               },
             ]}
           />

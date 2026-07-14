@@ -37,16 +37,22 @@ Implementado:
   - Habitaciones: `/admin/habitaciones/[id]/editar`
   - Huespedes: `/admin/huespedes/[id]/editar`
   - Tarifas: `/admin/tarifas/[id]/editar`
+  - Los listados principales editan registros desde dialogs shadcn sin cambiar de pagina.
 - Gestion de habitaciones permite subir multiples imagenes al bucket Supabase Storage `habitaciones`; se guardan URLs en `public.img_habitaciones` y el listado muestra miniatura/conteo.
+  - El formulario incluye una zona para arrastrar imagenes; la subida sigue ejecutandose por Server Action.
 - Tarifas asociadas a habitaciones:
   - `public.habitaciones.tarifa_id` apunta a `public.tarifas.id`, permitiendo que una tarifa se use en varias habitaciones.
   - `public.tarifas.habitacion_id` fue eliminado; no se debe reintroducir.
   - El CRUD de tarifas se administra en `/admin/tarifas`.
   - Al crear/editar habitacion se selecciona una tarifa existente para asociarla.
   - Si no hay tarifas disponibles, el formulario de habitacion muestra acceso a `/admin/tarifas`.
-  - Al crear/editar tarifa desde `/admin/tarifas`, se define tipo, temporada, vigencia y precio; la asociacion se hace desde habitaciones.
-  - Al reservar no se elige tarifa manualmente; la tarifa activa se deriva implicitamente desde la habitacion seleccionada.
-  - El servidor valida compatibilidad tarifa/habitacion antes de insertar la reserva.
+  - Al crear/editar tarifa desde `/admin/tarifas`, se define tipo, temporada, vigencia, precio, peso y estado; la asociacion se hace desde habitaciones.
+  - `public.tarifas.peso` permite valores `0`, `1`, `2`, `3` para resolver prioridades cuando hay tarifas solapadas.
+  - Si varias tarifas activas del mismo tipo estan vigentes para la fecha actual, gana la de mayor peso; si empata, gana la vigencia mas reciente y luego la creada mas recientemente.
+  - Supabase impide duplicar tarifas activas con el mismo `habitacion_tipo + temporada + peso` mediante un indice unico parcial.
+  - Next valida esa misma regla en `upsertTarifaAction` para mostrar un mensaje claro antes de guardar.
+  - Al reservar no se elige tarifa manualmente; la tarifa actual se deriva por fecha local actual (`America/La_Paz`), tipo de habitacion, vigencia y peso.
+  - El servidor valida que el `tarifa_id` recibido sea la tarifa vigente/prioritaria antes de insertar la reserva.
   - Habitaciones inactivas no se pueden seleccionar en los flujos de reserva.
 - Zona horaria y formato de fechas:
   - Supabase local esta configurado en `America/La_Paz`.
@@ -83,9 +89,13 @@ Implementado:
   - `src/components/theme/ThemeProvider.tsx`
   - `src/components/theme/ThemeToggle.tsx`
   - `ThemeProvider` configurado con `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`.
+- Paleta global actualizada con colores derivados del icono oficial del hostal.
+- Home publica mejorada con marca visual, mapa OpenLayers del Hostal Plaza en Camargo, link a Google Maps, galeria/carrusel e imagenes de `public/dentro-hostal` y `public/en-camargo`.
 - Dropdown menu base en `src/components/ui/dropdown-menu.tsx`.
 - Select base shadcn/Radix en `src/components/ui/select.tsx`; los formularios no usan `<select>` nativo.
 - Calendar base en `src/components/ui/calendar.tsx` y date picker reusable en `src/components/forms/DatePickerField.tsx`; los formularios no usan `Input type="date"`.
+- Dialog, Switch, Carousel y Sonner base shadcn estan disponibles para edicion modal, estados booleanos, galerias y notificaciones.
+- `src/components/forms/ActionToast.tsx` conecta respuestas `ActionState` de Server Actions con Sonner para mostrar exitos, errores generales y validaciones.
 - Catalogo publico de reserva en `src/components/public/PublicBookingCatalog.tsx`.
 - Clave compartida para intenciones de reserva en `src/lib/reservation-intent.ts`.
 - Navegacion responsive:
@@ -167,6 +177,7 @@ Notas de esquema:
 - Se aplico en la DB local `public.img_habitaciones` y el bucket publico `storage.buckets.id = 'habitaciones'`.
 - Se aplico historicamente `public.tarifas.habitacion_id` mediante `supabase/migrations/202607040002_add_tarifa_habitacion_id.sql`, pero luego fue reemplazado.
 - La relacion vigente es `public.habitaciones.tarifa_id`; `public.tarifas.habitacion_id` fue eliminado por `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`.
+- `public.tarifas.peso` fue agregado por `supabase/migrations/202607120001_add_tarifas_peso.sql`; tiene constraint `0..3`, indices de prioridad/vigencia y un indice unico parcial para evitar repetir `habitacion_tipo + temporada + peso` en tarifas activas.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes.tipo_documento` y `public.huespedes.numero_documento` son `NOT NULL`; los tipos locales ya reflejan ese comportamiento.
@@ -236,8 +247,9 @@ Verificaciones recientes:
 - `pnpm exec tsc --noEmit` pasa.
 - Tablas/listados actualizados para usar paginacion server-side con Supabase y UI de busqueda/orden/columnas/filas por pagina.
 - Supabase local verificado: `public.tarifas` ya no tiene `habitacion_id`; `public.habitaciones` tiene `tarifa_id`.
+- Supabase local verificado: `public.tarifas` tiene `peso smallint NOT NULL DEFAULT 0`, constraint `tarifas_peso_check` e indice unico parcial `tarifas_tipo_temporada_peso_activa_uidx`.
 - Supabase local verificado: `current_setting('TimeZone') = America/La_Paz`.
-- `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id` y tras configurar timezone.
+- `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id`, tras configurar timezone y tras agregar/validar `tarifas.peso`.
 - Supabase local verificado con Docker: existen tabla `public.img_habitaciones`, bucket `habitaciones` y politicas RLS para `storage.objects`.
 - `/admin/backups` responde protegido con redirect a `/login` sin sesion; endpoints `/admin/backups/database` y `/admin/backups/imagenes` devuelven `401` sin sesion.
 - `/admin/habitaciones` responde protegido con redirect a `/login` sin sesion; `/login` responde `200`.
@@ -257,6 +269,7 @@ Archivos:
 - `supabase/migrations/202607090001_add_habitacion_tarifa_id.sql`
 - `supabase/migrations/202607090002_set_lapaz_timezone.sql`
 - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`
+- `supabase/migrations/202607120001_add_tarifas_peso.sql`
 
 La primera migracion agrega:
 

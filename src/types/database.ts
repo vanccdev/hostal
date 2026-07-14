@@ -7,7 +7,7 @@ export type Json =
   | Json[];
 
 export type UserRole = "admin" | "recepcionista" | "limpieza" | "cliente";
-export type HabitacionTipo = "individual" | "matrimonial" | "doble" | "triple" | "familiar";
+export type HabitacionTipo = "individual" | "matrimonial" | "individual doble" | "triple" | "familiar";
 export type TipoDocumento = "CI" | "Pasaporte" | "DNI" | "RUC" | "Otro";
 export type TemporadaTarifa = "alta" | "baja" | "normal";
 export type ReservaCanal = "whatsapp" | "recepcion" | "walkin" | "web";
@@ -68,6 +68,7 @@ export type Tarifa = {
   habitacion_tipo: HabitacionTipo;
   temporada: TemporadaTarifa;
   precio_noche: number;
+  peso: number;
   moneda: string | null;
   vigente_desde: string;
   vigente_hasta: string | null;

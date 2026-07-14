@@ -3,15 +3,15 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { BedDouble, CalendarDays, ImageIcon, Users } from "lucide-react";
+import { BedDouble, ImageIcon, Users } from "lucide-react";
 import { DatePickerField } from "@/components/forms/DatePickerField";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
+import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
-import type { Habitacion, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
+import type { Habitacion, HabitacionTipo, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
 
 type RoomImage = Pick<ImgHabitacion, "id" | "habitacion_id" | "url">;
 type RoomBlock = {
@@ -60,6 +60,16 @@ const overlaps = (start: string, end: string, targetStart: string, targetEnd: st
 
 const stringValue = (value: unknown) => (typeof value === "string" ? value : "");
 
+const roomTypeOrder: HabitacionTipo[] = ["individual", "matrimonial", "individual doble", "triple", "familiar"];
+
+const roomTypeLabel: Record<HabitacionTipo, string> = {
+  individual: "Individual",
+  matrimonial: "Matrimonial",
+  "individual doble": "Individual doble",
+  triple: "Triple",
+  familiar: "Familiar",
+};
+
 export const PublicBookingCatalog = ({
   habitaciones,
   tarifas,
@@ -84,15 +94,33 @@ export const PublicBookingCatalog = ({
 
     return grouped;
   }, [imagenes]);
-  const tarifaByRoom = useMemo(() => {
-    const byRoom = new Map<string, Tarifa>();
+  const roomGroups = useMemo(() => {
+    const grouped = new Map<HabitacionTipo, Habitacion[]>();
+
+    for (const type of roomTypeOrder) {
+      grouped.set(type, []);
+    }
 
     for (const habitacion of habitaciones) {
-      const assignedTarifa = tarifas.find((tarifa) => tarifa.activa !== false && tarifa.id === habitacion.tarifa_id);
-      const legacyTarifa = tarifas.find(
-        (tarifa) => tarifa.activa !== false && tarifa.habitacion_tipo === habitacion.tipo,
-      );
-      const tarifa = assignedTarifa ?? legacyTarifa;
+      const rooms = grouped.get(habitacion.tipo) ?? [];
+      rooms.push(habitacion);
+      grouped.set(habitacion.tipo, rooms);
+    }
+
+    return roomTypeOrder
+      .map((type) => ({
+        type,
+        habitaciones: grouped.get(type) ?? [],
+      }))
+      .filter((group) => group.habitaciones.length > 0);
+  }, [habitaciones]);
+  const groupedRooms = useMemo(() => roomGroups.flatMap((group) => group.habitaciones), [roomGroups]);
+  const tarifaByRoom = useMemo(() => {
+    const byRoom = new Map<string, Tarifa>();
+    const today = localISODate();
+
+    for (const habitacion of habitaciones) {
+      const tarifa = selectTarifaActualParaHabitacion(habitacion, tarifas, today);
 
       if (tarifa) {
         byRoom.set(habitacion.id, tarifa);
@@ -131,20 +159,16 @@ export const PublicBookingCatalog = ({
     });
   };
   const selectedRoom = habitaciones.find((habitacion) => habitacion.id === habitacionId) ?? null;
-  const selectedTarifa = selectedRoom ? tarifaByRoom.get(selectedRoom.id) ?? null : null;
-  const unavailable = selectedRoom ? isRoomUnavailable(selectedRoom.id, fechaIngreso, fechaSalida) : false;
-  const selectedRoomInactive = selectedRoom?.activa === false;
-  const canContinue = Boolean(selectedRoom && selectedTarifa && nights > 0 && !unavailable && !selectedRoomInactive);
 
-  const continueReservation = () => {
-    if (!canContinue) {
+  const continueReservation = (nextHabitacionId = habitacionId) => {
+    if (!nextHabitacionId) {
       return;
     }
 
     window.sessionStorage.setItem(
       pendingReservationStorageKey,
       JSON.stringify({
-        habitacionId,
+        habitacionId: nextHabitacionId,
         fechaIngreso,
         fechaSalida,
       }),
@@ -153,7 +177,7 @@ export const PublicBookingCatalog = ({
   };
 
   return (
-    <section id="habitaciones" className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+    <section id="habitaciones" className="mx-auto max-w-7xl scroll-mt-20 space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-[#d8d4c8] bg-white p-4 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
         <div className="grid gap-4 md:grid-cols-[minmax(0,34rem)_auto] md:items-end md:justify-between">
           <div className="space-y-2">
@@ -187,10 +211,9 @@ export const PublicBookingCatalog = ({
               </div>
             </div>
           </div>
-          <Button type="button" className="h-12" disabled={!canContinue} onClick={continueReservation}>
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            Reservar
-          </Button>
+          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
+            Selecciona una habitación para iniciar sesión o crear tu cuenta y continuar la reserva.
+          </p>
         </div>
       </div>
 
@@ -205,7 +228,7 @@ export const PublicBookingCatalog = ({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {habitaciones.map((habitacion, index) => {
+        {groupedRooms.map((habitacion, index) => {
           const tarifa = tarifaByRoom.get(habitacion.id) ?? null;
           const roomImages = imagesByRoom.get(habitacion.id) ?? [];
           const image = roomImages[0];
@@ -220,7 +243,10 @@ export const PublicBookingCatalog = ({
               type="button"
               aria-pressed={selected}
               disabled={disabled}
-              onClick={() => setHabitacionId(habitacion.id)}
+              onClick={() => {
+                setHabitacionId(habitacion.id);
+                continueReservation(habitacion.id);
+              }}
               className={cn(
                 "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
                 selected ? "border-[#c7a35a] ring-2 ring-[#c7a35a]" : "border-[#d8d4c8] dark:border-[#314237]",
@@ -242,19 +268,13 @@ export const PublicBookingCatalog = ({
                     <ImageIcon className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
-                <div className="absolute left-3 top-3 flex gap-2">
-                  <Badge variant={roomUnavailable || inactive ? "destructive" : "default"}>
-                    {inactive ? "Inactiva" : roomUnavailable ? "Ocupada" : "Disponible"}
-                  </Badge>
-                  {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
-                </div>
               </div>
 
               <div className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
-                    <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.tipo}</p>
+                    <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{roomTypeLabel[habitacion.tipo]}</p>
                   </div>
                   {tarifa ? (
                     <div className="text-right">

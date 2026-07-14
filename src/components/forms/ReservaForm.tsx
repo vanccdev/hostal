@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { BedDouble, CalendarCheck, CalendarPlus, CheckCircle2, ImageIcon, Users, XCircle } from "lucide-react";
 import { createClientReservation, createStaffReservation } from "@/app/actions/reservas";
 import { initialActionState } from "@/app/actions/types";
+import { ActionToast } from "@/components/forms/ActionToast";
 import { DatePickerField } from "@/components/forms/DatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
+import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
-import type { Habitacion, Huesped, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
+import type { Habitacion, HabitacionTipo, Huesped, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
 
 type RoomImage = Pick<ImgHabitacion, "id" | "habitacion_id" | "url">;
 type RoomBlock = {
@@ -33,6 +35,7 @@ type ReservaFormProps = {
   imagenes?: RoomImage[];
   reservas?: Pick<Reserva, "id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida" | "estado">[];
   bloqueos?: RoomBlock[];
+  scrollTargetId?: string;
 };
 
 const addDays = (date: string, days: number) => {
@@ -64,6 +67,17 @@ const overlaps = (start: string, end: string, targetStart: string, targetEnd: st
   start < targetEnd && end > targetStart;
 
 const stringValue = (value: unknown) => (typeof value === "string" ? value : "");
+
+const roomTypeOrder: HabitacionTipo[] = ["individual", "matrimonial", "individual doble", "triple", "familiar"];
+
+const roomTypeLabel: Record<HabitacionTipo, string> = {
+  individual: "Individual",
+  matrimonial: "Matrimonial",
+  "individual doble": "Individual doble",
+  triple: "Triple",
+  familiar: "Familiar",
+};
+
 const isPendingReservation = (value: unknown): value is {
   habitacionId: string;
   fechaIngreso: string;
@@ -90,12 +104,15 @@ export const ReservaForm = ({
   imagenes = [],
   reservas = [],
   bloqueos = [],
+  scrollTargetId,
 }: ReservaFormProps) => {
   const action = mode === "cliente" ? createClientReservation : createStaffReservation;
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const [habitacionId, setHabitacionId] = useState("");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
+  const roomsSectionRef = useRef<HTMLDivElement | null>(null);
+  const shouldScrollToSelectedRoom = useRef(false);
   const nights = nightsBetween(fechaIngreso, fechaSalida);
   const selectedRoom = useMemo(
     () => habitaciones.find((habitacion) => habitacion.id === habitacionId) ?? null,
@@ -112,15 +129,32 @@ export const ReservaForm = ({
 
     return grouped;
   }, [imagenes]);
-  const tarifaByRoom = useMemo(() => {
-    const byRoom = new Map<string, Tarifa>();
+  const roomGroups = useMemo(() => {
+    const grouped = new Map<HabitacionTipo, Habitacion[]>();
+
+    for (const type of roomTypeOrder) {
+      grouped.set(type, []);
+    }
 
     for (const habitacion of habitaciones) {
-      const assignedTarifa = tarifas.find((tarifa) => tarifa.activa !== false && tarifa.id === habitacion.tarifa_id);
-      const legacyTarifa = tarifas.find(
-        (tarifa) => tarifa.activa !== false && tarifa.habitacion_tipo === habitacion.tipo,
-      );
-      const tarifa = assignedTarifa ?? legacyTarifa;
+      const rooms = grouped.get(habitacion.tipo) ?? [];
+      rooms.push(habitacion);
+      grouped.set(habitacion.tipo, rooms);
+    }
+
+    return roomTypeOrder
+      .map((type) => ({
+        type,
+        habitaciones: grouped.get(type) ?? [],
+      }))
+      .filter((group) => group.habitaciones.length > 0);
+  }, [habitaciones]);
+  const tarifaByRoom = useMemo(() => {
+    const byRoom = new Map<string, Tarifa>();
+    const today = localISODate();
+
+    for (const habitacion of habitaciones) {
+      const tarifa = selectTarifaActualParaHabitacion(habitacion, tarifas, today);
 
       if (tarifa) {
         byRoom.set(habitacion.id, tarifa);
@@ -161,7 +195,20 @@ export const ReservaForm = ({
   const selectedTarifa = selectedRoom ? tarifaByRoom.get(selectedRoom.id) ?? null : null;
   const selectedRoomUnavailable = selectedRoom ? isRoomUnavailable(selectedRoom.id, fechaIngreso, fechaSalida) : false;
   const selectedRoomInactive = selectedRoom?.activa === false;
+  const hasSelectedDateRange = nights > 0;
   const canSubmit = Boolean(selectedRoom && selectedTarifa && nights > 0 && !selectedRoomUnavailable && !selectedRoomInactive);
+  const visibleRoomGroups = useMemo(
+    () =>
+      roomGroups
+        .map((group) => ({
+          ...group,
+          habitaciones: selectedRoom
+            ? group.habitaciones.filter((habitacion) => habitacion.id !== selectedRoom.id)
+            : group.habitaciones,
+        }))
+        .filter((group) => group.habitaciones.length > 0),
+    [roomGroups, selectedRoom],
+  );
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -198,6 +245,133 @@ export const ReservaForm = ({
     };
   }, [habitaciones]);
 
+  useEffect(() => {
+    if (!selectedRoom || !shouldScrollToSelectedRoom.current) {
+      return;
+    }
+
+    shouldScrollToSelectedRoom.current = false;
+    const scrollTarget = scrollTargetId ? document.getElementById(scrollTargetId) : null;
+
+    (scrollTarget ?? roomsSectionRef.current)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [scrollTargetId, selectedRoom]);
+
+  const selectRoom = (nextHabitacionId: string) => {
+    shouldScrollToSelectedRoom.current = true;
+    setHabitacionId(nextHabitacionId);
+  };
+
+  const renderRoomCard = (habitacion: Habitacion, index: number) => {
+    const tarifa = tarifaByRoom.get(habitacion.id) ?? null;
+    const roomImages = imagesByRoom.get(habitacion.id) ?? [];
+    const image = roomImages[0];
+    const selected = habitacion.id === selectedRoom?.id;
+    const unavailable = isRoomUnavailable(habitacion.id, fechaIngreso, fechaSalida);
+    const inactive = habitacion.activa === false;
+    const disabled = !tarifa || unavailable || inactive;
+
+    return (
+      <button
+        key={habitacion.id}
+        type="button"
+        aria-pressed={selected}
+        disabled={disabled}
+        onClick={() => selectRoom(habitacion.id)}
+        className={cn(
+          "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
+          selected
+            ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
+            : "border-[#d8d4c8] dark:border-[#314237]",
+        )}
+      >
+        <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+          {image ? (
+            <Image
+              src={image.url}
+              alt={`Habitación ${habitacion.numero}`}
+              fill
+              sizes="(min-width: 1280px) 280px, (min-width: 640px) 45vw, 100vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              priority={index < 2}
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
+              <ImageIcon className="h-8 w-8" aria-hidden="true" />
+            </div>
+          )}
+          <div className="absolute left-3 top-3 flex gap-2">
+            {inactive || hasSelectedDateRange ? (
+              <Badge variant={unavailable || inactive ? "destructive" : "default"}>
+                {inactive ? "Inactiva" : unavailable ? "Ocupada" : "Disponible"}
+              </Badge>
+            ) : null}
+            {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
+          </div>
+        </div>
+
+        <div className="space-y-3 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
+              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{roomTypeLabel[habitacion.tipo]}</p>
+            </div>
+            {selected ? <CheckCircle2 className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" /> : null}
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+              {habitacion.capacidad_max} huéspedes
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <BedDouble className="h-3.5 w-3.5" aria-hidden="true" />
+              Piso {habitacion.piso}
+            </span>
+          </div>
+
+          {habitacion.descripcion ? (
+            <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
+          ) : null}
+
+          <div className="flex items-end justify-between gap-3">
+            {tarifa ? (
+              <div>
+                <p className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">
+                  {tarifa.precio_noche} {tarifa.moneda}
+                </p>
+                <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">por noche · {tarifa.temporada}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin tarifa activa</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {availabilityDays(habitacion.id).map((day) => (
+              <div
+                key={day.date}
+                className={cn(
+                  "rounded-lg border px-1 py-1.5 text-center text-[0.68rem] leading-tight",
+                  day.available
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                    : "border-zinc-200 bg-zinc-100 text-zinc-400 line-through dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500",
+                )}
+                title={`${formatDate(day.date)} ${day.available ? "disponible" : "no disponible"}`}
+              >
+                <span className="block uppercase">{formatWeekday(day.date)}</span>
+                <span className="block font-semibold">{new Date(`${day.date}T00:00:00`).getDate()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <form
       action={formAction}
@@ -208,6 +382,11 @@ export const ReservaForm = ({
         }
       }}
     >
+      <ActionToast
+        state={state}
+        successTitle="Reserva creada"
+        errorTitle={mode === "staff" ? "No se pudo crear la reserva" : "No se pudo completar la reserva"}
+      />
       {mode === "staff" ? (
         <div className="space-y-2">
           <Label htmlFor="huespedId">Huésped</Label>
@@ -267,7 +446,7 @@ export const ReservaForm = ({
       <input name="tarifaId" type="hidden" value={selectedTarifa?.id ?? ""} readOnly />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-4">
+        <div ref={roomsSectionRef} className="scroll-mt-4 space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones disponibles</h2>
@@ -278,114 +457,33 @@ export const ReservaForm = ({
             {nights > 0 ? <Badge variant="secondary">{nights} noches</Badge> : null}
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {habitaciones.map((habitacion, index) => {
-              const tarifa = tarifaByRoom.get(habitacion.id) ?? null;
-              const roomImages = imagesByRoom.get(habitacion.id) ?? [];
-              const image = roomImages[0];
-              const selected = habitacion.id === selectedRoom?.id;
-              const unavailable = isRoomUnavailable(habitacion.id, fechaIngreso, fechaSalida);
-              const inactive = habitacion.activa === false;
-              const disabled = !tarifa || unavailable || inactive;
+          <div className="space-y-8">
+            {selectedRoom ? (
+              <section className="space-y-3">
+                <div className="flex items-center justify-between gap-3 border-b border-[#d8d4c8] pb-2 dark:border-[#314237]">
+                  <h3 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">Habitación seleccionada</h3>
+                  <Badge variant="secondary">{roomTypeLabel[selectedRoom.tipo]}</Badge>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {renderRoomCard(selectedRoom, 0)}
+                </div>
+              </section>
+            ) : null}
 
-              return (
-                <button
-                  key={habitacion.id}
-                  type="button"
-                  aria-pressed={selected}
-                  disabled={disabled}
-                  onClick={() => setHabitacionId(habitacion.id)}
-                  className={cn(
-                    "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
-                    selected
-                      ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
-                      : "border-[#d8d4c8] dark:border-[#314237]",
-                  )}
-                >
-                  <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
-                    {image ? (
-                      <Image
-                        src={image.url}
-                        alt={`Habitación ${habitacion.numero}`}
-                        fill
-                        sizes="(min-width: 1280px) 280px, (min-width: 640px) 45vw, 100vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        priority={index < 2}
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
-                        <ImageIcon className="h-8 w-8" aria-hidden="true" />
-                      </div>
-                    )}
-                    <div className="absolute left-3 top-3 flex gap-2">
-                      <Badge variant={unavailable || inactive ? "destructive" : "default"}>
-                        {inactive ? "Inactiva" : unavailable ? "Ocupada" : "Disponible"}
-                      </Badge>
-                      {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
-                    </div>
-                  </div>
+            {visibleRoomGroups.map((group) => (
+              <section key={group.type} className="space-y-3">
+                <div className="flex items-center justify-between gap-3 border-b border-[#d8d4c8] pb-2 dark:border-[#314237]">
+                  <h3 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">{roomTypeLabel[group.type]}</h3>
+                  <Badge variant="outline">
+                    {group.habitaciones.length} {group.habitaciones.length === 1 ? "habitación" : "habitaciones"}
+                  </Badge>
+                </div>
 
-                  <div className="space-y-3 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">
-                          Habitación {habitacion.numero}
-                        </h3>
-                        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.tipo}</p>
-                      </div>
-                      {selected ? <CheckCircle2 className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" /> : null}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
-                      <span className="inline-flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                        {habitacion.capacidad_max} huéspedes
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <BedDouble className="h-3.5 w-3.5" aria-hidden="true" />
-                        Piso {habitacion.piso}
-                      </span>
-                    </div>
-
-                    {habitacion.descripcion ? (
-                      <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
-                    ) : null}
-
-                    <div className="flex items-end justify-between gap-3">
-                      {tarifa ? (
-                        <div>
-                          <p className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">
-                            {tarifa.precio_noche} {tarifa.moneda}
-                          </p>
-                          <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">por noche · {tarifa.temporada}</p>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin tarifa activa</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                      {availabilityDays(habitacion.id).map((day) => (
-                        <div
-                          key={day.date}
-                          className={cn(
-                            "rounded-lg border px-1 py-1.5 text-center text-[0.68rem] leading-tight",
-                            day.available
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
-                              : "border-zinc-200 bg-zinc-100 text-zinc-400 line-through dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500",
-                          )}
-                          title={`${formatDate(day.date)} ${day.available ? "disponible" : "no disponible"}`}
-                        >
-                          <span className="block uppercase">{formatWeekday(day.date)}</span>
-                          <span className="block font-semibold">{new Date(`${day.date}T00:00:00`).getDate()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {group.habitaciones.map((habitacion, index) => renderRoomCard(habitacion, index + 1))}
+                </div>
+              </section>
+            ))}
           </div>
 
           <FormMessage state={state} field="habitacionId" />

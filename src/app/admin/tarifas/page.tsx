@@ -1,10 +1,8 @@
-import { Pencil } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
+import { TarifaEditDialog } from "@/components/forms/TarifaEditDialog";
 import { TarifaForm } from "@/components/forms/TarifaForm";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
@@ -69,23 +67,7 @@ export default async function TarifasPage({ searchParams }: { searchParams: Prom
               {
                 key: "acciones",
                 header: "Acciones",
-                render: (row) => (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="sm">
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                        Editar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Editar tarifa</DialogTitle>
-                        <DialogDescription>Actualiza la tarifa sin salir del listado.</DialogDescription>
-                      </DialogHeader>
-                      <TarifaForm tarifa={row} />
-                    </DialogContent>
-                  </Dialog>
-                ),
+                render: (row) => <TarifaEditDialog tarifa={row} />,
               },
             ]}
           />

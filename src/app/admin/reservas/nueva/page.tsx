@@ -10,7 +10,7 @@ export default async function NuevaReservaAdminPage() {
     supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
     supabase
       .from("tarifas")
-      .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
       .eq("activa", true)
       .order("habitacion_tipo"),
     supabase
@@ -39,7 +39,7 @@ export default async function NuevaReservaAdminPage() {
         <h1 className="text-2xl font-semibold">Nueva reserva</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Selecciona un huésped existente para no duplicar cuentas.</p>
       </div>
-      <Card>
+      <Card id="datos-de-reserva" className="scroll-mt-4">
         <CardHeader>
           <CardTitle>Datos de reserva</CardTitle>
         </CardHeader>
@@ -52,6 +52,7 @@ export default async function NuevaReservaAdminPage() {
             imagenes={imagenes ?? []}
             reservas={reservas ?? []}
             bloqueos={bloqueos ?? []}
+            scrollTargetId="datos-de-reserva"
           />
         </CardContent>
       </Card>

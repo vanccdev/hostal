@@ -1,10 +1,8 @@
-import { Pencil } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
+import { HuespedEditDialog } from "@/components/forms/HuespedEditDialog";
 import { HuespedForm } from "@/components/forms/HuespedForm";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
@@ -69,23 +67,7 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
               {
                 key: "acciones",
                 header: "Acciones",
-                render: (row) => (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="sm">
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                        Editar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Editar huésped</DialogTitle>
-                        <DialogDescription>Actualiza los datos del huésped sin salir del listado.</DialogDescription>
-                      </DialogHeader>
-                      <HuespedForm huesped={row} />
-                    </DialogContent>
-                  </Dialog>
-                ),
+                render: (row) => <HuespedEditDialog huesped={row} />,
               },
             ]}
           />

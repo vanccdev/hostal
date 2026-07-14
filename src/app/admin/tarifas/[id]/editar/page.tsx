@@ -13,7 +13,7 @@ export default async function EditarTarifaPage({ params }: { params: Promise<{ i
   const { data: tarifa } = await supabase
     .from("tarifas")
     .select(
-      "id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at",
+      "id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at",
     )
     .eq("id", id)
     .maybeSingle();

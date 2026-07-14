@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ThemeToggle />
           {children}
+          <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
     </html>
