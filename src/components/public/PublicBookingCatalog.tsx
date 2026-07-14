@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BedDouble, ImageIcon, Users } from "lucide-react";
 import { DatePickerField } from "@/components/forms/DatePickerField";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
+import { getRoomAvailabilityStatus, intervalsOverlap } from "@/lib/room-availability";
+import { defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
 import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
 import type { Habitacion, HabitacionTipo, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
@@ -20,14 +22,19 @@ type RoomBlock = {
   fecha_inicio?: unknown;
   fecha_fin?: unknown;
 };
+type RoomReservation = Pick<
+  Reserva,
+  "id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida" | "estado" | "checkin_programado_at" | "checkout_programado_at"
+>;
 
 type PublicBookingCatalogProps = {
   habitaciones: Habitacion[];
   tarifas: Tarifa[];
   imagenes: RoomImage[];
-  reservas: Pick<Reserva, "id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida" | "estado">[];
+  reservas: RoomReservation[];
   bloqueos: RoomBlock[];
   continueHref: string;
+  staySettings?: StaySettings;
 };
 
 const addDays = (date: string, days: number) => {
@@ -77,12 +84,15 @@ export const PublicBookingCatalog = ({
   reservas,
   bloqueos,
   continueHref,
+  staySettings = defaultStaySettings,
 }: PublicBookingCatalogProps) => {
   const router = useRouter();
   const [habitacionId, setHabitacionId] = useState("");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
+  const [now, setNow] = useState(() => new Date());
   const nights = nightsBetween(fechaIngreso, fechaSalida);
+  const hasSelectedDateRange = nights > 0;
   const imagesByRoom = useMemo(() => {
     const grouped = new Map<string, RoomImage[]>();
 
@@ -134,8 +144,20 @@ export const PublicBookingCatalog = ({
       return false;
     }
 
+    const targetInterval = scheduledStayInterval(start, end, staySettings);
+
     return (
-      reservas.some((reserva) => reserva.habitacion_id === roomId && overlaps(reserva.fecha_ingreso, reserva.fecha_salida, start, end)) ||
+      reservas.some((reserva) => {
+        if (reserva.habitacion_id !== roomId) {
+          return false;
+        }
+
+        const fallbackInterval = scheduledStayInterval(reserva.fecha_ingreso, reserva.fecha_salida, staySettings);
+        const checkinAt = reserva.checkin_programado_at ?? fallbackInterval.checkinAt;
+        const checkoutAt = reserva.checkout_programado_at ?? fallbackInterval.checkoutAt;
+
+        return intervalsOverlap(checkinAt, checkoutAt, targetInterval.checkinAt, targetInterval.checkoutAt);
+      }) ||
       bloqueos.some((bloqueo) => {
         const blockRoomId = stringValue(bloqueo.habitacion_id);
         const fechaInicio = stringValue(bloqueo.fecha_inicio);
@@ -160,6 +182,14 @@ export const PublicBookingCatalog = ({
   };
   const selectedRoom = habitaciones.find((habitacion) => habitacion.id === habitacionId) ?? null;
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   const continueReservation = (nextHabitacionId = habitacionId) => {
     if (!nextHabitacionId) {
       return;
@@ -182,6 +212,7 @@ export const PublicBookingCatalog = ({
         <div className="grid gap-4 md:grid-cols-[minmax(0,34rem)_auto] md:items-end md:justify-between">
           <div className="space-y-2">
             <Label>Fechas</Label>
+            <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="publicFechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
@@ -233,9 +264,19 @@ export const PublicBookingCatalog = ({
           const roomImages = imagesByRoom.get(habitacion.id) ?? [];
           const image = roomImages[0];
           const selected = habitacion.id === selectedRoom?.id;
-          const roomUnavailable = isRoomUnavailable(habitacion.id, fechaIngreso, fechaSalida);
+          const availability = getRoomAvailabilityStatus({
+            roomId: habitacion.id,
+            fechaIngreso,
+            fechaSalida,
+            reservas,
+            bloqueos,
+            staySettings,
+            now,
+          });
+          const roomUnavailable = hasSelectedDateRange ? !availability.available : false;
           const inactive = habitacion.activa === false;
           const disabled = !tarifa || roomUnavailable || inactive;
+          const showAvailabilityBadge = inactive || hasSelectedDateRange || !availability.available;
 
           return (
             <button
@@ -268,6 +309,19 @@ export const PublicBookingCatalog = ({
                     <ImageIcon className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
+                <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
+                  {showAvailabilityBadge ? (
+                    inactive ? (
+                      <Badge variant="destructive">Inactiva</Badge>
+                    ) : (
+                      <Badge variant={availability.variant}>
+                        {availability.label}
+                        {availability.detail ? ` · ${availability.detail}` : ""}
+                      </Badge>
+                    )
+                  ) : null}
+                  {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
+                </div>
               </div>
 
               <div className="space-y-3 p-4">

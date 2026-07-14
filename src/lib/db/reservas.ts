@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { localISODate } from "@/lib/datetime";
+import { intervalsOverlap } from "@/lib/room-availability";
+import { getStaySettings, scheduledStayInterval, type StaySettings } from "@/lib/stay-settings";
 import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import type { Database } from "@/types/database";
 
@@ -30,10 +32,13 @@ export const assertRoomIsAvailable = async (
   habitacionId: string,
   fechaIngreso: string,
   fechaSalida: string,
+  settings?: StaySettings,
 ) => {
+  const staySettings = settings ?? await getStaySettings(supabase);
+  const targetInterval = scheduledStayInterval(fechaIngreso, fechaSalida, staySettings);
   const { data: overlappingReservations, error: reservationsError } = await supabase
     .from("reservas")
-    .select("id")
+    .select("id,fecha_ingreso,fecha_salida,checkin_programado_at,checkout_programado_at")
     .eq("habitacion_id", habitacionId)
     .in("estado", ["pendiente_pago", "confirmada", "checkin"])
     .lt("fecha_ingreso", fechaSalida)
@@ -44,7 +49,29 @@ export const assertRoomIsAvailable = async (
     throw new Error(reservationsError.message);
   }
 
-  if (overlappingReservations.length > 0) {
+  const hasOverlappingReservation = overlappingReservations.some((reservation) => {
+    const reservationInterval = {
+      checkinAt: reservation.checkin_programado_at ?? scheduledStayInterval(
+        reservation.fecha_ingreso,
+        reservation.fecha_salida,
+        staySettings,
+      ).checkinAt,
+      checkoutAt: reservation.checkout_programado_at ?? scheduledStayInterval(
+        reservation.fecha_ingreso,
+        reservation.fecha_salida,
+        staySettings,
+      ).checkoutAt,
+    };
+
+    return intervalsOverlap(
+      reservationInterval.checkinAt,
+      reservationInterval.checkoutAt,
+      targetInterval.checkinAt,
+      targetInterval.checkoutAt,
+    );
+  });
+
+  if (hasOverlappingReservation) {
     throw new Error("La habitación ya tiene una reserva en ese rango de fechas.");
   }
 

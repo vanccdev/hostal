@@ -94,6 +94,8 @@ export type Reserva = {
   motivo_ajuste: string | null;
   notas_internas: string | null;
   registrado_por: string;
+  checkin_programado_at: string | null;
+  checkout_programado_at: string | null;
   checkin_at: string | null;
   checkout_at: string | null;
   created_at: string;

@@ -8,6 +8,7 @@ import { writeAuditLog } from "@/lib/db/audit";
 import { localISODate } from "@/lib/datetime";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { isManagementRole } from "@/lib/permissions";
+import { getStaySettings, scheduledStayInterval } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { reservaClienteSchema, reservaStaffSchema } from "@/schemas/reservas";
 import type { ActionState } from "@/app/actions/types";
@@ -57,11 +58,14 @@ export const createClientReservation = async (
 
   try {
     const nights = assertReservationDates(parsed.data.fechaIngreso, parsed.data.fechaSalida);
+    const staySettings = await getStaySettings(admin);
+    const stayInterval = scheduledStayInterval(parsed.data.fechaIngreso, parsed.data.fechaSalida, staySettings);
     await assertRoomIsAvailable(
       admin,
       parsed.data.habitacionId,
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
+      staySettings,
     );
     const total = await calculateReservationPrice(admin, parsed.data.tarifaId, parsed.data.habitacionId, nights);
 
@@ -74,6 +78,8 @@ export const createClientReservation = async (
         tarifa_id: parsed.data.tarifaId,
         fecha_ingreso: parsed.data.fechaIngreso,
         fecha_salida: parsed.data.fechaSalida,
+        checkin_programado_at: stayInterval.checkinAt,
+        checkout_programado_at: stayInterval.checkoutAt,
         num_noches: nights,
         num_huespedes: 1,
         canal_origen: "web",
@@ -137,11 +143,14 @@ export const createStaffReservation = async (
 
   try {
     const nights = assertReservationDates(parsed.data.fechaIngreso, parsed.data.fechaSalida);
+    const staySettings = await getStaySettings(admin);
+    const stayInterval = scheduledStayInterval(parsed.data.fechaIngreso, parsed.data.fechaSalida, staySettings);
     await assertRoomIsAvailable(
       admin,
       parsed.data.habitacionId,
       parsed.data.fechaIngreso,
       parsed.data.fechaSalida,
+      staySettings,
     );
     const total = await calculateReservationPrice(admin, parsed.data.tarifaId, parsed.data.habitacionId, nights);
 
@@ -154,6 +163,8 @@ export const createStaffReservation = async (
         tarifa_id: parsed.data.tarifaId,
         fecha_ingreso: parsed.data.fechaIngreso,
         fecha_salida: parsed.data.fechaSalida,
+        checkin_programado_at: stayInterval.checkinAt,
+        checkout_programado_at: stayInterval.checkoutAt,
         num_noches: nights,
         num_huespedes: 1,
         canal_origen: "recepcion",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { calculateTurnoverMinutes } from "@/lib/stay-settings";
 
 const tipoDocumentoSchema = z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"]).optional().or(z.literal(""));
 
@@ -34,6 +35,17 @@ export const tarifaSchema = z.object({
   activa: z.coerce.boolean().default(true),
 });
 
+export const staySettingsSchema = z
+  .object({
+    checkinTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora de check-in inválida"),
+    checkoutTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora de check-out inválida"),
+  })
+  .refine((value) => calculateTurnoverMinutes(value.checkoutTime, value.checkinTime) >= 1, {
+    path: ["checkinTime"],
+    message: "El check-in debe ser posterior al check-out por al menos 1 minuto.",
+  });
+
 export type HabitacionInput = z.infer<typeof habitacionSchema>;
 export type HuespedInput = z.infer<typeof huespedSchema>;
 export type TarifaInput = z.infer<typeof tarifaSchema>;
+export type StaySettingsInput = z.infer<typeof staySettingsSchema>;

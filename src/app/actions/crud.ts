@@ -1,9 +1,12 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canAccessAdminModule, isManagementRole } from "@/lib/permissions";
-import { habitacionSchema, huespedSchema, tarifaSchema } from "@/schemas/crud";
+import { APP_TIME_ZONE } from "@/lib/datetime";
+import { calculateTurnoverMinutes, staySettingKeys } from "@/lib/stay-settings";
+import { habitacionSchema, huespedSchema, staySettingsSchema, tarifaSchema } from "@/schemas/crud";
 import type { ActionState } from "@/app/actions/types";
 import { formValue, validationErrors } from "@/app/actions/helpers";
 
@@ -284,4 +287,57 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
   }
 
   return { ok: true, message: "Tarifa guardada." };
+};
+
+export const updateStaySettingsAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "configuracion")) {
+    return { ok: false, message: "Solo admin puede gestionar la configuración." };
+  }
+
+  const parsed = staySettingsSchema.safeParse({
+    checkinTime: formValue(formData, "checkinTime"),
+    checkoutTime: formValue(formData, "checkoutTime"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, errors: validationErrors(parsed.error) };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const rows = [
+    {
+      clave: staySettingKeys.checkinTime,
+      valor: parsed.data.checkinTime,
+      descripcion: "Hora estándar desde la que el huésped puede ocupar la habitación.",
+    },
+    {
+      clave: staySettingKeys.checkoutTime,
+      valor: parsed.data.checkoutTime,
+      descripcion: "Hora límite en la que el huésped debe desocupar la habitación.",
+    },
+    {
+      clave: staySettingKeys.turnoverMinutes,
+      valor: String(calculateTurnoverMinutes(parsed.data.checkoutTime, parsed.data.checkinTime)),
+      descripcion: "Minutos calculados automáticamente entre check-out y nuevo check-in para limpieza/preparación.",
+    },
+    {
+      clave: staySettingKeys.timezone,
+      valor: APP_TIME_ZONE,
+      descripcion: "Zona horaria operativa fija para Bolivia.",
+    },
+  ];
+
+  const { error } = await admin
+    .from("configuracion_hostal")
+    .upsert(rows, { onConflict: "clave" });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/admin/configuracion");
+
+  return { ok: true, message: "Configuración de estadía guardada." };
 };

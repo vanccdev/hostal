@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
-import { formatDate } from "@/lib/datetime";
+import { formatDate, formatDateTime } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -18,7 +18,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
   const supabase = createSupabaseAdminClient();
   const { data: reserva } = await supabase
     .from("reservas")
-    .select("id,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,precio_total,estado,created_at")
+    .select("id,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,precio_total,estado,checkin_programado_at,checkout_programado_at,created_at")
     .eq("id", id)
     .eq("huesped_id", guest.id)
     .maybeSingle();
@@ -43,6 +43,8 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
           <p>Noches: {reserva.num_noches}</p>
           <p>Total: {reserva.precio_total}</p>
           <p>Habitación: {reserva.habitacion_id}</p>
+          <p>Check-in programado: {formatDateTime(reserva.checkin_programado_at)}</p>
+          <p>Check-out programado: {formatDateTime(reserva.checkout_programado_at)}</p>
           <p>
             Estado: <Badge variant="secondary">{reserva.estado}</Badge>
           </p>

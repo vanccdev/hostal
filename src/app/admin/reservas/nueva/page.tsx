@@ -1,12 +1,13 @@
 import { ReservaForm } from "@/components/forms/ReservaForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
+import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function NuevaReservaAdminPage() {
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
-  const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }, { data: reservas }, { data: bloqueos }] = await Promise.all([
+  const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }, { data: reservas }, { data: bloqueos }, staySettings] = await Promise.all([
     supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
     supabase
       .from("tarifas")
@@ -19,9 +20,10 @@ export default async function NuevaReservaAdminPage() {
       .order("nombre_completo"),
     supabase
       .from("reservas")
-      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado")
+      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado,checkin_programado_at,checkout_programado_at")
       .in("estado", ["pendiente_pago", "confirmada", "checkin"]),
     supabase.from("bloqueos_fechas").select("id,habitacion_id,fecha_inicio,fecha_fin"),
+    getStaySettings(supabase),
   ]);
   const habitacionIds = (habitaciones ?? []).map((habitacion) => habitacion.id);
   const { data: imagenes } =
@@ -52,6 +54,7 @@ export default async function NuevaReservaAdminPage() {
             imagenes={imagenes ?? []}
             reservas={reservas ?? []}
             bloqueos={bloqueos ?? []}
+            staySettings={staySettings}
             scrollTargetId="datos-de-reserva"
           />
         </CardContent>

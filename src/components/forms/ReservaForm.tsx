@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
+import { getRoomAvailabilityStatus, intervalsOverlap } from "@/lib/room-availability";
+import { defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
 import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
 import type { Habitacion, HabitacionTipo, Huesped, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
@@ -26,6 +28,10 @@ type RoomBlock = {
   fecha_inicio?: unknown;
   fecha_fin?: unknown;
 };
+type RoomReservation = Pick<
+  Reserva,
+  "id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida" | "estado" | "checkin_programado_at" | "checkout_programado_at"
+>;
 
 type ReservaFormProps = {
   mode: "cliente" | "staff";
@@ -33,8 +39,9 @@ type ReservaFormProps = {
   tarifas: Tarifa[];
   huespedes?: Huesped[];
   imagenes?: RoomImage[];
-  reservas?: Pick<Reserva, "id" | "habitacion_id" | "fecha_ingreso" | "fecha_salida" | "estado">[];
+  reservas?: RoomReservation[];
   bloqueos?: RoomBlock[];
+  staySettings?: StaySettings;
   scrollTargetId?: string;
 };
 
@@ -104,6 +111,7 @@ export const ReservaForm = ({
   imagenes = [],
   reservas = [],
   bloqueos = [],
+  staySettings = defaultStaySettings,
   scrollTargetId,
 }: ReservaFormProps) => {
   const action = mode === "cliente" ? createClientReservation : createStaffReservation;
@@ -111,6 +119,7 @@ export const ReservaForm = ({
   const [habitacionId, setHabitacionId] = useState("");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
+  const [now, setNow] = useState(() => new Date());
   const roomsSectionRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollToSelectedRoom = useRef(false);
   const nights = nightsBetween(fechaIngreso, fechaSalida);
@@ -168,8 +177,20 @@ export const ReservaForm = ({
       return false;
     }
 
+    const targetInterval = scheduledStayInterval(start, end, staySettings);
+
     return (
-      reservas.some((reserva) => reserva.habitacion_id === roomId && overlaps(reserva.fecha_ingreso, reserva.fecha_salida, start, end)) ||
+      reservas.some((reserva) => {
+        if (reserva.habitacion_id !== roomId) {
+          return false;
+        }
+
+        const fallbackInterval = scheduledStayInterval(reserva.fecha_ingreso, reserva.fecha_salida, staySettings);
+        const checkinAt = reserva.checkin_programado_at ?? fallbackInterval.checkinAt;
+        const checkoutAt = reserva.checkout_programado_at ?? fallbackInterval.checkoutAt;
+
+        return intervalsOverlap(checkinAt, checkoutAt, targetInterval.checkinAt, targetInterval.checkoutAt);
+      }) ||
       bloqueos.some((bloqueo) => {
         const habitacionId = stringValue(bloqueo.habitacion_id);
         const fechaInicio = stringValue(bloqueo.fecha_inicio);
@@ -209,6 +230,14 @@ export const ReservaForm = ({
         .filter((group) => group.habitaciones.length > 0),
     [roomGroups, selectedRoom],
   );
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -269,9 +298,19 @@ export const ReservaForm = ({
     const roomImages = imagesByRoom.get(habitacion.id) ?? [];
     const image = roomImages[0];
     const selected = habitacion.id === selectedRoom?.id;
-    const unavailable = isRoomUnavailable(habitacion.id, fechaIngreso, fechaSalida);
+    const availability = getRoomAvailabilityStatus({
+      roomId: habitacion.id,
+      fechaIngreso,
+      fechaSalida,
+      reservas,
+      bloqueos,
+      staySettings,
+      now,
+    });
+    const unavailable = hasSelectedDateRange ? !availability.available : false;
     const inactive = habitacion.activa === false;
     const disabled = !tarifa || unavailable || inactive;
+    const showAvailabilityBadge = inactive || hasSelectedDateRange || !availability.available;
 
     return (
       <button
@@ -303,11 +342,16 @@ export const ReservaForm = ({
               <ImageIcon className="h-8 w-8" aria-hidden="true" />
             </div>
           )}
-          <div className="absolute left-3 top-3 flex gap-2">
-            {inactive || hasSelectedDateRange ? (
-              <Badge variant={unavailable || inactive ? "destructive" : "default"}>
-                {inactive ? "Inactiva" : unavailable ? "Ocupada" : "Disponible"}
-              </Badge>
+          <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
+            {showAvailabilityBadge ? (
+              inactive ? (
+                <Badge variant="destructive">Inactiva</Badge>
+              ) : (
+                <Badge variant={availability.variant}>
+                  {availability.label}
+                  {availability.detail ? ` · ${availability.detail}` : ""}
+                </Badge>
+              )
             ) : null}
             {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
           </div>
@@ -408,6 +452,7 @@ export const ReservaForm = ({
 
       <div className="max-w-2xl space-y-2">
         <Label>Fechas</Label>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="fechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
@@ -508,6 +553,12 @@ export const ReservaForm = ({
                 <span className="text-[#66736a] dark:text-[#b7c0b4]">Fechas</span>
                 <span className="text-right font-semibold text-[#18221b] dark:text-zinc-100">
                   {fechaIngreso && fechaSalida ? `${formatDate(fechaIngreso)} - ${formatDate(fechaSalida)}` : "Pendiente"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Horarios</span>
+                <span className="text-right font-semibold text-[#18221b] dark:text-zinc-100">
+                  {staySettings.checkinTime} / {staySettings.checkoutTime}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPathByRole } from "@/lib/auth/redirect-by-role";
 import { isStaffRole } from "@/lib/permissions";
+import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function Home() {
@@ -20,6 +21,7 @@ export default async function Home() {
     { data: tarifas },
     { data: reservas },
     { data: bloqueos },
+    staySettings,
   ] = await Promise.all([
     supabase
       .from("habitaciones")
@@ -37,11 +39,12 @@ export default async function Home() {
       .order("habitacion_tipo"),
     supabase
       .from("reservas")
-      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado")
+      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado,checkin_programado_at,checkout_programado_at")
       .in("estado", ["pendiente_pago", "confirmada", "checkin"]),
     supabase
       .from("bloqueos_fechas")
       .select("id,habitacion_id,fecha_inicio,fecha_fin"),
+    getStaySettings(supabase),
   ]);
   const habitacionIds = (habitaciones ?? []).map((habitacion) => habitacion.id);
   const { data: imagenes } =
@@ -140,6 +143,7 @@ export default async function Home() {
         reservas={reservas ?? []}
         bloqueos={bloqueos ?? []}
         continueHref={continueHref}
+        staySettings={staySettings}
       />
       <section
         id="ubicacion"
