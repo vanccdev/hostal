@@ -7,6 +7,7 @@ export const staySettingKeys = {
   checkoutTime: "reserva_checkout_hora",
   turnoverMinutes: "reserva_turnover_minutos",
   timezone: "reserva_timezone",
+  paymentProofTimeoutMinutes: "reserva_comprobante_espera_minutos",
 } as const;
 
 export type StaySettings = {
@@ -14,6 +15,7 @@ export type StaySettings = {
   checkoutTime: string;
   turnoverMinutes: number;
   timezone: string;
+  paymentProofTimeoutMinutes: number;
 };
 
 export const defaultStaySettings: StaySettings = {
@@ -21,6 +23,7 @@ export const defaultStaySettings: StaySettings = {
   checkoutTime: "12:00",
   turnoverMinutes: 120,
   timezone: APP_TIME_ZONE,
+  paymentProofTimeoutMinutes: 120,
 };
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -43,6 +46,12 @@ export const calculateTurnoverMinutes = (checkoutTime: string, checkinTime: stri
 
 export const hasValidStaySchedule = (checkoutTime: string, checkinTime: string) =>
   calculateTurnoverMinutes(checkoutTime, checkinTime) >= 1;
+
+const validTimeoutMinutes = (value: string | undefined, fallback: number) => {
+  const minutes = Number(value);
+
+  return Number.isInteger(minutes) && minutes >= 0 && minutes <= 10_080 ? minutes : fallback;
+};
 
 export const getStaySettings = async (supabase: SupabaseClient<Database>): Promise<StaySettings> => {
   const { data, error } = await supabase
@@ -67,6 +76,10 @@ export const getStaySettings = async (supabase: SupabaseClient<Database>): Promi
       ? calculateTurnoverMinutes(checkoutTime, checkinTime)
       : defaultStaySettings.turnoverMinutes,
     timezone: APP_TIME_ZONE,
+    paymentProofTimeoutMinutes: validTimeoutMinutes(
+      values.get(staySettingKeys.paymentProofTimeoutMinutes),
+      defaultStaySettings.paymentProofTimeoutMinutes,
+    ),
   };
 };
 

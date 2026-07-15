@@ -39,6 +39,11 @@ export const staySettingsSchema = z
   .object({
     checkinTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora de check-in inválida"),
     checkoutTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora de check-out inválida"),
+    paymentProofTimeoutMinutes: z.coerce
+      .number()
+      .int("Ingresa minutos completos")
+      .min(0, "Usa 0 para desactivar o un tiempo válido")
+      .max(10080, "El máximo es 10080 minutos"),
   })
   .refine((value) => calculateTurnoverMinutes(value.checkoutTime, value.checkinTime) >= 1, {
     path: ["checkinTime"],

@@ -299,6 +299,7 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
   const parsed = staySettingsSchema.safeParse({
     checkinTime: formValue(formData, "checkinTime"),
     checkoutTime: formValue(formData, "checkoutTime"),
+    paymentProofTimeoutMinutes: formValue(formData, "paymentProofTimeoutMinutes"),
   });
 
   if (!parsed.success) {
@@ -326,6 +327,11 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
       clave: staySettingKeys.timezone,
       valor: APP_TIME_ZONE,
       descripcion: "Zona horaria operativa fija para Bolivia.",
+    },
+    {
+      clave: staySettingKeys.paymentProofTimeoutMinutes,
+      valor: String(parsed.data.paymentProofTimeoutMinutes),
+      descripcion: "Minutos de espera para recibir comprobante antes de cancelar automáticamente una reserva pendiente de pago. Usa 0 para desactivar.",
     },
   ];
 

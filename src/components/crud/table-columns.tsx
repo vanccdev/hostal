@@ -1,5 +1,6 @@
 import type { Column } from "@/components/crud/DataTable";
 import { formatDate, formatDateTime } from "@/lib/datetime";
+import { formatReservaEstado } from "@/lib/reserva-estado";
 import { userReferenceColumns } from "@/lib/table-user-references";
 import type { Database, GenericRow, Json } from "@/types/database";
 
@@ -57,8 +58,6 @@ const columnLabels: Record<string, string> = {
   registrado_por: "Registrado por",
   checkin_programado_at: "Check-in programado",
   checkout_programado_at: "Check-out programado",
-  checkin_at: "Check-in",
-  checkout_at: "Check-out",
   actor_id: "Actor ID",
   accion: "Acción",
   entidad: "Entidad",
@@ -154,8 +153,6 @@ const schemaColumns: Partial<Record<TableName, string[]>> = {
     "registrado_por",
     "checkin_programado_at",
     "checkout_programado_at",
-    "checkin_at",
-    "checkout_at",
     "created_at",
     "updated_at",
   ],
@@ -216,8 +213,6 @@ const dateColumns = new Set([
 const dateTimeColumns = new Set([
   "created_at",
   "updated_at",
-  "checkin_at",
-  "checkout_at",
   "checkin_programado_at",
   "checkout_programado_at",
   "emitido_at",
@@ -279,7 +274,10 @@ export const columnsForTable = <T extends RowRecord>(
   return uniqueKeys.map((key) => ({
     key,
     header: formatColumnHeader(key),
-    render: (row) => formatTableValue(row[key], key, options),
+    render: (row) =>
+      table === "reservas" && key === "estado" && typeof row[key] === "string"
+        ? formatReservaEstado(row[key])
+        : formatTableValue(row[key], key, options),
   }));
 };
 

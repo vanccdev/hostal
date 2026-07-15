@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
+import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function DetalleReservaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -46,7 +47,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
           <p>Check-in programado: {formatDateTime(reserva.checkin_programado_at)}</p>
           <p>Check-out programado: {formatDateTime(reserva.checkout_programado_at)}</p>
           <p>
-            Estado: <Badge variant="secondary">{reserva.estado}</Badge>
+            Estado: <Badge variant="secondary">{formatReservaEstado(reserva.estado)}</Badge>
           </p>
         </CardContent>
       </Card>

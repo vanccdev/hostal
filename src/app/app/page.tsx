@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { formatDate } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
+import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function ClientDashboardPage() {
@@ -44,7 +45,8 @@ export default async function ClientDashboardPage() {
                 href={`/app/reservas/${reservation.id}`}
                 className="block rounded-2xl border border-[#d8d4c8] bg-white p-4 text-sm font-medium text-[#18221b] transition hover:border-[#c7a35a] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d] dark:text-zinc-100"
               >
-                {formatDate(reservation.fecha_ingreso)} a {formatDate(reservation.fecha_salida)} · {reservation.estado}
+                {formatDate(reservation.fecha_ingreso)} a {formatDate(reservation.fecha_salida)} ·{" "}
+                {formatReservaEstado(reservation.estado)}
               </Link>
             ))
           )}

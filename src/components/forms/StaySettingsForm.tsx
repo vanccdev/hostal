@@ -11,6 +11,7 @@ import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_TIME_ZONE } from "@/lib/datetime";
@@ -33,6 +34,7 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
     defaultValues: {
       checkinTime: settings.checkinTime,
       checkoutTime: settings.checkoutTime,
+      paymentProofTimeoutMinutes: settings.paymentProofTimeoutMinutes,
     },
   });
   const [checkinTime, setCheckinTime] = useState(settings.checkinTime);
@@ -64,6 +66,22 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
           value={checkoutTime}
           onChange={setCheckoutTime}
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="paymentProofTimeoutMinutes">Espera de comprobante en minutos</Label>
+        <Input
+          id="paymentProofTimeoutMinutes"
+          type="number"
+          min={0}
+          max={10080}
+          step={1}
+          {...form.register("paymentProofTimeoutMinutes")}
+          name="paymentProofTimeoutMinutes"
+        />
+        <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+          Usa 0 para desactivar la cancelación automática. El job cancela reservas pendientes de pago sin comprobante al pasar este tiempo.
+        </p>
+        <FormMessage state={state} field="paymentProofTimeoutMinutes" />
       </div>
       <div className="flex items-start gap-2 rounded-xl bg-[#f4ecd8] p-3 text-sm text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
         <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

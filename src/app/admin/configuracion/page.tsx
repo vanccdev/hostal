@@ -42,8 +42,7 @@ export default async function ConfiguracionPage() {
           <CardTitle>Asociación con reservas</CardTitle>
           <CardDescription>
             Al crear una reserva, estas claves generan <span className="font-mono">checkin_programado_at</span> y{" "}
-            <span className="font-mono">checkout_programado_at</span>. Los eventos reales de recepción siguen usando{" "}
-            <span className="font-mono">checkin_at</span> y <span className="font-mono">checkout_at</span>.
+            <span className="font-mono">checkout_programado_at</span> para disponibilidad y horarios operativos.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,6 +55,15 @@ export default async function ConfiguracionPage() {
               value={`${settings.turnoverMinutes} minutos`}
             />
             <ConfigDefinition label="Zona horaria fija" settingKey={staySettingKeys.timezone} value={settings.timezone} />
+            <ConfigDefinition
+              label="Espera de comprobante"
+              settingKey={staySettingKeys.paymentProofTimeoutMinutes}
+              value={
+                settings.paymentProofTimeoutMinutes === 0
+                  ? "Desactivada"
+                  : `${settings.paymentProofTimeoutMinutes} minutos`
+              }
+            />
           </dl>
         </CardContent>
       </Card>

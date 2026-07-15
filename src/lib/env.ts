@@ -15,8 +15,8 @@ export const publicEnv = {
 
 export const serverEnv = {
   supabaseServiceRoleKey: () => readEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  cronSecret: () => process.env.CRON_SECRET,
   webhookReservasUrl: () => process.env.WEBHOOK_RESERVAS_URL,
   webhookPagosUrl: () => process.env.WEBHOOK_PAGOS_URL,
   webhookAuthEventsUrl: () => process.env.WEBHOOK_AUTH_EVENTS_URL,
 };
-
