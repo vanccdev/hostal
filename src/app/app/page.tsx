@@ -1,36 +1,83 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ReservaForm } from "@/components/forms/ReservaForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { formatDate } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { formatReservaEstado } from "@/lib/reserva-estado";
+import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function ClientDashboardPage() {
   const currentUser = await requirePasswordReady();
   const supabase = createSupabaseAdminClient();
   const guest = await getGuestForUser(currentUser.authUserId);
-  const { data: reservations } = guest
-    ? await supabase
-        .from("reservas")
-        .select("id,fecha_ingreso,fecha_salida,estado,precio_total")
-        .eq("huesped_id", guest.id)
-        .order("fecha_ingreso")
-        .limit(5)
-    : { data: [] };
+  const [
+    { data: reservations },
+    { data: habitaciones },
+    { data: tarifas },
+    { data: reservas },
+    { data: bloqueos },
+    staySettings,
+  ] = await Promise.all([
+    guest
+      ? supabase
+          .from("reservas")
+          .select("id,fecha_ingreso,fecha_salida,estado,precio_total")
+          .eq("huesped_id", guest.id)
+          .order("fecha_ingreso")
+          .limit(5)
+      : Promise.resolve({ data: [] }),
+    supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
+    supabase
+      .from("tarifas")
+      .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .eq("activa", true)
+      .order("habitacion_tipo"),
+    supabase
+      .from("reservas")
+      .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado,checkin_programado_at,checkout_programado_at")
+      .in("estado", ["pendiente_pago", "confirmada", "checkin"]),
+    supabase.from("bloqueos_fechas").select("id,habitacion_id,fecha_inicio,fecha_fin"),
+    getStaySettings(supabase),
+  ]);
+  const habitacionIds = (habitaciones ?? []).map((habitacion) => habitacion.id);
+  const { data: imagenes } =
+    habitacionIds.length > 0
+      ? await supabase
+          .from("img_habitaciones")
+          .select("id,habitacion_id,url")
+          .in("habitacion_id", habitacionIds)
+          .order("created_at")
+      : { data: [] };
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Hola, {currentUser.profile?.nombre}</h1>
-          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Portal de cliente.</p>
-        </div>
-        <Button asChild>
-          <Link href="/app/reservas/nueva">Nueva reserva</Link>
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold">Hola, {currentUser.profile?.nombre}</h1>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
+          Elige una habitación y completa tu reserva desde tu cuenta.
+        </p>
       </div>
+
+      <Card id="fechas-y-habitacion" className="scroll-mt-4">
+        <CardHeader>
+          <CardTitle>Nueva reserva</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ReservaForm
+            mode="cliente"
+            habitaciones={habitaciones ?? []}
+            tarifas={tarifas ?? []}
+            imagenes={imagenes ?? []}
+            reservas={reservas ?? []}
+            bloqueos={bloqueos ?? []}
+            staySettings={staySettings}
+            scrollTargetId="fechas-y-habitacion"
+          />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Próximas reservas</CardTitle>

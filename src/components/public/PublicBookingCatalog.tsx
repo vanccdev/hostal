@@ -311,14 +311,24 @@ export const PublicBookingCatalog = ({
           return (
             <article
               key={habitacion.id}
+              tabIndex={0}
+              role="button"
+              aria-label={`Ver habitación ${habitacion.numero}`}
               onPointerEnter={(event) => {
                 if (event.pointerType === "mouse") {
                   scheduleHoverPreview(habitacion.id);
                 }
               }}
               onPointerLeave={clearHoverPreviewTimeout}
+              onClick={() => openRoomPreview(habitacion.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openRoomPreview(habitacion.id);
+                }
+              }}
               className={cn(
-                "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-within:ring-2 focus-within:ring-[#c7a35a] dark:bg-[#18251d]",
+                "group cursor-pointer overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] focus-within:ring-2 focus-within:ring-[#c7a35a] dark:bg-[#18251d]",
                 disabled ? "opacity-70" : "",
                 selected ? "border-[#c7a35a] ring-2 ring-[#c7a35a]" : "border-[#d8d4c8] dark:border-[#314237]",
               )}
@@ -342,7 +352,10 @@ export const PublicBookingCatalog = ({
                 <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/20 group-hover:opacity-100 group-focus-within:bg-black/20 group-focus-within:opacity-100">
                   <button
                     type="button"
-                    onClick={() => openRoomPreview(habitacion.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openRoomPreview(habitacion.id);
+                    }}
                     className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-[#18221b] shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:bg-[#18251d]/95 dark:text-zinc-100"
                     aria-label={`Ver habitación ${habitacion.numero}`}
                   >

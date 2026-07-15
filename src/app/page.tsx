@@ -58,10 +58,10 @@ export default async function Home() {
   const accountPath = currentUser ? getPathByRole(currentUser.profile) : null;
   const continueHref =
     currentUser?.profile?.rol === "cliente"
-      ? "/app/reservas/nueva"
+      ? "/app"
       : currentUser?.profile && isStaffRole(currentUser.profile.rol)
         ? "/admin/reservas/nueva"
-        : "/login?next=/app/reservas/nueva";
+        : "/login?next=/app";
 
   return (
     <main className="min-h-screen bg-[#f6f1e6] text-[#18221b] dark:bg-[#101a14] dark:text-zinc-100">
