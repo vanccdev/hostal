@@ -27,6 +27,12 @@ Implementado:
   - `src/app/actions/password.ts`
   - `src/app/actions/crud.ts`
 - Panel admin con rutas principales bajo `/admin`.
+- Vista administrativa `/admin/reserva-detalle`:
+  - Menu lateral "Reserva detalle" con permiso del modulo `reservas`.
+  - Muestra reservas en tarjetas paginadas server-side.
+  - Presenta datos relacionados de reserva, cliente/usuario, habitacion con imagen principal, tarifa, transacciones, comprobantes, cancelaciones, notificaciones y auditoria.
+  - Busca por codigo, estado, canal, nombre del huesped, email, telefono, documento y nombre de usuario cliente.
+  - Mantiene paginacion por query params y no carga todas las reservas en cliente.
 - Backups administrativos bajo `/admin/backups`:
   - Descarga operativa de tablas publicas de la app en JSON.
   - Descarga operativa de imagenes del bucket `habitaciones` en TAR.
@@ -58,6 +64,10 @@ Implementado:
   - Supabase local esta configurado en `America/La_Paz`.
   - El frontend usa `src/lib/datetime.ts` para generar fechas locales y formatear fechas/timestamps.
   - Las tablas ya no muestran timestamps crudos como `2026-07-04T01:36:21.337562`; se muestran formateados en `es-BO`.
+- Estados y tipos tecnicos:
+  - `src/lib/reserva-estado.ts` muestra `reservas.estado` como texto legible sin cambiar el valor guardado.
+  - `pendiente_pago` se muestra como `Pendiente de pago`, `no_show` como `No se presento`, etc.
+  - `src/lib/notificacion-tipo.ts` muestra tipos de notificacion como `pago_pendiente` en texto legible.
 - Tablas/listados administrativos:
   - El componente base de tabla evita saltos de linea en headers y celdas.
   - Las tablas usan scroll horizontal para mostrar contenido completo.
@@ -76,6 +86,13 @@ Implementado:
   - Panel de resumen con fechas, noches, tarifa y total.
   - Fechas pasadas bloqueadas en UI y validadas en servidor.
   - Habitaciones ocupadas o bloqueadas no se pueden reservar para el rango elegido.
+- Configuracion operativa de reservas:
+  - `/admin/configuracion` administra check-in, check-out y espera de comprobante.
+  - `configuracion_hostal.reserva_comprobante_espera_minutos` define cuantos minutos se espera el comprobante antes de cancelar una reserva `pendiente_pago`.
+  - Valor `0` desactiva la cancelacion automatica.
+  - Endpoint protegido para cron: `/api/jobs/cancelar-reservas-vencidas`, con `Authorization: Bearer <CRON_SECRET>`.
+  - La cancelacion automatica solo afecta reservas `pendiente_pago` vencidas sin comprobante, sin `comprobante_url` y sin transaccion aprobada.
+  - Documentacion operativa en `OPERACION_RESERVAS.md`.
 - Flujo base `createClientAccountByStaff`.
 - Flujo base `resetClientPasswordToPhone`.
 - Eventos internos y dispatch de webhooks sin romper la operacion principal si el webhook falla.
@@ -146,6 +163,7 @@ NEXT_PUBLIC_SUPABASE_URL=http://localhost:8000
 NEXT_PUBLIC_SUPABASE_ANON_KEY=replace-with-self-hosted-anon-key
 
 SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key-server-only
+CRON_SECRET=replace-with-random-cron-secret
 WEBHOOK_RESERVAS_URL=
 WEBHOOK_PAGOS_URL=
 WEBHOOK_AUTH_EVENTS_URL=
@@ -178,6 +196,9 @@ Notas de esquema:
 - Se aplico historicamente `public.tarifas.habitacion_id` mediante `supabase/migrations/202607040002_add_tarifa_habitacion_id.sql`, pero luego fue reemplazado.
 - La relacion vigente es `public.habitaciones.tarifa_id`; `public.tarifas.habitacion_id` fue eliminado por `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`.
 - `public.tarifas.peso` fue agregado por `supabase/migrations/202607120001_add_tarifas_peso.sql`; tiene constraint `0..3`, indices de prioridad/vigencia y un indice unico parcial para evitar repetir `habitacion_tipo + temporada + peso` en tarifas activas.
+- `supabase/migrations/202607140001_add_stay_schedule_settings.sql` agrega `checkin_programado_at` y `checkout_programado_at` a `public.reservas` y claves de horario en `configuracion_hostal`.
+- `supabase/migrations/202607140002_drop_reservas_real_check_times.sql` elimina `checkin_at` y `checkout_at` si todavia existen.
+- `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql` agrega la clave `reserva_comprobante_espera_minutos`.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes.tipo_documento` y `public.huespedes.numero_documento` son `NOT NULL`; los tipos locales ya reflejan ese comportamiento.
@@ -197,6 +218,15 @@ http://localhost:3000
 Si faltan variables de Supabase, la app puede mostrar error al entrar a rutas que consultan auth.
 
 La carga de imagenes de habitaciones usa Server Actions; `next.config.ts` configura `experimental.serverActions.bodySizeLimit = "30mb"` para permitir varias imagenes de hasta 5 MB cada una.
+
+Para ejecutar la cancelacion automatica de reservas vencidas se debe configurar `CRON_SECRET` y llamar periodicamente:
+
+```bash
+curl -X POST http://localhost:3000/api/jobs/cancelar-reservas-vencidas \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Ver detalles en `OPERACION_RESERVAS.md`.
 
 ## Backups y Migracion
 

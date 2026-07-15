@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { BedDouble, ImageIcon, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BedDouble, Eye, ImageIcon, Users } from "lucide-react";
 import { DatePickerField } from "@/components/forms/DatePickerField";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
@@ -88,6 +91,8 @@ export const PublicBookingCatalog = ({
 }: PublicBookingCatalogProps) => {
   const router = useRouter();
   const [habitacionId, setHabitacionId] = useState("");
+  const [previewRoomId, setPreviewRoomId] = useState("");
+  const hoverPreviewTimeoutRef = useRef<number | null>(null);
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
   const [now, setNow] = useState(() => new Date());
@@ -181,6 +186,7 @@ export const PublicBookingCatalog = ({
     });
   };
   const selectedRoom = habitaciones.find((habitacion) => habitacion.id === habitacionId) ?? null;
+  const previewRoom = habitaciones.find((habitacion) => habitacion.id === previewRoomId) ?? null;
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -189,6 +195,30 @@ export const PublicBookingCatalog = ({
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  const clearHoverPreviewTimeout = () => {
+    if (hoverPreviewTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(hoverPreviewTimeoutRef.current);
+    hoverPreviewTimeoutRef.current = null;
+  };
+
+  const openRoomPreview = (nextHabitacionId: string) => {
+    clearHoverPreviewTimeout();
+    setHabitacionId(nextHabitacionId);
+    setPreviewRoomId(nextHabitacionId);
+  };
+
+  const scheduleHoverPreview = (nextHabitacionId: string) => {
+    clearHoverPreviewTimeout();
+    hoverPreviewTimeoutRef.current = window.setTimeout(() => {
+      openRoomPreview(nextHabitacionId);
+    }, 15_000);
+  };
+
+  useEffect(() => () => clearHoverPreviewTimeout(), []);
 
   const continueReservation = (nextHabitacionId = habitacionId) => {
     if (!nextHabitacionId) {
@@ -279,17 +309,17 @@ export const PublicBookingCatalog = ({
           const showAvailabilityBadge = inactive || hasSelectedDateRange || !availability.available;
 
           return (
-            <button
+            <article
               key={habitacion.id}
-              type="button"
-              aria-pressed={selected}
-              disabled={disabled}
-              onClick={() => {
-                setHabitacionId(habitacion.id);
-                continueReservation(habitacion.id);
+              onPointerEnter={(event) => {
+                if (event.pointerType === "mouse") {
+                  scheduleHoverPreview(habitacion.id);
+                }
               }}
+              onPointerLeave={clearHoverPreviewTimeout}
               className={cn(
-                "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
+                "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-within:ring-2 focus-within:ring-[#c7a35a] dark:bg-[#18251d]",
+                disabled ? "opacity-70" : "",
                 selected ? "border-[#c7a35a] ring-2 ring-[#c7a35a]" : "border-[#d8d4c8] dark:border-[#314237]",
               )}
             >
@@ -300,15 +330,25 @@ export const PublicBookingCatalog = ({
                     alt={`Habitación ${habitacion.numero}`}
                     fill
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    className="object-cover transition duration-300 group-hover:scale-[1.03] group-hover:blur-[1px] group-focus-within:blur-[1px]"
                     priority={index < 2}
                     unoptimized
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
+                  <div className="flex h-full items-center justify-center text-[#66736a] transition duration-300 group-hover:blur-[1px] group-focus-within:blur-[1px] dark:text-[#b7c0b4]">
                     <ImageIcon className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/20 group-hover:opacity-100 group-focus-within:bg-black/20 group-focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => openRoomPreview(habitacion.id)}
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/95 text-[#18221b] shadow-lg transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:bg-[#18251d]/95 dark:text-zinc-100"
+                    aria-label={`Ver habitación ${habitacion.numero}`}
+                  >
+                    <Eye className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </div>
                 <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
                   {showAvailabilityBadge ? (
                     inactive ? (
@@ -320,7 +360,11 @@ export const PublicBookingCatalog = ({
                       </Badge>
                     )
                   ) : null}
-                  {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
+                  {roomImages.length > 1 ? (
+                    <Badge variant="outline" className="bg-white/90 shadow-sm backdrop-blur dark:bg-[#18251d]/90">
+                      {roomImages.length} fotos
+                    </Badge>
+                  ) : null}
                 </div>
               </div>
 
@@ -373,11 +417,179 @@ export const PublicBookingCatalog = ({
                   ))}
                 </div>
               </div>
-            </button>
+            </article>
           );
         })}
       </div>
 
+      <Dialog open={Boolean(previewRoom)} onOpenChange={(open) => setPreviewRoomId(open ? previewRoomId : "")}>
+        {previewRoom ? (
+          <DialogContent className="max-w-4xl p-0">
+            {(() => {
+              const roomImages = imagesByRoom.get(previewRoom.id) ?? [];
+              const tarifa = tarifaByRoom.get(previewRoom.id) ?? null;
+              const availability = getRoomAvailabilityStatus({
+                roomId: previewRoom.id,
+                fechaIngreso,
+                fechaSalida,
+                reservas,
+                bloqueos,
+                staySettings,
+                now,
+              });
+              const inactive = previewRoom.activa === false;
+              const unavailable = hasSelectedDateRange ? !availability.available : false;
+              const disabled = !tarifa || unavailable || inactive;
+
+              return (
+                <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
+                  <div className="relative min-h-[280px] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                    <AutoRoomCarousel
+                      images={roomImages}
+                      alt={`Habitación ${previewRoom.numero}`}
+                      sizes="(min-width: 1024px) 55vw, 100vw"
+                      className="h-full min-h-[280px]"
+                      showControls
+                    />
+                  </div>
+                  <div className="space-y-5 p-5 sm:p-6">
+                    <DialogHeader>
+                      <DialogTitle>Habitación {previewRoom.numero}</DialogTitle>
+                      <DialogDescription>{roomTypeLabel[previewRoom.tipo]}</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex flex-wrap gap-2">
+                      {inactive ? (
+                        <Badge variant="destructive">Inactiva</Badge>
+                      ) : (
+                        <Badge variant={availability.variant}>
+                          {availability.label}
+                          {availability.detail ? ` · ${availability.detail}` : ""}
+                        </Badge>
+                      )}
+                      {roomImages.length > 0 ? (
+                        <Badge variant="outline" className="bg-white/90 shadow-sm backdrop-blur dark:bg-[#18251d]/90">
+                          {roomImages.length} fotos
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                      <div>
+                        <dt className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">Capacidad</dt>
+                        <dd className="mt-1 font-medium text-[#18221b] dark:text-zinc-100">{previewRoom.capacidad_max} huéspedes</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">Piso</dt>
+                        <dd className="mt-1 font-medium text-[#18221b] dark:text-zinc-100">{previewRoom.piso}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">Tarifa</dt>
+                        <dd className="mt-1 font-medium text-[#18221b] dark:text-zinc-100">
+                          {tarifa ? `${tarifa.precio_noche} ${tarifa.moneda} / noche` : "Sin tarifa vigente"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">Estadía</dt>
+                        <dd className="mt-1 font-medium text-[#18221b] dark:text-zinc-100">
+                          {nights > 0 ? `${nights} noches` : "Selecciona fechas"}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    {previewRoom.descripcion ? (
+                      <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{previewRoom.descripcion}</p>
+                    ) : null}
+
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => {
+                          setHabitacionId(previewRoom.id);
+                          continueReservation(previewRoom.id);
+                        }}
+                      >
+                        Reservar esta habitación
+                      </Button>
+                    </DialogFooter>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        ) : null}
+      </Dialog>
     </section>
+  );
+};
+
+const AutoRoomCarousel = ({
+  images,
+  alt,
+  sizes,
+  priority = false,
+  className,
+  showControls = false,
+}: {
+  images: RoomImage[];
+  alt: string;
+  sizes: string;
+  priority?: boolean;
+  className?: string;
+  showControls?: boolean;
+}) => {
+  const [api, setApi] = useState<CarouselApi>();
+
+  useEffect(() => {
+    if (!api || images.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (api.canScrollNext()) {
+        api.scrollNext();
+      } else {
+        api.scrollTo(0);
+      }
+    }, 2800);
+
+    return () => window.clearInterval(intervalId);
+  }, [api, images.length]);
+
+  if (images.length === 0) {
+    return (
+      <div className={cn("flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]", className)}>
+        <ImageIcon className="h-8 w-8" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return (
+    <Carousel setApi={setApi} opts={{ loop: images.length > 1 }} className={cn("h-full [&>div]:h-full [&>div>div]:h-full", className)}>
+      <CarouselContent className="h-full -ml-0">
+        {images.map((image, index) => (
+          <CarouselItem key={image.id} className="h-full pl-0">
+            <div className="relative h-full min-h-full">
+              <Image
+                src={image.url}
+                alt={alt}
+                fill
+                sizes={sizes}
+                className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                priority={priority && index === 0}
+                unoptimized
+              />
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      {showControls && images.length > 1 ? (
+        <>
+          <CarouselPrevious className="left-3 bg-white/90 dark:bg-[#18251d]/90" />
+          <CarouselNext className="right-3 bg-white/90 dark:bg-[#18251d]/90" />
+        </>
+      ) : null}
+    </Carousel>
   );
 };
