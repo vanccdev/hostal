@@ -6,8 +6,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirectByRole } from "@/lib/auth/redirect-by-role";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { pendingDocumentNumberForUser } from "@/lib/client-profile";
 import { normalizePhone } from "@/lib/phone";
-import { changePasswordSchema, loginSchema, signupSchema } from "@/schemas/auth";
+import { changePasswordSchema, completeClientProfileSchema, loginSchema, signupSchema } from "@/schemas/auth";
 import type { ActionState } from "@/app/actions/types";
 import { formValue, validationErrors } from "@/app/actions/helpers";
 import { isStaffRole } from "@/lib/permissions";
@@ -60,7 +61,6 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
     email: formValue(formData, "email"),
     password: formValue(formData, "password"),
     telefono: formValue(formData, "telefono"),
-    documento: formValue(formData, "documento"),
   });
 
   if (!parsed.success) {
@@ -84,7 +84,7 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
   }
 
   const admin = createSupabaseAdminClient();
-  const telefono = parsed.data.telefono ? normalizePhone(parsed.data.telefono) : null;
+  const telefono = normalizePhone(parsed.data.telefono);
 
   const { data: existingProfile, error: profileReadError } = await admin
     .from("usuarios")
@@ -122,7 +122,7 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
     email: parsed.data.email,
     telefono,
     tipo_documento: "Otro" as const,
-    numero_documento: parsed.data.documento || `sd-${data.user.id.slice(0, 27)}`,
+    numero_documento: pendingDocumentNumberForUser(data.user.id),
     pais_origen: null,
   };
 
@@ -148,6 +148,76 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
 
   const nextPath = safeNextPath(formValue(formData, "next"));
   redirect(nextPath?.startsWith("/app") ? nextPath : "/app");
+};
+
+export const completeClientProfileAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
+  const parsed = completeClientProfileSchema.safeParse({
+    nombre: formValue(formData, "nombre"),
+    telefono: formValue(formData, "telefono"),
+    tipoDocumento: formValue(formData, "tipoDocumento"),
+    numeroDocumento: formValue(formData, "numeroDocumento"),
+    pais: formValue(formData, "pais"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, errors: validationErrors(parsed.error) };
+  }
+
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || currentUser.profile.rol !== "cliente") {
+    return { ok: false, message: "Debes iniciar sesión como cliente para completar tu perfil." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const normalizedPhone = normalizePhone(parsed.data.telefono);
+
+  const { error: profileError } = await admin
+    .from("usuarios")
+    .update({ nombre: parsed.data.nombre })
+    .eq("id", currentUser.authUserId);
+
+  if (profileError) {
+    return { ok: false, message: profileError.message };
+  }
+
+  const guestPayload = {
+    usuario_id: currentUser.authUserId,
+    nombre_completo: parsed.data.nombre,
+    email: currentUser.email,
+    telefono: normalizedPhone,
+    tipo_documento: parsed.data.tipoDocumento,
+    numero_documento: parsed.data.numeroDocumento,
+    pais_origen: parsed.data.pais || null,
+  };
+
+  const { data: existingGuest, error: guestReadError } = await admin
+    .from("huespedes")
+    .select("id")
+    .eq("usuario_id", currentUser.authUserId)
+    .maybeSingle();
+
+  if (guestReadError) {
+    return { ok: false, message: guestReadError.message };
+  }
+
+  const guestQuery = existingGuest
+    ? admin.from("huespedes").update(guestPayload).eq("id", existingGuest.id)
+    : admin.from("huespedes").insert(guestPayload);
+
+  const { error: guestError } = await guestQuery;
+
+  if (guestError) {
+    return { ok: false, message: guestError.message };
+  }
+
+  revalidatePath("/app");
+  revalidatePath("/app/perfil");
+
+  return { ok: true, message: "Perfil completado." };
 };
 
 export const logoutAction = async () => {

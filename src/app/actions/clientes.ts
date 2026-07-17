@@ -88,8 +88,8 @@ export const createClientAccountByStaff = async (
     nombre_completo: parsed.data.nombreCompleto,
     email: parsed.data.email,
     telefono: phone,
-    tipo_documento: parsed.data.tipoDocumento || "Otro",
-    numero_documento: parsed.data.numeroDocumento || `sd-${created.user.id.slice(0, 27)}`,
+    tipo_documento: parsed.data.tipoDocumento,
+    numero_documento: parsed.data.numeroDocumento,
     pais_origen: parsed.data.pais || null,
   });
 

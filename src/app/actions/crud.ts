@@ -248,8 +248,8 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
     nombre_completo: parsed.data.nombreCompleto,
     email: parsed.data.email || null,
     telefono: parsed.data.telefono || null,
-    tipo_documento: parsed.data.tipoDocumento || "Otro",
-    numero_documento: parsed.data.numeroDocumento || `sd-${(parsed.data.id ?? crypto.randomUUID()).slice(0, 27)}`,
+    tipo_documento: parsed.data.tipoDocumento,
+    numero_documento: parsed.data.numeroDocumento,
     pais_origen: parsed.data.pais || null,
   };
 

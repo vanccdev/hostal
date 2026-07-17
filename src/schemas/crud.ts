@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { calculateTurnoverMinutes } from "@/lib/stay-settings";
 
-const tipoDocumentoSchema = z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"]).optional().or(z.literal(""));
-
 export const habitacionSchema = z.object({
   id: z.uuid().optional(),
   tarifaId: z.uuid("Selecciona una tarifa"),
@@ -19,8 +17,8 @@ export const huespedSchema = z.object({
   nombreCompleto: z.string().min(2, "Ingresa el nombre completo"),
   email: z.email("Email inválido").optional().or(z.literal("")),
   telefono: z.string().optional(),
-  tipoDocumento: tipoDocumentoSchema,
-  numeroDocumento: z.string().optional(),
+  tipoDocumento: z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"], "Selecciona el tipo de documento"),
+  numeroDocumento: z.string().min(2, "Ingresa el número de documento"),
   pais: z.string().optional(),
 });
 

@@ -24,7 +24,6 @@ export const ClienteStaffForm = () => {
       nombreCompleto: "",
       email: "",
       telefono: "",
-      tipoDocumento: "",
       numeroDocumento: "",
       pais: "",
     },
@@ -72,10 +71,12 @@ export const ClienteStaffForm = () => {
               <SelectItem value="Otro">Otro</SelectItem>
             </SelectContent>
           </Select>
+          <FormMessage state={state} field="tipoDocumento" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="numeroDocumento">Número documento</Label>
           <Input id="numeroDocumento" {...form.register("numeroDocumento")} />
+          <FormMessage state={state} field="numeroDocumento" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="pais">País</Label>

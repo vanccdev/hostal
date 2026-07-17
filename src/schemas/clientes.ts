@@ -1,13 +1,11 @@
 import { z } from "zod";
 
-const tipoDocumentoSchema = z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"]).optional().or(z.literal(""));
-
 export const clienteStaffSchema = z.object({
   nombreCompleto: z.string().min(2, "Ingresa el nombre completo"),
   email: z.email("Email inválido").trim().toLowerCase(),
   telefono: z.string().min(6, "El teléfono es obligatorio"),
-  tipoDocumento: tipoDocumentoSchema,
-  numeroDocumento: z.string().optional(),
+  tipoDocumento: z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"], "Selecciona el tipo de documento"),
+  numeroDocumento: z.string().min(2, "Ingresa el número de documento"),
   pais: z.string().optional(),
 });
 

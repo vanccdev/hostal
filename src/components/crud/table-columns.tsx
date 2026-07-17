@@ -1,4 +1,5 @@
 import type { Column } from "@/components/crud/DataTable";
+import { displayDocumentNumber, isPendingDocumentNumber } from "@/lib/client-profile";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import { userReferenceColumns } from "@/lib/table-user-references";
@@ -231,6 +232,10 @@ export const formatTableValue = (value: Json | undefined, key?: string, options?
 
   if (typeof value === "string" && key && userReferenceColumns.has(key)) {
     return options?.userNamesById?.[value] ?? value;
+  }
+
+  if (typeof value === "string" && key === "numero_documento" && isPendingDocumentNumber(value)) {
+    return displayDocumentNumber(value);
   }
 
   if (typeof value === "string" && key && dateColumns.has(key)) {

@@ -5,6 +5,7 @@ import { verifyReservationProofFormAction } from "@/app/actions/comprobantes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { displayDocumentNumber } from "@/lib/client-profile";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { formatNotificacionTipo } from "@/lib/notificacion-tipo";
 import { formatReservaEstado } from "@/lib/reserva-estado";
@@ -153,7 +154,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
                 ["Usuario", usuarioCliente?.nombre],
                 ["Email", huesped?.email],
                 ["Teléfono", huesped?.telefono],
-                ["Documento", huesped ? `${huesped.tipo_documento} ${huesped.numero_documento}` : undefined],
+                ["Documento", huesped ? `${huesped.tipo_documento} ${displayDocumentNumber(huesped.numero_documento)}` : undefined],
                 ["País", huesped?.pais_origen],
                 ["Nacimiento", formatDate(huesped?.fecha_nacimiento)],
                 ["Observaciones", huesped?.observaciones],

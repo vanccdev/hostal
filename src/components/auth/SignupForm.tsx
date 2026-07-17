@@ -26,7 +26,6 @@ export const SignupForm = ({ nextPath }: SignupFormProps) => {
       email: "",
       password: "",
       telefono: "",
-      documento: "",
     },
   });
 
@@ -49,15 +48,10 @@ export const SignupForm = ({ nextPath }: SignupFormProps) => {
         <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
         <FormMessage state={state} field="password" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="telefono">Teléfono</Label>
-          <Input id="telefono" autoComplete="tel" {...form.register("telefono")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="documento">Documento</Label>
-          <Input id="documento" {...form.register("documento")} />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="telefono">Número de celular o teléfono</Label>
+        <Input id="telefono" autoComplete="tel" {...form.register("telefono")} />
+        <FormMessage state={state} field="telefono" />
       </div>
       <FormMessage state={state} />
       <Button type="submit" className="w-full" disabled={pending}>

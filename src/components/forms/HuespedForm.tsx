@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { isPendingDocumentNumber } from "@/lib/client-profile";
 import { huespedSchema, type HuespedInput } from "@/schemas/crud";
 import type { Huesped } from "@/types/database";
 
@@ -29,8 +30,8 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
       nombreCompleto: huesped?.nombre_completo ?? "",
       email: huesped?.email ?? "",
       telefono: huesped?.telefono ?? "",
-      tipoDocumento: (huesped?.tipo_documento as HuespedInput["tipoDocumento"]) ?? "",
-      numeroDocumento: huesped?.numero_documento ?? "",
+      tipoDocumento: huesped?.tipo_documento,
+      numeroDocumento: isPendingDocumentNumber(huesped?.numero_documento) ? "" : (huesped?.numero_documento ?? ""),
       pais: huesped?.pais_origen ?? "",
     },
   });
@@ -73,10 +74,12 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
               <SelectItem value="Otro">Otro</SelectItem>
             </SelectContent>
           </Select>
+          <FormMessage state={state} field="tipoDocumento" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="numeroDocumento">Número documento</Label>
           <Input id="numeroDocumento" {...form.register("numeroDocumento")} />
+          <FormMessage state={state} field="numeroDocumento" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="pais">País</Label>
