@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Banknote, CalendarDays, FileCheck, History, ReceiptText, UserRound } from "lucide-react";
+import { verifyReservationProofFormAction } from "@/app/actions/comprobantes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,6 +101,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
   const totalPagado = transacciones
     .filter((transaccion) => transaccion.estado_verificacion === "aprobada" && transaccion.tipo === "pago")
     .reduce((total, transaccion) => total + Number(transaccion.monto), 0);
+  const pendingPaymentProof = transacciones.find((transaccion) => transaccion.estado_verificacion === "por_verificar");
 
   return (
     <Card className="overflow-hidden rounded-lg shadow-none">
@@ -238,6 +240,35 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
                 ]}
               />
             </DataPanel>
+
+            {pendingPaymentProof ? (
+              <DataPanel icon={FileCheck} title="Verificación pendiente">
+                <div className="space-y-3 text-sm">
+                  <p className="text-[#66736a] dark:text-[#b7c0b4]">
+                    Revisa el depósito en el banco antes de confirmar o rechazar esta reserva.
+                  </p>
+                  {pendingPaymentProof.comprobante_url ? (
+                    <Button asChild variant="outline">
+                      <a href={pendingPaymentProof.comprobante_url} target="_blank" rel="noreferrer">
+                        Ver comprobante
+                      </a>
+                    </Button>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <form action={verifyReservationProofFormAction}>
+                      <input type="hidden" name="reservaId" value={reserva.id} />
+                      <input type="hidden" name="decision" value="aprobar" />
+                      <Button type="submit">Confirmar reserva</Button>
+                    </form>
+                    <form action={verifyReservationProofFormAction}>
+                      <input type="hidden" name="reservaId" value={reserva.id} />
+                      <input type="hidden" name="decision" value="rechazar" />
+                      <Button type="submit" variant="destructive">Rechazar comprobante</Button>
+                    </form>
+                  </div>
+                </div>
+              </DataPanel>
+            ) : null}
           </div>
         </div>
 

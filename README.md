@@ -12,8 +12,8 @@ Implementado:
 - Flujo publico de reserva:
   - El visitante elige fechas y habitacion en `/`.
   - Al confirmar, se guarda la intencion en `sessionStorage` con clave `hostal.pendingReservation`.
-  - Se redirige a `/login?next=/app/reservas/nueva` o `/crear-cuenta?next=/app/reservas/nueva`.
-  - Despues de login/registro, `/app/reservas/nueva` restaura habitacion y fechas sin perder lo llenado.
+  - Se redirige a `/login?next=/app` o `/crear-cuenta?next=/app`.
+  - Despues de login/registro, `/app` restaura habitacion y fechas sin perder lo llenado.
   - La creacion real de reserva sigue protegida bajo `/app`.
 - Roles desde `public.usuarios`: `admin`, `recepcionista`, `limpieza`, `cliente`.
 - Clientes Supabase:
@@ -37,7 +37,11 @@ Implementado:
   - Descarga operativa de tablas publicas de la app en JSON.
   - Descarga operativa de imagenes del bucket `habitaciones` en TAR.
   - Migracion completa self-hosted mediante scripts locales con `pg_dump`, `pg_restore` y archivo TAR de Storage.
-- Portal cliente con rutas principales bajo `/app`.
+- Portal cliente bajo `/app`:
+  - La pantalla principal combina el resumen de reservas proximas con el formulario visual de nueva reserva.
+  - Ya no depende de un boton "Nueva reserva" para iniciar el flujo.
+  - Muestra habitaciones listas para seleccionar y restaura automaticamente la habitacion/fechas elegidas desde la home publica.
+  - `/app/reservas/nueva` se mantiene disponible como ruta compatible del formulario.
 - CRUD inicial funcional para habitaciones, huespedes y tarifas.
 - Edicion de registros para CRUD principales:
   - Habitaciones: `/admin/habitaciones/[id]/editar`
@@ -108,6 +112,9 @@ Implementado:
   - `ThemeProvider` configurado con `attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`.
 - Paleta global actualizada con colores derivados del icono oficial del hostal.
 - Home publica mejorada con marca visual, mapa OpenLayers del Hostal Plaza en Camargo, link a Google Maps, galeria/carrusel e imagenes de `public/dentro-hostal` y `public/en-camargo`.
+  - Las tarjetas de habitaciones muestran una imagen estatica en el catalogo.
+  - Al interactuar con una tarjeta se abre un dialog de detalle con galeria/carrusel de todas las fotos de esa habitacion.
+  - La accion de reserva desde el dialog guarda la intencion y continua hacia `/app`.
 - Dropdown menu base en `src/components/ui/dropdown-menu.tsx`.
 - Select base shadcn/Radix en `src/components/ui/select.tsx`; los formularios no usan `<select>` nativo.
 - Calendar base en `src/components/ui/calendar.tsx` y date picker reusable en `src/components/forms/DatePickerField.tsx`; los formularios no usan `Input type="date"`.
@@ -300,6 +307,9 @@ Archivos:
 - `supabase/migrations/202607090002_set_lapaz_timezone.sql`
 - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`
 - `supabase/migrations/202607120001_add_tarifas_peso.sql`
+- `supabase/migrations/202607140001_add_stay_schedule_settings.sql`
+- `supabase/migrations/202607140002_drop_reservas_real_check_times.sql`
+- `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql`
 
 La primera migracion agrega:
 
@@ -335,10 +345,10 @@ La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de P
 
 3. Cliente crea reserva desde home publica:
    - Ir a `/` sin sesion.
-   - Seleccionar fechas y una habitacion disponible.
-   - Pulsar reservar.
-   - Debe redirigir a `/login?next=/app/reservas/nueva` o permitir ir a `/crear-cuenta?next=/app/reservas/nueva`.
-   - Tras login/registro, `/app/reservas/nueva` debe restaurar fechas y habitacion.
+   - Seleccionar fechas y abrir una habitacion disponible desde su tarjeta/dialog.
+   - Pulsar reservar desde el detalle.
+   - Debe redirigir a `/login?next=/app` o permitir ir a `/crear-cuenta?next=/app`.
+   - Tras login/registro, `/app` debe restaurar fechas y habitacion en el formulario integrado.
    - Confirmar reserva; la tarifa se deriva de la habitacion y la reserva se asocia al huesped de `auth.uid()`.
 
 4. Staff crea cliente:

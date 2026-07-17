@@ -84,6 +84,7 @@ const columnLabels: Record<string, string> = {
   numero_comprobante: "Número comprobante",
   emitido_at: "Emitido",
   pdf_url: "PDF URL",
+  uploaded_by: "Subido por",
   clave: "Clave",
   valor: "Valor",
   cambiado_por: "Cambiado por",
@@ -181,7 +182,7 @@ const schemaColumns: Partial<Record<TableName, string[]>> = {
     "gestionado_por",
     "created_at",
   ],
-  comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "emitido_at", "pdf_url"],
+  comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "emitido_at", "pdf_url", "uploaded_by", "created_at"],
   bloqueos_fechas: ["id", "habitacion_id", "fecha_inicio", "fecha_fin", "motivo", "creado_por", "created_at"],
   estado_habitaciones: ["id", "habitacion_id", "estado", "cambiado_por", "notas", "changed_at"],
   log_estados_habitacion: ["id", "habitacion_id", "estado_anterior", "estado_nuevo", "cambiado_por", "created_at"],
@@ -197,7 +198,7 @@ const schemaColumns: Partial<Record<TableName, string[]>> = {
     "ip_origen",
     "created_at",
   ],
-  notificaciones: ["id", "tipo", "reserva_id", "mensaje", "leida", "destinatario_rol", "created_at"],
+  notificaciones: ["id", "tipo", "reserva_id", "usuario_id", "mensaje", "leida", "destinatario_rol", "created_at"],
 };
 
 const dateColumns = new Set([

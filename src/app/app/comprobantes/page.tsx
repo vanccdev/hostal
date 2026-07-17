@@ -7,7 +7,7 @@ export default async function ComprobantesPage({ searchParams }: { searchParams:
       title="Comprobantes"
       description="Comprobantes asociados a tus reservas."
       table="comprobantes"
-      filterBy="huesped_id"
+      filterBy="uploaded_by"
       searchParams={await searchParams}
     />
   );

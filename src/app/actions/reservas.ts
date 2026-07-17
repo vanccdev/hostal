@@ -56,6 +56,8 @@ export const createClientReservation = async (
     return { ok: false, message: guestError?.message ?? "No existe huésped asociado a tu usuario." };
   }
 
+  let createdReservationId = "";
+
   try {
     const nights = assertReservationDates(parsed.data.fechaIngreso, parsed.data.fechaSalida);
     const staySettings = await getStaySettings(admin);
@@ -109,12 +111,14 @@ export const createClientReservation = async (
       userId: currentUser.authUserId,
       payload: { reserva_id: reservation.id, origen: "cliente" },
     });
+
+    createdReservationId = reservation.id;
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "No se pudo crear la reserva." };
   }
 
   revalidatePath("/app/reservas");
-  redirect("/app/reservas");
+  redirect(`/app/reservas/${createdReservationId}`);
 };
 
 export const createStaffReservation = async (

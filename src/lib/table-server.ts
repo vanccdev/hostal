@@ -84,12 +84,12 @@ export const searchableColumnsByTable: Partial<Record<TableName, string[]>> = {
   audit_log: ["id", "usuario_id", "accion", "tabla_afectada", "registro_id", "ip_origen"],
   transacciones: ["id", "reserva_id", "moneda", "metodo_pago", "estado_verificacion", "referencia_externa", "verificado_por", "tipo"],
   cancelaciones: ["id", "reserva_id", "motivo", "politica_aplicada", "gestionado_por"],
-  comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "pdf_url"],
+  comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "pdf_url", "uploaded_by"],
   bloqueos_fechas: ["id", "habitacion_id", "motivo", "creado_por"],
   estado_habitaciones: ["id", "habitacion_id", "estado", "cambiado_por", "notas"],
   log_estados_habitacion: ["id", "habitacion_id", "estado_anterior", "estado_nuevo", "cambiado_por"],
   configuracion_hostal: ["id", "clave", "valor", "descripcion"],
-  notificaciones: ["id", "tipo", "reserva_id", "mensaje", "destinatario_rol"],
+  notificaciones: ["id", "tipo", "reserva_id", "usuario_id", "mensaje", "destinatario_rol"],
 };
 
 export const sortableColumnsByTable: Partial<Record<TableName, string[]>> = {
@@ -101,7 +101,7 @@ export const sortableColumnsByTable: Partial<Record<TableName, string[]>> = {
   audit_log: ["accion", "tabla_afectada", "created_at"],
   transacciones: ["monto", "metodo_pago", "estado_verificacion", "tipo", "created_at"],
   cancelaciones: ["created_at", "horas_anticipacion", "monto_reembolso"],
-  comprobantes: ["numero_comprobante", "emitido_at"],
+  comprobantes: ["numero_comprobante", "emitido_at", "created_at"],
   bloqueos_fechas: ["fecha_inicio", "fecha_fin", "created_at"],
   estado_habitaciones: ["estado", "changed_at"],
   log_estados_habitacion: ["created_at"],

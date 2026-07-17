@@ -15,6 +15,8 @@ const notificationByEvent: Partial<
 > = {
   "reserva.creada": { tipo: "pago_pendiente", destinatario_rol: "recepcionista" },
   "pago.registrado": { tipo: "pago_pendiente", destinatario_rol: "recepcionista" },
+  "pago.aprobado": { tipo: "pago_pendiente", destinatario_rol: "todos" },
+  "pago.rechazado": { tipo: "pago_pendiente", destinatario_rol: "todos" },
   "habitacion.estado_actualizado": { tipo: "mantenimiento", destinatario_rol: "recepcionista" },
 };
 
@@ -35,6 +37,7 @@ export const emitEvent = async (supabase: SupabaseClient<Database>, input: EmitE
     const { error } = await supabase.from("notificaciones").insert({
       tipo: notification.tipo,
       reserva_id: reservaIdFromPayload(metadata),
+      usuario_id: input.userId ?? null,
       mensaje: input.message,
       destinatario_rol: notification.destinatario_rol,
       leida: false,

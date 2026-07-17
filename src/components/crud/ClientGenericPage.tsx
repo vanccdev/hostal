@@ -22,7 +22,7 @@ type ClientGenericPageProps = {
   title: string;
   description: string;
   table: TableName;
-  filterBy: "huesped_id" | "usuario_id";
+  filterBy: "huesped_id" | "usuario_id" | "uploaded_by";
   searchParams?: TableQueryInput;
 };
 
@@ -30,7 +30,7 @@ export const ClientGenericPage = async ({ title, description, table, filterBy, s
   const currentUser = await requirePasswordReady();
   const guest = await getGuestForUser(currentUser.authUserId);
   const supabase = createSupabaseAdminClient();
-  const filterValue = filterBy === "usuario_id" ? currentUser.authUserId : guest?.id;
+  const filterValue = filterBy === "usuario_id" || filterBy === "uploaded_by" ? currentUser.authUserId : guest?.id;
   const searchableColumns = searchableColumnsByTable[table] ?? ["id"];
   const sortableColumns = sortableColumnsByTable[table] ?? ["id"];
   const tableQuery = parseTableQuery(searchParams, {

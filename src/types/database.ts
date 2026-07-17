@@ -134,6 +134,8 @@ export type Comprobante = {
   numero_comprobante: string;
   emitido_at: string;
   pdf_url: string | null;
+  uploaded_by: string | null;
+  created_at: string;
 };
 
 export type BloqueoFecha = {
@@ -188,6 +190,7 @@ export type Notificacion = {
   id: string;
   tipo: NotificacionTipo;
   reserva_id: string | null;
+  usuario_id: string | null;
   mensaje: string;
   leida: boolean | null;
   destinatario_rol: NotificacionDestinatarioRol;
@@ -290,7 +293,7 @@ export type Database = {
         Comprobante,
         WithGeneratedId<Comprobante> &
           Pick<Comprobante, "reserva_id" | "transaccion_id" | "numero_comprobante" | "emitido_at"> &
-          Partial<Pick<Comprobante, "pdf_url">>
+          Partial<Pick<Comprobante, "pdf_url" | "uploaded_by" | "created_at">>
       >;
       bloqueos_fechas: DbTable<
         BloqueoFecha,
@@ -326,7 +329,7 @@ export type Database = {
         Notificacion,
         WithGeneratedId<Notificacion> &
           Pick<Notificacion, "tipo" | "mensaje" | "destinatario_rol"> &
-          Partial<Pick<Notificacion, "reserva_id" | "leida" | "created_at">>
+          Partial<Pick<Notificacion, "reserva_id" | "usuario_id" | "leida" | "created_at">>
       >;
     };
     Views: Record<string, never>;

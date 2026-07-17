@@ -120,6 +120,7 @@ export const ReservaForm = ({
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
   const [now, setNow] = useState(() => new Date());
+  const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
   const roomsSectionRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollToSelectedRoom = useRef(false);
   const nights = nightsBetween(fechaIngreso, fechaSalida);
@@ -296,7 +297,6 @@ export const ReservaForm = ({
   const renderRoomCard = (habitacion: Habitacion, index: number) => {
     const tarifa = tarifaByRoom.get(habitacion.id) ?? null;
     const roomImages = imagesByRoom.get(habitacion.id) ?? [];
-    const image = roomImages[0];
     const selected = habitacion.id === selectedRoom?.id;
     const availability = getRoomAvailabilityStatus({
       roomId: habitacion.id,
@@ -311,108 +311,105 @@ export const ReservaForm = ({
     const inactive = habitacion.activa === false;
     const disabled = !tarifa || unavailable || inactive;
     const showAvailabilityBadge = inactive || hasSelectedDateRange || !availability.available;
+    const carouselActive = hoveredRoomId === habitacion.id;
 
     return (
-      <button
+      <div
         key={habitacion.id}
-        type="button"
-        aria-pressed={selected}
-        disabled={disabled}
-        onClick={() => selectRoom(habitacion.id)}
-        className={cn(
-          "group overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
-          selected
-            ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
-            : "border-[#d8d4c8] dark:border-[#314237]",
-        )}
+        onMouseEnter={() => setHoveredRoomId(habitacion.id)}
+        onMouseLeave={() => setHoveredRoomId((currentRoomId) => (currentRoomId === habitacion.id ? null : currentRoomId))}
+        className="h-full"
       >
-        <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
-          {image ? (
-            <Image
-              src={image.url}
-              alt={`Habitación ${habitacion.numero}`}
-              fill
-              sizes="(min-width: 1280px) 280px, (min-width: 640px) 45vw, 100vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              priority={index < 2}
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
-              <ImageIcon className="h-8 w-8" aria-hidden="true" />
-            </div>
+        <button
+          type="button"
+          aria-pressed={selected}
+          disabled={disabled}
+          onClick={() => selectRoom(habitacion.id)}
+          className={cn(
+            "group h-full w-full overflow-hidden rounded-2xl border bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#18251d]",
+            selected
+              ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
+              : "border-[#d8d4c8] dark:border-[#314237]",
           )}
-          <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
-            {showAvailabilityBadge ? (
-              inactive ? (
-                <Badge variant="destructive">Inactiva</Badge>
-              ) : (
-                <Badge variant={availability.variant}>
-                  {availability.label}
-                  {availability.detail ? ` · ${availability.detail}` : ""}
-                </Badge>
-              )
-            ) : null}
-            {roomImages.length > 1 ? <Badge variant="outline">{roomImages.length} fotos</Badge> : null}
-          </div>
-        </div>
-
-        <div className="space-y-3 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
-              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{roomTypeLabel[habitacion.tipo]}</p>
+        >
+          <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+            <HoverRoomImageCarousel
+              images={roomImages}
+              alt={`Habitación ${habitacion.numero}`}
+              active={carouselActive}
+              priority={index < 2}
+            />
+            <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
+              {showAvailabilityBadge ? (
+                inactive ? (
+                  <Badge variant="destructive">Inactiva</Badge>
+                ) : (
+                  <Badge variant={availability.variant}>
+                    {availability.label}
+                    {availability.detail ? ` · ${availability.detail}` : ""}
+                  </Badge>
+                )
+              ) : null}
             </div>
-            {selected ? <CheckCircle2 className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" /> : null}
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" aria-hidden="true" />
-              {habitacion.capacidad_max} huéspedes
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <BedDouble className="h-3.5 w-3.5" aria-hidden="true" />
-              Piso {habitacion.piso}
-            </span>
-          </div>
-
-          {habitacion.descripcion ? (
-            <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
-          ) : null}
-
-          <div className="flex items-end justify-between gap-3">
-            {tarifa ? (
+          <div className="space-y-3 p-4">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">
-                  {tarifa.precio_noche} {tarifa.moneda}
-                </p>
-                <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">por noche · {tarifa.temporada}</p>
+                <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">Habitación {habitacion.numero}</h3>
+                <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{roomTypeLabel[habitacion.tipo]}</p>
               </div>
-            ) : (
-              <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin tarifa activa</p>
-            )}
-          </div>
+              {selected ? <CheckCircle2 className="h-5 w-5 text-[#c7a35a]" aria-hidden="true" /> : null}
+            </div>
 
-          <div className="grid grid-cols-7 gap-1">
-            {availabilityDays(habitacion.id).map((day) => (
-              <div
-                key={day.date}
-                className={cn(
-                  "rounded-lg border px-1 py-1.5 text-center text-[0.68rem] leading-tight",
-                  day.available
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
-                    : "border-zinc-200 bg-zinc-100 text-zinc-400 line-through dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500",
-                )}
-                title={`${formatDate(day.date)} ${day.available ? "disponible" : "no disponible"}`}
-              >
-                <span className="block uppercase">{formatWeekday(day.date)}</span>
-                <span className="block font-semibold">{new Date(`${day.date}T00:00:00`).getDate()}</span>
-              </div>
-            ))}
+            <div className="flex flex-wrap gap-2 text-xs text-[#66736a] dark:text-[#b7c0b4]">
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                {habitacion.capacidad_max} huéspedes
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <BedDouble className="h-3.5 w-3.5" aria-hidden="true" />
+                Piso {habitacion.piso}
+              </span>
+            </div>
+
+            {habitacion.descripcion ? (
+              <p className="line-clamp-2 min-h-10 text-sm text-[#66736a] dark:text-[#b7c0b4]">{habitacion.descripcion}</p>
+            ) : null}
+
+            <div className="flex items-end justify-between gap-3">
+              {tarifa ? (
+                <div>
+                  <p className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">
+                    {tarifa.precio_noche} {tarifa.moneda}
+                  </p>
+                  <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">por noche · {tarifa.temporada}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Sin tarifa activa</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {availabilityDays(habitacion.id).map((day) => (
+                <div
+                  key={day.date}
+                  className={cn(
+                    "rounded-lg border px-1 py-1.5 text-center text-[0.68rem] leading-tight",
+                    day.available
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+                      : "border-zinc-200 bg-zinc-100 text-zinc-400 line-through dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-500",
+                  )}
+                  title={`${formatDate(day.date)} ${day.available ? "disponible" : "no disponible"}`}
+                >
+                  <span className="block uppercase">{formatWeekday(day.date)}</span>
+                  <span className="block font-semibold">{new Date(`${day.date}T00:00:00`).getDate()}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      </div>
     );
   };
 
@@ -627,5 +624,54 @@ export const ReservaForm = ({
         </aside>
       </div>
     </form>
+  );
+};
+
+const HoverRoomImageCarousel = ({
+  images,
+  alt,
+  active,
+  priority = false,
+}: {
+  images: RoomImage[];
+  alt: string;
+  active: boolean;
+  priority?: boolean;
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!active || images.length <= 1) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setCurrentIndex((index) => (index + 1) % images.length);
+    }, 2200);
+
+    return () => window.clearInterval(intervalId);
+  }, [active, images.length]);
+
+  if (images.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-[#66736a] dark:text-[#b7c0b4]">
+        <ImageIcon className="h-8 w-8" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  const displayedIndex = active && images.length > 1 ? currentIndex % images.length : 0;
+  const image = images[displayedIndex];
+
+  return (
+    <Image
+      src={image.url}
+      alt={alt}
+      fill
+      sizes="(min-width: 1280px) 280px, (min-width: 640px) 45vw, 100vw"
+      className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+      priority={priority && displayedIndex === 0}
+      unoptimized
+    />
   );
 };
