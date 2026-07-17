@@ -205,8 +205,7 @@ export const createTarArchive = (files: TarFile[]) => {
   return archive;
 };
 
-export const createHabitacionesImagesBackup = async (actorId: string) => {
-  const bucket = "habitaciones";
+const createStorageBucketBackup = async (actorId: string, bucket: string) => {
   const admin = createSupabaseAdminClient();
   const storageFiles = await listStorageFiles(bucket);
   const tarFiles: TarFile[] = [];
@@ -236,10 +235,16 @@ export const createHabitacionesImagesBackup = async (actorId: string) => {
     }
 
     tarFiles.push({
-      path: `habitaciones/${file.name}`,
+      path: `${bucket}/${file.name}`,
       data: new Uint8Array(await data.arrayBuffer()),
     });
   }
 
   return createTarArchive(tarFiles);
 };
+
+export const createHabitacionesImagesBackup = async (actorId: string) =>
+  createStorageBucketBackup(actorId, "habitaciones");
+
+export const createComprobantesImagesBackup = async (actorId: string) =>
+  createStorageBucketBackup(actorId, "comprobante");

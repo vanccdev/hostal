@@ -37,7 +37,9 @@ Implementado:
 - Backups administrativos bajo `/admin/backups`:
   - Descarga operativa de tablas publicas de la app en JSON.
   - Descarga operativa de imagenes del bucket `habitaciones` en TAR.
+  - Descarga operativa de archivos del bucket `comprobante` en TAR.
   - Migracion completa self-hosted mediante scripts locales con `pg_dump`, `pg_restore` y archivo TAR de Storage.
+  - La pagina incluye tutorial operativo para ejecutar backup/restore desde PC local o VPS.
 - Portal cliente bajo `/app`:
   - La pantalla principal combina el resumen de reservas proximas con el formulario visual de nueva reserva.
   - Ya no depende de un boton "Nueva reserva" para iniciar el flujo.
@@ -55,6 +57,9 @@ Implementado:
   - Los listados principales editan registros desde dialogs shadcn sin cambiar de pagina.
 - Gestion de habitaciones permite subir multiples imagenes al bucket Supabase Storage `habitaciones`; se guardan URLs en `public.img_habitaciones` y el listado muestra miniatura/conteo.
   - El formulario incluye una zona para arrastrar imagenes; la subida sigue ejecutandose por Server Action.
+  - Al editar una habitacion, el dialog y la ruta `/admin/habitaciones/[id]/editar` muestran las imagenes actuales ya cargadas.
+  - Subir imagenes nuevas al editar conserva las existentes y agrega nuevos registros a `public.img_habitaciones`.
+  - Cada imagen existente puede eliminarse desde la edicion de habitacion; se borra el objeto del bucket `habitaciones` y la fila en `public.img_habitaciones`.
 - Tarifas asociadas a habitaciones:
   - `public.habitaciones.tarifa_id` apunta a `public.tarifas.id`, permitiendo que una tarifa se use en varias habitaciones.
   - `public.tarifas.habitacion_id` fue eliminado; no se debe reintroducir.
@@ -158,7 +163,7 @@ Pendiente o siguiente iteracion:
 - Implementar edicion de perfil cliente.
 - Permitir reemplazar comprobante rechazado desde UI cliente, si se decide operativamente.
 - Definir metodos de pago reales para reemplazar el default tecnico `qr_otro`.
-- Agregar administracion completa de imagenes de habitaciones existentes: borrar fotos, ordenar galeria y agregar imagenes a habitaciones ya creadas desde una vista de edicion.
+- Agregar administracion completa de imagenes de habitaciones existentes: ordenar galeria. La visualizacion, carga nueva y eliminacion de fotos al editar ya estan implementadas.
 - Agregar eliminacion/desactivacion controlada en CRUD principales.
 - Revisar y endurecer RLS con el esquema final real.
 - Agregar pruebas automatizadas cuando el backend este disponible.
@@ -220,6 +225,8 @@ Notas de esquema:
 
 - Se agrego en la DB local `public.usuarios.must_change_password`.
 - Se aplico en la DB local `public.img_habitaciones` y el bucket publico `storage.buckets.id = 'habitaciones'`.
+- Storage local de habitaciones verificado despues de restore: `storage.objects` tiene 21 objetos y `public.img_habitaciones` tiene 21 URLs asociadas.
+- Ultimo punto sano de backup/restore completo verificado: `backups/20260717T154907Z`.
 - Se aplico historicamente `public.tarifas.habitacion_id` mediante `supabase/migrations/202607040002_add_tarifa_habitacion_id.sql`, pero luego fue reemplazado.
 - La relacion vigente es `public.habitaciones.tarifa_id`; `public.tarifas.habitacion_id` fue eliminado por `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`.
 - `public.tarifas.peso` fue agregado por `supabase/migrations/202607120001_add_tarifas_peso.sql`; tiene constraint `0..3`, indices de prioridad/vigencia y un indice unico parcial para evitar repetir `habitacion_tipo + temporada + peso` en tarifas activas.
@@ -267,6 +274,7 @@ Para una descarga rapida desde la app:
 
 - `/admin/backups/database`: exporta tablas publicas de la aplicacion en JSON.
 - `/admin/backups/imagenes`: exporta imagenes del bucket `habitaciones` en TAR.
+- `/admin/backups/comprobantes`: exporta archivos del bucket `comprobante` en TAR.
 
 Para migrar a otro Supabase self-hosted con Auth, configuraciones internas, schemas, policies, storage metadata y archivos:
 
@@ -275,17 +283,29 @@ scripts/backup-supabase-local.sh
 CONFIRM_RESTORE=YES scripts/restore-supabase-local.sh backups/YYYYMMDDTHHMMSSZ
 ```
 
-Los scripts usan por defecto los contenedores Docker `supabase-db` y `supabase-storage`. Se pueden cambiar con:
+Ejecuta `scripts/backup-supabase-local.sh` en la maquina donde corre Supabase self-hosted con Docker. Si Next.js y
+Supabase estan en el mismo VPS, se ejecuta desde la raiz del proyecto en ese VPS. Si estan separados, se ejecuta en la
+maquina donde viven los contenedores de Supabase.
+
+Los scripts usan por defecto los contenedores Docker `supabase-db` y `supabase-storage`, y el rol de base
+`supabase_admin`. Se pueden cambiar con:
 
 ```bash
-SUPABASE_DB_CONTAINER=nombre-db SUPABASE_STORAGE_CONTAINER=nombre-storage scripts/backup-supabase-local.sh
+SUPABASE_DB_CONTAINER=nombre-db SUPABASE_STORAGE_CONTAINER=nombre-storage SUPABASE_DB_USER=supabase_admin scripts/backup-supabase-local.sh
 ```
 
-Si Storage no esta montado en `/var/lib/storage`, definir:
+El respaldo y restore de Storage se ejecuta dentro del contenedor `supabase-storage` sobre `/var/lib/storage`, para evitar
+problemas de permisos del usuario del host. En esta instalacion local la estructura correcta incluye `stub/stub`; no
+aplanar esa carpeta. Despues de extraer `storage.tar`, el restore recompone los xattrs `user.supabase.cache-control` y
+`user.supabase.content-type` que Supabase Storage necesita para servir los archivos.
 
-```bash
-SUPABASE_STORAGE_DIR=/ruta/storage scripts/backup-supabase-local.sh
-```
+Estado verificado del flujo completo:
+
+- `scripts/backup-supabase-local.sh` genera `database.dump` y `storage.tar` dentro de `backups/YYYYMMDDTHHMMSSZ`.
+- `CONFIRM_RESTORE=YES scripts/restore-supabase-local.sh backups/20260717T154907Z` restaura DB y Storage sin romper las imagenes.
+- El restore filtra entradas internas conflictivas de `pg_restore` que no conviene aplicar en Supabase self-hosted local, como privilegios/event triggers administrados por roles internos.
+- El restore de Storage recompone xattrs dentro del contenedor con `fs-xattr`; sin esos xattrs Supabase Storage puede responder `500`/`ENODATA` o servir imagenes como corruptas.
+- URLs de prueba del bucket `habitaciones` responden `200 image/jpeg` despues del restore.
 
 ## Verificacion
 
@@ -308,12 +328,15 @@ Verificaciones recientes:
 
 - `pnpm lint` pasa.
 - `pnpm exec tsc --noEmit` pasa.
+- `bash -n scripts/backup-supabase-local.sh` pasa.
+- `bash -n scripts/restore-supabase-local.sh` pasa.
 - Tablas/listados actualizados para usar paginacion server-side con Supabase y UI de busqueda/orden/columnas/filas por pagina.
 - Supabase local verificado: `public.tarifas` ya no tiene `habitacion_id`; `public.habitaciones` tiene `tarifa_id`.
 - Supabase local verificado: `public.tarifas` tiene `peso smallint NOT NULL DEFAULT 0`, constraint `tarifas_peso_check` e indice unico parcial `tarifas_tipo_temporada_peso_activa_uidx`.
 - Supabase local verificado: `current_setting('TimeZone') = America/La_Paz`.
 - `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id`, tras configurar timezone y tras agregar/validar `tarifas.peso`.
 - Supabase local verificado con Docker: existen tabla `public.img_habitaciones`, bucket `habitaciones` y politicas RLS para `storage.objects`.
+- Supabase local verificado con Docker: despues del restore sano existen 21 objetos en Storage `habitaciones` y 21 filas en `public.img_habitaciones`; las habitaciones tienen entre 2 y 3 fotos.
 - Supabase local verificado con Docker: bucket `comprobante` publico con limite 10 MB y MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - Supabase local verificado con Docker: `public.comprobantes` tiene `uploaded_by` y `created_at`; `public.notificaciones` tiene `usuario_id`; `reservas` y `notificaciones` estan publicadas en `supabase_realtime`.
 - Supabase local verificado con Docker: `public.reservas` ya no tiene columnas antiguas `checkin_at`/`checkout_at`.
@@ -364,13 +387,15 @@ La sexta configura la zona horaria local de Postgres/Supabase en `America/La_Paz
 
 La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de PostgREST.
 
-La octava agrega horarios programados de estadia y claves operativas de check-in/check-out.
+La octava agrega `public.tarifas.peso`, constraints de prioridad e indice unico parcial para no repetir `habitacion_tipo + temporada + peso` en tarifas activas.
 
-La novena elimina columnas antiguas `public.reservas.checkin_at` y `public.reservas.checkout_at`.
+La novena agrega horarios programados de estadia y claves operativas de check-in/check-out.
 
-La decima agrega la configuracion de espera de comprobante.
+La decima elimina columnas antiguas `public.reservas.checkin_at` y `public.reservas.checkout_at`.
 
-La undecima crea/configura el bucket `comprobante`, agrega columnas para trazabilidad de comprobantes/notificaciones y publica `reservas` y `notificaciones` en Supabase Realtime.
+La undecima agrega la configuracion de espera de comprobante.
+
+La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazabilidad de comprobantes/notificaciones y publica `reservas` y `notificaciones` en Supabase Realtime.
 
 ## Flujos Para Probar
 
@@ -436,13 +461,14 @@ La undecima crea/configura el bucket `comprobante`, agrega columnas para trazabi
    - Debe asociar la tarifa seleccionada actualizando `public.habitaciones.tarifa_id`.
    - Debe subir archivos a Storage bucket `habitaciones`, guardar URLs en `public.img_habitaciones` y mostrar miniatura/conteo en el listado.
 
-8. Staff edita CRUD principales:
+9. Staff edita CRUD principales:
    - Ir a `/admin/habitaciones`, `/admin/huespedes` o `/admin/tarifas`.
    - Usar el boton `Editar` del listado.
    - Guardar cambios desde la ruta `/editar`.
    - Debe actualizar el registro existente sin crear duplicados.
+   - En habitaciones, el dialog de edicion debe mostrar las imagenes actuales, permitir agregar nuevas imagenes sin borrar las existentes y eliminar fotos individuales.
 
-9. Tablas con paginacion server-side:
+10. Tablas con paginacion server-side:
    - Ir a listados como `/admin/usuarios`, `/admin/habitaciones`, `/admin/huespedes`, `/admin/tarifas`, `/admin/reservas`, `/admin/auditoria` o modulos genericos.
    - Cambiar filas por pagina y navegar paginas; debe actualizar query params y consultar Supabase con `range`.
    - Buscar en todas las columnas o una columna especifica; debe resetear a pagina 1 y consultar Supabase con filtros.
@@ -454,7 +480,9 @@ La undecima crea/configura el bucket `comprobante`, agrega columnas para trazabi
 - Operaciones administrativas usan `createSupabaseAdminClient()` solo en servidor.
 - La subida de imagenes de habitaciones usa `SUPABASE_SERVICE_ROLE_KEY` solo en Server Action (`src/app/actions/crud.ts`), nunca en componentes cliente.
 - Los backups operativos de la app usan `SUPABASE_SERVICE_ROLE_KEY` solo del lado servidor en `src/lib/backups.ts`; no exportan `auth.users` ni hashes de contrasenas.
-- Los scripts de migracion completa usan `pg_dump` sobre el contenedor DB y TAR del directorio Storage; deben ejecutarse solo en infraestructura controlada.
+- Los scripts de migracion completa usan `pg_dump`/`pg_restore` sobre el contenedor DB y TAR del directorio Storage; deben ejecutarse solo en infraestructura controlada.
+- No ejecutar restore sin `CONFIRM_RESTORE=YES`; el restore reemplaza el estado actual de la DB/Storage destino por el estado del backup elegido.
+- No aplanar ni editar manualmente `storage.tar`; en esta instalacion la estructura `stub/stub` y los xattrs restaurados son necesarios para que las imagenes sigan funcionando.
 - Toda accion critica valida sesion y rol server-side.
 - El rol se consulta desde `public.usuarios`, no solo desde JWT.
 - Cliente solo debe acceder a datos propios.

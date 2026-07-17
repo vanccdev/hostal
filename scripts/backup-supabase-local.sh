@@ -4,6 +4,7 @@ set -euo pipefail
 BACKUP_ROOT="${1:-backups}"
 DB_CONTAINER="${SUPABASE_DB_CONTAINER:-supabase-db}"
 STORAGE_CONTAINER="${SUPABASE_STORAGE_CONTAINER:-supabase-storage}"
+DB_USER="${SUPABASE_DB_USER:-supabase_admin}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR="${BACKUP_ROOT%/}/${TIMESTAMP}"
 DB_DUMP="database.dump"
@@ -15,30 +16,25 @@ storage_dir_from_container() {
 
 STORAGE_DIR="${SUPABASE_STORAGE_DIR:-$(storage_dir_from_container)}"
 
-if [ -z "$STORAGE_DIR" ] || [ ! -d "$STORAGE_DIR" ]; then
-  echo "No se encontro el directorio local de Storage. Define SUPABASE_STORAGE_DIR." >&2
-  exit 1
-fi
-
 mkdir -p "$OUT_DIR"
 
 docker exec "$DB_CONTAINER" pg_dump \
-  -U postgres \
+  -U "$DB_USER" \
   -d postgres \
   --format=custom \
   --blobs \
-  --file="/tmp/$DB_DUMP"
+  > "$OUT_DIR/$DB_DUMP"
 
-docker cp "$DB_CONTAINER:/tmp/$DB_DUMP" "$OUT_DIR/$DB_DUMP"
-docker exec "$DB_CONTAINER" rm -f "/tmp/$DB_DUMP"
-
-tar -C "$STORAGE_DIR" -cf "$OUT_DIR/storage.tar" .
+docker exec "$STORAGE_CONTAINER" tar -C /var/lib/storage -cf /tmp/storage.tar .
+docker cp "$STORAGE_CONTAINER:/tmp/storage.tar" "$OUT_DIR/storage.tar"
+docker exec "$STORAGE_CONTAINER" rm -f /tmp/storage.tar
 
 cat > "$OUT_DIR/manifest.txt" <<EOF
 created_at=$TIMESTAMP
 db_container=$DB_CONTAINER
 storage_container=$STORAGE_CONTAINER
-storage_dir=$STORAGE_DIR
+storage_dir=${STORAGE_DIR:-/var/lib/storage}
+database_user=$DB_USER
 database_dump=$DB_DUMP
 storage_archive=storage.tar
 

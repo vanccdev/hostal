@@ -11,6 +11,7 @@ import { upsertHabitacionAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
+import { HabitacionImageDeleteButton } from "@/components/forms/HabitacionImageDeleteButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +19,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { habitacionSchema } from "@/schemas/crud";
-import type { Habitacion, Tarifa } from "@/types/database";
+import type { Habitacion, ImgHabitacion, Tarifa } from "@/types/database";
 
 type HabitacionFormProps = {
   habitacion?: Habitacion;
+  existingImages?: Pick<ImgHabitacion, "id" | "url">[];
   tarifas: Tarifa[];
   onSuccess?: () => void;
 };
@@ -33,13 +35,14 @@ type ImagePreview = {
   url: string;
 };
 
-export const HabitacionForm = ({ habitacion, tarifas, onSuccess }: HabitacionFormProps) => {
+export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuccess }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
   const initialTipo = (habitacion?.tipo as z.input<typeof habitacionSchema>["tipo"]) ?? "individual";
   const [selectedTipo, setSelectedTipo] = useState<z.input<typeof habitacionSchema>["tipo"]>(initialTipo);
   const [selectedTarifaId, setSelectedTarifaId] = useState(habitacion?.tarifa_id ?? "");
   const [activa, setActiva] = useState(habitacion?.activa ?? true);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [deletedExistingImageIds, setDeletedExistingImageIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imagePreviewsRef = useRef<ImagePreview[]>([]);
   const form = useForm<z.input<typeof habitacionSchema>>({
@@ -57,6 +60,8 @@ export const HabitacionForm = ({ habitacion, tarifas, onSuccess }: HabitacionFor
   });
   const hasTarifas = tarifas.length > 0;
   const imageCount = imagePreviews.length;
+  const visibleExistingImages = existingImages.filter((image) => !deletedExistingImageIds.includes(image.id));
+  const existingImageCount = visibleExistingImages.length;
 
   useEffect(() => {
     return () => {
@@ -124,6 +129,10 @@ export const HabitacionForm = ({ habitacion, tarifas, onSuccess }: HabitacionFor
     }
 
     setPreviewState([]);
+  };
+
+  const handleExistingImageDeleted = (imageId: string) => {
+    setDeletedExistingImageIds((currentIds) => [...currentIds, imageId]);
   };
 
   const handleSuccess = () => {
@@ -240,6 +249,43 @@ export const HabitacionForm = ({ habitacion, tarifas, onSuccess }: HabitacionFor
           onDrop={handleImageDrop}
         >
           <Label htmlFor="imagenes">Imágenes</Label>
+          {existingImageCount > 0 ? (
+            <div className="space-y-3 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Imágenes actuales</p>
+                <span className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+                  {existingImageCount} foto{existingImageCount === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {visibleExistingImages.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className="relative overflow-hidden rounded-xl border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23]"
+                  >
+                    <div className="relative aspect-[4/3]">
+                      <Image
+                        src={image.url}
+                        alt={`Imagen actual ${index + 1} de habitación ${habitacion?.numero ?? ""}`}
+                        fill
+                        sizes="(min-width: 1024px) 180px, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <HabitacionImageDeleteButton imageId={image.id} onDeleted={handleExistingImageDeleted} />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+                Al seleccionar nuevas imágenes se agregarán a la galería existente.
+              </p>
+            </div>
+          ) : habitacion ? (
+            <div className="rounded-xl border border-[#d8d4c8] bg-white p-3 text-sm font-medium text-[#66736a] dark:border-[#314237] dark:bg-[#18251d] dark:text-[#b7c0b4]">
+              Esta habitación no tiene imágenes cargadas.
+            </div>
+          ) : null}
           <label
             htmlFor="imagenes"
             className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-6 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"

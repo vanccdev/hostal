@@ -34,6 +34,18 @@ const roomImageFilesFromFormData = (formData: FormData) =>
     .getAll("imagenes")
     .filter((value): value is File => value instanceof File && value.size > 0);
 
+const roomImageObjectPathFromPublicUrl = (url: string) => {
+  const marker = `/storage/v1/object/public/${ROOM_IMAGES_BUCKET}/`;
+  const markerIndex = url.indexOf(marker);
+
+  if (markerIndex === -1) {
+    return null;
+  }
+
+  const rawPath = url.slice(markerIndex + marker.length).split("?")[0];
+  return rawPath ? decodeURIComponent(rawPath) : null;
+};
+
 const validateRoomImageFiles = (files: File[]) => {
   for (const file of files) {
     if (!ALLOWED_ROOM_IMAGE_TYPES.has(file.type)) {
@@ -168,6 +180,46 @@ export const upsertHabitacionAction = async (
     ok: true,
     message: imageFiles.length > 0 ? "Habitación guardada con imágenes." : "Habitación guardada.",
   };
+};
+
+export const deleteHabitacionImageAction = async (imageId: string): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
+    return { ok: false, message: "No tienes permiso para eliminar imágenes de habitaciones." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: image, error: imageError } = await admin
+    .from("img_habitaciones")
+    .select("id,habitacion_id,url")
+    .eq("id", imageId)
+    .maybeSingle();
+
+  if (imageError || !image) {
+    return { ok: false, message: imageError?.message ?? "La imagen ya no existe." };
+  }
+
+  const objectPath = roomImageObjectPathFromPublicUrl(image.url);
+
+  if (objectPath) {
+    const { error: storageError } = await admin.storage.from(ROOM_IMAGES_BUCKET).remove([objectPath]);
+
+    if (storageError) {
+      return { ok: false, message: storageError.message };
+    }
+  }
+
+  const { error: deleteError } = await admin.from("img_habitaciones").delete().eq("id", image.id);
+
+  if (deleteError) {
+    return { ok: false, message: deleteError.message };
+  }
+
+  revalidatePath("/admin/habitaciones");
+  revalidatePath(`/admin/habitaciones/${image.habitacion_id}/editar`);
+
+  return { ok: true, message: "Imagen eliminada." };
 };
 
 export const upsertHuespedAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {

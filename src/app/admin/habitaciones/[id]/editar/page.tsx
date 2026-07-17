@@ -10,12 +10,17 @@ export default async function EditarHabitacionPage({ params }: { params: Promise
   await requireAdminModule("habitaciones");
   const { id } = await params;
   const supabase = createSupabaseAdminClient();
-  const [{ data: habitacion }, { data: availableTarifas }] = await Promise.all([
+  const [{ data: habitacion }, { data: imagenes }, { data: availableTarifas }] = await Promise.all([
     supabase
       .from("habitaciones")
       .select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at")
       .eq("id", id)
       .maybeSingle(),
+    supabase
+      .from("img_habitaciones")
+      .select("id,url")
+      .eq("habitacion_id", id)
+      .order("created_at"),
     supabase
       .from("tarifas")
       .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
@@ -43,7 +48,7 @@ export default async function EditarHabitacionPage({ params }: { params: Promise
           <CardTitle>Datos de habitación</CardTitle>
         </CardHeader>
         <CardContent>
-          <HabitacionForm habitacion={habitacion} tarifas={availableTarifas ?? []} />
+          <HabitacionForm habitacion={habitacion} existingImages={imagenes ?? []} tarifas={availableTarifas ?? []} />
         </CardContent>
       </Card>
     </section>
