@@ -80,9 +80,10 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
           <p>Check-out programado: {formatDateTime(reserva.checkout_programado_at)}</p>
           <p>Comprobante: {comprobante ? "Subido" : "Pendiente"}</p>
           <p>Verificación de pago: {transaccion?.estado_verificacion ?? "Pendiente"}</p>
-          <p>
-            Estado: <Badge variant="secondary">{formatReservaEstado(reserva.estado)}</Badge>
-          </p>
+          <div className="flex items-center gap-2">
+            <span>Estado:</span>
+            <Badge variant="secondary">{formatReservaEstado(reserva.estado)}</Badge>
+          </div>
         </CardContent>
       </Card>
     </section>

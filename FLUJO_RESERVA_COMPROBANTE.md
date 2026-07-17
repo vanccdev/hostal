@@ -217,6 +217,19 @@ Esta migracion:
 - Crea indices auxiliares.
 - Habilita Realtime para `public.reservas` y `public.notificaciones`.
 
+En la instancia local fue aplicada y verificada con Docker:
+
+```text
+storage.buckets.id = comprobante
+storage.buckets.public = true
+storage.buckets.file_size_limit = 10485760
+allowed_mime_types = application/pdf,image/jpeg,image/png,image/webp
+public.comprobantes.uploaded_by existe
+public.comprobantes.created_at existe
+public.notificaciones.usuario_id existe
+public.reservas y public.notificaciones estan en supabase_realtime
+```
+
 ## Archivos principales
 
 ```text
@@ -236,4 +249,33 @@ src/app/api/jobs/cancelar-reservas-vencidas/route.ts
 - Definir si un comprobante rechazado puede reemplazarse desde la UI del cliente.
 - Definir si `metodo_pago = qr_otro` debe cambiarse por un metodo especifico cuando existan datos bancarios reales.
 - Endurecer RLS final para que clientes puedan leer solo sus comprobantes y notificaciones.
-- Probar Realtime en la instancia self-hosted despues de aplicar la migracion.
+
+## Estado local de predespliegue
+
+La base local fue limpiada para pruebas de predespliegue preservando:
+
+```text
+auth.users/admin@admin.com = 1
+public.usuarios/admin = 1
+public.habitaciones = 10
+public.img_habitaciones = 21
+storage.objects bucket habitaciones = 21
+public.tarifas = 15
+public.configuracion_hostal = 5
+```
+
+Quedaron vacias:
+
+```text
+public.huespedes
+public.reservas
+public.transacciones
+public.comprobantes
+public.notificaciones
+public.cancelaciones
+public.huespedes_reserva
+public.bloqueos_fechas
+public.estado_habitaciones
+public.log_estados_habitacion
+public.audit_log
+```

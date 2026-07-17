@@ -23,6 +23,7 @@ Implementado:
 - Server Actions:
   - `src/app/actions/auth.ts`
   - `src/app/actions/clientes.ts`
+  - `src/app/actions/comprobantes.ts`
   - `src/app/actions/reservas.ts`
   - `src/app/actions/password.ts`
   - `src/app/actions/crud.ts`
@@ -42,6 +43,10 @@ Implementado:
   - Ya no depende de un boton "Nueva reserva" para iniciar el flujo.
   - Muestra habitaciones listas para seleccionar y restaura automaticamente la habitacion/fechas elegidas desde la home publica.
   - `/app/reservas/nueva` se mantiene disponible como ruta compatible del formulario.
+  - Al crear reserva como cliente, redirige a `/app/reservas/[id]` para completar el pago.
+  - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen y actualizacion en tiempo real.
+  - `/app/comprobantes` lista comprobantes subidos por el usuario mediante `comprobantes.uploaded_by`.
+  - `/app/pagos` y `/app/cancelaciones` filtran por reservas del huesped y luego por `reserva_id`; no usan columnas inexistentes en tablas hijas.
 - CRUD inicial funcional para habitaciones, huespedes y tarifas.
 - Edicion de registros para CRUD principales:
   - Habitaciones: `/admin/habitaciones/[id]/editar`
@@ -97,6 +102,17 @@ Implementado:
   - Endpoint protegido para cron: `/api/jobs/cancelar-reservas-vencidas`, con `Authorization: Bearer <CRON_SECRET>`.
   - La cancelacion automatica solo afecta reservas `pendiente_pago` vencidas sin comprobante, sin `comprobante_url` y sin transaccion aprobada.
   - Documentacion operativa en `OPERACION_RESERVAS.md`.
+- Flujo de comprobantes de reserva:
+  - Documentacion funcional en `FLUJO_RESERVA_COMPROBANTE.md`.
+  - Bucket publico Supabase Storage `comprobante` para PDF/JPG/PNG/WEBP de hasta 10 MB.
+  - `uploadReservationProofAction` valida pertenencia de la reserva, estado `pendiente_pago`, MIME y tamano antes de subir.
+  - El archivo se nombra con codigo de reserva, nombre del huesped, telefono y sufijo unico.
+  - Al subir se crean `public.transacciones` en `por_verificar` y `public.comprobantes` con `pdf_url` y `uploaded_by`.
+  - Se notifica a recepcion/admin mediante `public.notificaciones`.
+  - `/admin/reserva-detalle` permite abrir comprobante, confirmar reserva o rechazar comprobante.
+  - Confirmar marca `transacciones.estado_verificacion = aprobada`, guarda verificador y cambia `reservas.estado = confirmada`.
+  - Rechazar marca `transacciones.estado_verificacion = rechazada`.
+  - Cliente y staff usan Supabase Realtime para refrescar estado/notificaciones sin polling.
 - Flujo base `createClientAccountByStaff`.
 - Flujo base `resetClientPasswordToPhone`.
 - Eventos internos y dispatch de webhooks sin romper la operacion principal si el webhook falla.
@@ -115,6 +131,9 @@ Implementado:
   - Las tarjetas de habitaciones muestran una imagen estatica en el catalogo.
   - Al interactuar con una tarjeta se abre un dialog de detalle con galeria/carrusel de todas las fotos de esa habitacion.
   - La accion de reserva desde el dialog guarda la intencion y continua hacia `/app`.
+- Tarjetas de habitaciones en el formulario de reserva:
+  - Se elimino la etiqueta de conteo de fotos en `/app`.
+  - La imagen cambia automaticamente entre fotos solo mientras hay hover sobre la tarjeta.
 - Dropdown menu base en `src/components/ui/dropdown-menu.tsx`.
 - Select base shadcn/Radix en `src/components/ui/select.tsx`; los formularios no usan `<select>` nativo.
 - Calendar base en `src/components/ui/calendar.tsx` y date picker reusable en `src/components/forms/DatePickerField.tsx`; los formularios no usan `Input type="date"`.
@@ -137,7 +156,8 @@ Pendiente o siguiente iteracion:
 - Implementar busqueda avanzada de cliente por nombre, email, telefono y documento en `/admin/reservas/nueva`.
 - Implementar flujo combinado "crear cliente nuevo + crear reserva" desde `/admin/reservas/nueva`.
 - Implementar edicion de perfil cliente.
-- Implementar carga real de comprobantes si se usara Supabase Storage.
+- Permitir reemplazar comprobante rechazado desde UI cliente, si se decide operativamente.
+- Definir metodos de pago reales para reemplazar el default tecnico `qr_otro`.
 - Agregar administracion completa de imagenes de habitaciones existentes: borrar fotos, ordenar galeria y agregar imagenes a habitaciones ya creadas desde una vista de edicion.
 - Agregar eliminacion/desactivacion controlada en CRUD principales.
 - Revisar y endurecer RLS con el esquema final real.
@@ -206,9 +226,15 @@ Notas de esquema:
 - `supabase/migrations/202607140001_add_stay_schedule_settings.sql` agrega `checkin_programado_at` y `checkout_programado_at` a `public.reservas` y claves de horario en `configuracion_hostal`.
 - `supabase/migrations/202607140002_drop_reservas_real_check_times.sql` elimina `checkin_at` y `checkout_at` si todavia existen.
 - `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql` agrega la clave `reserva_comprobante_espera_minutos`.
+- `supabase/migrations/202607150001_add_comprobante_storage.sql` crea bucket `comprobante`, agrega `comprobantes.uploaded_by`, `comprobantes.created_at`, `notificaciones.usuario_id`, indices y Realtime para `reservas`/`notificaciones`.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes.tipo_documento` y `public.huespedes.numero_documento` son `NOT NULL`; los tipos locales ya reflejan ese comportamiento.
+- Limpieza local de predespliegue realizada:
+  - Se preservo `admin@admin.com` como unico usuario en `auth.users` y `public.usuarios`.
+  - Se preservaron `public.habitaciones`, `public.img_habitaciones`, Storage bucket `habitaciones`, `public.tarifas` y `public.configuracion_hostal`.
+  - Quedaron vacias `public.huespedes`, `public.reservas`, `public.transacciones`, `public.comprobantes`, `public.notificaciones`, `public.cancelaciones`, `public.huespedes_reserva`, `public.bloqueos_fechas`, `public.estado_habitaciones`, `public.log_estados_habitacion` y `public.audit_log`.
+  - Conteos finales verificados: `habitaciones = 10`, `img_habitaciones = 21`, Storage `habitaciones = 21`, `tarifas = 15`, `configuracion_hostal = 5`, `auth.users = 1`, `public.usuarios = 1`.
 
 ## Desarrollo
 
@@ -288,6 +314,13 @@ Verificaciones recientes:
 - Supabase local verificado: `current_setting('TimeZone') = America/La_Paz`.
 - `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id`, tras configurar timezone y tras agregar/validar `tarifas.peso`.
 - Supabase local verificado con Docker: existen tabla `public.img_habitaciones`, bucket `habitaciones` y politicas RLS para `storage.objects`.
+- Supabase local verificado con Docker: bucket `comprobante` publico con limite 10 MB y MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
+- Supabase local verificado con Docker: `public.comprobantes` tiene `uploaded_by` y `created_at`; `public.notificaciones` tiene `usuario_id`; `reservas` y `notificaciones` estan publicadas en `supabase_realtime`.
+- Supabase local verificado con Docker: `public.reservas` ya no tiene columnas antiguas `checkin_at`/`checkout_at`.
+- Supabase local limpiado para predespliegue preservando solo admin, habitaciones, imagenes, tarifas y configuracion.
+- `src/lib/env.ts` usa acceso directo a `process.env.NEXT_PUBLIC_*` para que Next exponga las variables publicas al bundle cliente.
+- `/app/reservas/[id]` corregido para no renderizar `Badge` dentro de `<p>`, evitando error de hidratacion.
+- `/app/pagos` y `/app/cancelaciones` corregidos para no filtrar por columnas inexistentes en tablas hijas.
 - `/admin/backups` responde protegido con redirect a `/login` sin sesion; endpoints `/admin/backups/database` y `/admin/backups/imagenes` devuelven `401` sin sesion.
 - `/admin/habitaciones` responde protegido con redirect a `/login` sin sesion; `/login` responde `200`.
 - `/admin/usuarios` fue medido en viewport movil `390x844` con Chrome headless:
@@ -310,6 +343,7 @@ Archivos:
 - `supabase/migrations/202607140001_add_stay_schedule_settings.sql`
 - `supabase/migrations/202607140002_drop_reservas_real_check_times.sql`
 - `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql`
+- `supabase/migrations/202607150001_add_comprobante_storage.sql`
 
 La primera migracion agrega:
 
@@ -329,6 +363,14 @@ La quinta agrega `public.habitaciones.tarifa_id`, migra asignaciones antiguas de
 La sexta configura la zona horaria local de Postgres/Supabase en `America/La_Paz`.
 
 La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de PostgREST.
+
+La octava agrega horarios programados de estadia y claves operativas de check-in/check-out.
+
+La novena elimina columnas antiguas `public.reservas.checkin_at` y `public.reservas.checkout_at`.
+
+La decima agrega la configuracion de espera de comprobante.
+
+La undecima crea/configura el bucket `comprobante`, agrega columnas para trazabilidad de comprobantes/notificaciones y publica `reservas` y `notificaciones` en Supabase Realtime.
 
 ## Flujos Para Probar
 
@@ -350,6 +392,11 @@ La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de P
    - Debe redirigir a `/login?next=/app` o permitir ir a `/crear-cuenta?next=/app`.
    - Tras login/registro, `/app` debe restaurar fechas y habitacion en el formulario integrado.
    - Confirmar reserva; la tarifa se deriva de la habitacion y la reserva se asocia al huesped de `auth.uid()`.
+   - Debe redirigir a `/app/reservas/[id]`.
+   - La pantalla debe mostrar contador de espera de comprobante segun `reserva_comprobante_espera_minutos`.
+   - Subir comprobante PDF/JPG/PNG/WEBP de hasta 10 MB.
+   - Deben crearse registros en `public.transacciones`, `public.comprobantes` y `public.notificaciones`.
+   - El cliente debe ver estado "comprobante recibido" mientras recepcion verifica.
 
 4. Staff crea cliente:
    - Login como `admin` o `recepcionista`.
@@ -364,14 +411,24 @@ La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de P
    - No seleccionar tarifa manualmente; debe derivarse de la habitacion.
    - No debe duplicar `auth.users` ni `huespedes`.
 
-6. Reset password:
+6. Staff verifica comprobante:
+   - Login como `admin` o `recepcionista`.
+   - Ir a `/admin/notificaciones` y confirmar que aparece el aviso de comprobante pendiente.
+   - Ir a `/admin/reserva-detalle`.
+   - Abrir el comprobante y revisar deposito manualmente.
+   - Si es valido, pulsar "Confirmar reserva".
+   - Debe actualizar `transacciones.estado_verificacion = aprobada` y `reservas.estado = confirmada`.
+   - La pantalla del cliente en `/app/reservas/[id]` debe refrescarse por Realtime.
+   - Si no es valido, pulsar "Rechazar comprobante" y validar `transacciones.estado_verificacion = rechazada`.
+
+7. Reset password:
    - Ir a `/admin/usuarios`.
    - Seleccionar reset de un cliente.
    - Confirmar en `/admin/usuarios/[id]/reset-password`.
    - Password nueva = telefono normalizado.
    - `must_change_password = true`.
 
-7. Staff crea habitacion con imagenes:
+8. Staff crea habitacion con imagenes:
    - Login como `admin` o `recepcionista`.
    - Ir a `/admin/habitaciones`.
    - Crear habitacion, seleccionar una tarifa existente y seleccionar una o varias imagenes JPG, PNG, WEBP o GIF.

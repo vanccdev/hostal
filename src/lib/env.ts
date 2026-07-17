@@ -8,9 +8,17 @@ const readEnv = (key: string) => {
   return value;
 };
 
+const readPublicEnv = (key: string, value: string | undefined) => {
+  if (!value) {
+    throw new Error(`Missing environment variable: ${key}`);
+  }
+
+  return value;
+};
+
 export const publicEnv = {
-  supabaseUrl: () => readEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: () => readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  supabaseUrl: () => readPublicEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
+  supabaseAnonKey: () => readPublicEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
 };
 
 export const serverEnv = {
