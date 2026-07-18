@@ -1,9 +1,11 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { authUserPhone } from "@/lib/auth/user-contact";
 import type { Usuario } from "@/types/database";
 
 export type CurrentUser = {
   authUserId: string;
   email: string | null;
+  phone: string | null;
   profile: Usuario | null;
 };
 
@@ -26,7 +28,7 @@ export const getCurrentUser = async (): Promise<CurrentUser | null> => {
   return {
     authUserId: user.id,
     email: user.email ?? null,
+    phone: authUserPhone(user),
     profile,
   };
 };
-

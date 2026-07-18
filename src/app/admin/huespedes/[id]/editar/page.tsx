@@ -25,7 +25,7 @@ export default async function EditarHuespedPage({ params }: { params: Promise<{ 
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Editar huésped</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">{huesped.nombre_completo}</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Ficha documental del huésped</p>
         </div>
         <Button asChild variant="outline">
           <Link href="/admin/huespedes">Volver</Link>

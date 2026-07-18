@@ -38,6 +38,7 @@ type ReservaFormProps = {
   habitaciones: Habitacion[];
   tarifas: Tarifa[];
   huespedes?: Huesped[];
+  huespedContacts?: Record<string, { nombre: string; email: string | null }>;
   imagenes?: RoomImage[];
   reservas?: RoomReservation[];
   bloqueos?: RoomBlock[];
@@ -108,6 +109,7 @@ export const ReservaForm = ({
   habitaciones,
   tarifas,
   huespedes = [],
+  huespedContacts = {},
   imagenes = [],
   reservas = [],
   bloqueos = [],
@@ -438,7 +440,8 @@ export const ReservaForm = ({
             <SelectContent>
               {huespedes.map((huesped) => (
                 <SelectItem key={huesped.id} value={huesped.id}>
-                  {huesped.nombre_completo} {huesped.email ? `- ${huesped.email}` : ""}
+                  {huespedContacts[huesped.id]?.nombre ?? "Cliente sin nombre"}{" "}
+                  {huespedContacts[huesped.id]?.email ? `- ${huespedContacts[huesped.id]?.email}` : ""}
                 </SelectItem>
               ))}
             </SelectContent>

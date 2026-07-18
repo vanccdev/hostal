@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { upsertHuespedAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
+import { DatePickerField } from "@/components/forms/DatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,12 +27,10 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
   const form = useForm<HuespedInput>({
     resolver: zodResolver(huespedSchema),
     defaultValues: {
-      id: huesped?.id,
-      nombreCompleto: huesped?.nombre_completo ?? "",
-      email: huesped?.email ?? "",
-      telefono: huesped?.telefono ?? "",
+      id: huesped?.id ?? "",
       tipoDocumento: huesped?.tipo_documento,
       numeroDocumento: isPendingDocumentNumber(huesped?.numero_documento) ? "" : (huesped?.numero_documento ?? ""),
+      fechaNacimiento: huesped?.fecha_nacimiento ?? "",
       pais: huesped?.pais_origen ?? "",
     },
   });
@@ -44,21 +43,8 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
         errorTitle="No se pudo guardar el huésped"
         onSuccess={onSuccess}
       />
-      {huesped ? <input type="hidden" value={huesped.id} {...form.register("id")} /> : null}
+      <input type="hidden" value={huesped?.id ?? ""} {...form.register("id")} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="nombreCompleto">Nombre completo</Label>
-          <Input id="nombreCompleto" {...form.register("nombreCompleto")} />
-          <FormMessage state={state} field="nombreCompleto" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...form.register("email")} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="telefono">Teléfono</Label>
-          <Input id="telefono" {...form.register("telefono")} />
-        </div>
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
           <Select name="tipoDocumento" defaultValue={huesped?.tipo_documento ?? "__none"}>
@@ -82,13 +68,24 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
           <FormMessage state={state} field="numeroDocumento" />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
+          <DatePickerField
+            id="fechaNacimiento"
+            name="fechaNacimiento"
+            defaultValue={form.getValues("fechaNacimiento")}
+            placeholder="Seleccionar fecha"
+            showMonthYearSelect
+          />
+          <FormMessage state={state} field="fechaNacimiento" />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="pais">País</Label>
           <Input id="pais" {...form.register("pais")} />
         </div>
       </div>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" aria-hidden="true" />
-        {huesped ? "Actualizar huésped" : "Guardar huésped"}
+        Actualizar huésped
       </Button>
     </form>
   );

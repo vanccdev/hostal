@@ -77,7 +77,7 @@ export const tableStateFromQuery = (
 
 export const searchableColumnsByTable: Partial<Record<TableName, string[]>> = {
   usuarios: ["id", "nombre", "rol"],
-  huespedes: ["id", "nombre_completo", "tipo_documento", "numero_documento", "pais_origen", "telefono", "email"],
+  huespedes: ["tipo_documento", "numero_documento", "pais_origen"],
   habitaciones: ["id", "numero", "tipo", "descripcion", "tarifa_id"],
   tarifas: ["id", "habitacion_tipo", "temporada", "moneda", "created_by"],
   reservas: ["id", "codigo_reserva", "huesped_id", "habitacion_id", "tarifa_id", "canal_origen", "estado", "registrado_por"],
@@ -94,7 +94,7 @@ export const searchableColumnsByTable: Partial<Record<TableName, string[]>> = {
 
 export const sortableColumnsByTable: Partial<Record<TableName, string[]>> = {
   usuarios: ["nombre", "rol", "activo", "created_at", "must_change_password"],
-  huespedes: ["nombre_completo", "tipo_documento", "numero_documento", "pais_origen", "telefono", "email", "created_at", "updated_at"],
+  huespedes: ["usuario_id", "tipo_documento", "numero_documento", "pais_origen", "created_at", "updated_at"],
   habitaciones: ["numero", "tipo", "piso", "capacidad_max", "activa", "created_at"],
   tarifas: ["habitacion_tipo", "temporada", "precio_noche", "peso", "vigente_desde", "vigente_hasta", "activa", "created_at"],
   reservas: ["codigo_reserva", "fecha_ingreso", "fecha_salida", "num_noches", "num_huespedes", "estado", "precio_total", "created_at"],

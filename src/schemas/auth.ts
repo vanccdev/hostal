@@ -21,10 +21,17 @@ export const completeClientProfileSchema = z.object({
   telefono: z.string().min(5, "Ingresa tu número de celular o teléfono"),
   tipoDocumento: z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"], "Selecciona el tipo de documento"),
   numeroDocumento: z.string().min(2, "Ingresa tu número de documento"),
+  fechaNacimiento: z.iso.date("Fecha de nacimiento inválida").optional().or(z.literal("")),
   pais: z.string().optional(),
+  observaciones: z.string().optional(),
+});
+
+export const updateClientProfileSchema = completeClientProfileSchema.extend({
+  email: z.email("Email inválido").trim().toLowerCase(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type CompleteClientProfileInput = z.infer<typeof completeClientProfileSchema>;
+export type UpdateClientProfileInput = z.infer<typeof updateClientProfileSchema>;

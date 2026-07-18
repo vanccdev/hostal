@@ -4,6 +4,7 @@ import { ReservaDetallePagination } from "@/components/admin/ReservaDetallePagin
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
+import { authUserIdsMatchingContact, userContactsById } from "@/lib/auth/user-contact";
 import { ilikePattern } from "@/lib/table-server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -116,17 +117,16 @@ export default async function ReservaDetallePage({
 
   if (query.q) {
     const pattern = ilikePattern(query.q);
-    const [{ data: matchedHuespedes }, { data: matchedUsuarios }] = await Promise.all([
+    const [{ data: matchedHuespedes }, { data: matchedUsuarios }, authMatchedUserIds] = await Promise.all([
       supabase
         .from("huespedes")
         .select("id")
-        .or(
-          `nombre_completo.ilike.${pattern},email.ilike.${pattern},telefono.ilike.${pattern},numero_documento.ilike.${pattern}`,
-        )
+        .or(`numero_documento.ilike.${pattern},pais_origen.ilike.${pattern}`)
         .limit(100),
       supabase.from("usuarios").select("id").ilike("nombre", pattern).limit(100),
+      authUserIdsMatchingContact(supabase, query.q),
     ]);
-    const matchedUserIds = compactIds((matchedUsuarios ?? []).map((usuario) => usuario.id));
+    const matchedUserIds = compactIds([...(matchedUsuarios ?? []).map((usuario) => usuario.id), ...authMatchedUserIds]);
     const { data: matchedUserHuespedes } =
       matchedUserIds.length > 0
         ? await supabase.from("huespedes").select("id").in("usuario_id", matchedUserIds).limit(100)
@@ -217,6 +217,7 @@ export default async function ReservaDetallePage({
       ? await supabase.from("usuarios").select("*").in("id", referencedUserIds)
       : { data: [] as Usuario[] };
   const usuariosById = byId(usuarios);
+  const contactsById = await userContactsById(supabase, usuarios ?? []);
 
   const items: ReservaDetalleItem[] = reservationRows.map((reserva) => {
     const huesped = huespedesById.get(reserva.huesped_id);
@@ -225,6 +226,7 @@ export default async function ReservaDetallePage({
       reserva,
       huesped,
       usuarioCliente: huesped?.usuario_id ? usuariosById.get(huesped.usuario_id) : undefined,
+      contactoCliente: huesped?.usuario_id ? contactsById.get(huesped.usuario_id) : undefined,
       habitacion: habitacionesById.get(reserva.habitacion_id),
       habitacionImagenes: imagesByRoom.get(reserva.habitacion_id) ?? [],
       tarifa: tarifasById.get(reserva.tarifa_id),

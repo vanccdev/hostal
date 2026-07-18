@@ -9,6 +9,7 @@ import { displayDocumentNumber } from "@/lib/client-profile";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { formatNotificacionTipo } from "@/lib/notificacion-tipo";
 import { formatReservaEstado } from "@/lib/reserva-estado";
+import type { UserContact } from "@/lib/auth/user-contact";
 import type {
   AuditLog,
   Cancelacion,
@@ -27,6 +28,7 @@ export type ReservaDetalleItem = {
   reserva: Reserva;
   huesped?: Huesped;
   usuarioCliente?: Usuario;
+  contactoCliente?: UserContact;
   habitacion?: Habitacion;
   habitacionImagenes: ImgHabitacion[];
   tarifa?: Tarifa;
@@ -87,6 +89,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
     reserva,
     huesped,
     usuarioCliente,
+    contactoCliente,
     habitacion,
     habitacionImagenes,
     tarifa,
@@ -150,10 +153,10 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
             <KeyValueList
               columns="three"
               items={[
-                ["Nombre", huesped?.nombre_completo],
+                ["Nombre", contactoCliente?.nombre ?? usuarioCliente?.nombre],
                 ["Usuario", usuarioCliente?.nombre],
-                ["Email", huesped?.email],
-                ["Teléfono", huesped?.telefono],
+                ["Email", contactoCliente?.email],
+                ["Teléfono", contactoCliente?.telefono],
                 ["Documento", huesped ? `${huesped.tipo_documento} ${displayDocumentNumber(huesped.numero_documento)}` : undefined],
                 ["País", huesped?.pais_origen],
                 ["Nacimiento", formatDate(huesped?.fecha_nacimiento)],

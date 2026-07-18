@@ -7,6 +7,10 @@ Aplicacion Next.js con App Router para administrar un hostal conectado a Supabas
 Implementado:
 
 - Autenticacion con Supabase Auth: `/login`, `/crear-cuenta`, logout hacia `/` y cambio obligatorio de contrasena.
+  - El registro publico pide nombre, email, contrasena y telefono obligatorio.
+  - El telefono se guarda en `auth.users.phone` y tambien en metadata como respaldo.
+  - El registro valida duplicados de email y telefono contra Auth antes de crear la cuenta, mostrando errores claros en el formulario.
+  - Al crear cuenta se crea automaticamente la fila relacionada en `public.huespedes` con documento temporal interno; el dialog inicial solo actualiza esa ficha.
 - Guards server-side y `middleware.ts` para proteger `/admin` y `/app`.
 - Home publica en `/` con catalogo de habitaciones, fotos, tarifas y disponibilidad sin requerir sesion.
 - Flujo publico de reserva:
@@ -49,12 +53,20 @@ Implementado:
   - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen y actualizacion en tiempo real.
   - `/app/comprobantes` lista comprobantes subidos por el usuario mediante `comprobantes.uploaded_by`.
   - `/app/pagos` y `/app/cancelaciones` filtran por reservas del huesped y luego por `reserva_id`; no usan columnas inexistentes en tablas hijas.
+  - `/app/perfil` fue convertido en panel editable:
+    - Muestra datos relacionados de Auth, `public.usuarios`, `public.huespedes`, reservas, comprobantes/pagos y notificaciones.
+    - Permite editar nombre, email, telefono, tipo/numero de documento, fecha de nacimiento, pais y observaciones.
+    - Mantiene los valores del formulario despues de guardar para permitir cambios sucesivos.
+    - Usa `DatePickerField` con selector de mes/anio para fecha de nacimiento.
 - CRUD inicial funcional para habitaciones, huespedes y tarifas.
 - Edicion de registros para CRUD principales:
   - Habitaciones: `/admin/habitaciones/[id]/editar`
   - Huespedes: `/admin/huespedes/[id]/editar`
   - Tarifas: `/admin/tarifas/[id]/editar`
   - Los listados principales editan registros desde dialogs shadcn sin cambiar de pagina.
+  - `public.huespedes` ya no almacena nombre, email ni telefono; esos datos viven en `public.usuarios` y Auth.
+  - El listado de huespedes muestra nombre/email/telefono resolviendo `usuario_id` contra `public.usuarios` y `auth.users`.
+  - El formulario directo "Nuevo huesped" fue removido; para crear una persona nueva se usa `/admin/clientes/nuevo`, que crea Auth + `public.usuarios` + ficha documental en `public.huespedes`.
 - Gestion de habitaciones permite subir multiples imagenes al bucket Supabase Storage `habitaciones`; se guardan URLs en `public.img_habitaciones` y el listado muestra miniatura/conteo.
   - El formulario incluye una zona para arrastrar imagenes; la subida sigue ejecutandose por Server Action.
   - Al editar una habitacion, el dialog y la ruta `/admin/habitaciones/[id]/editar` muestran las imagenes actuales ya cargadas.
@@ -160,7 +172,6 @@ Pendiente o siguiente iteracion:
 - Definir estrategia de backup programado en produccion y almacenamiento externo cifrado.
 - Implementar busqueda avanzada de cliente por nombre, email, telefono y documento en `/admin/reservas/nueva`.
 - Implementar flujo combinado "crear cliente nuevo + crear reserva" desde `/admin/reservas/nueva`.
-- Implementar edicion de perfil cliente.
 - Permitir reemplazar comprobante rechazado desde UI cliente, si se decide operativamente.
 - Definir metodos de pago reales para reemplazar el default tecnico `qr_otro`.
 - Agregar administracion completa de imagenes de habitaciones existentes: ordenar galeria. La visualizacion, carga nueva y eliminacion de fotos al editar ya estan implementadas.
@@ -234,9 +245,18 @@ Notas de esquema:
 - `supabase/migrations/202607140002_drop_reservas_real_check_times.sql` elimina `checkin_at` y `checkout_at` si todavia existen.
 - `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql` agrega la clave `reserva_comprobante_espera_minutos`.
 - `supabase/migrations/202607150001_add_comprobante_storage.sql` crea bucket `comprobante`, agrega `comprobantes.uploaded_by`, `comprobantes.created_at`, `notificaciones.usuario_id`, indices y Realtime para `reservas`/`notificaciones`.
+- `supabase/migrations/202607170001_drop_huespedes_identity_duplicates.sql` elimina duplicados de identidad en `public.huespedes`:
+  - Migra telefonos existentes hacia `auth.users.raw_user_meta_data.telefono` cuando faltan.
+  - Elimina `public.huespedes.nombre_completo`, `public.huespedes.email` y `public.huespedes.telefono`.
+  - Hace `public.huespedes.usuario_id` obligatorio y unico.
+- `supabase/migrations/202607170002_backfill_auth_users_phone.sql` copia telefonos de metadata hacia `auth.users.phone` para registros antiguos.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
-- En la DB local, `public.huespedes.tipo_documento` y `public.huespedes.numero_documento` son `NOT NULL`; los tipos locales ya reflejan ese comportamiento.
+- En la DB local, `public.huespedes` queda como ficha documental del usuario:
+  - Columnas vigentes: `id`, `usuario_id`, `tipo_documento`, `numero_documento`, `pais_origen`, `fecha_nacimiento`, `observaciones`, `created_at`, `updated_at`.
+  - `tipo_documento`, `numero_documento` y `usuario_id` son `NOT NULL`.
+  - `usuario_id` es unico y referencia `public.usuarios(id)`.
+  - Nombre se lee de `public.usuarios.nombre`; email y telefono se leen de `auth.users`.
 - Limpieza local de predespliegue realizada:
   - Se preservo `admin@admin.com` como unico usuario en `auth.users` y `public.usuarios`.
   - Se preservaron `public.habitaciones`, `public.img_habitaciones`, Storage bucket `habitaciones`, `public.tarifas` y `public.configuracion_hostal`.
@@ -340,6 +360,10 @@ Verificaciones recientes:
 - Supabase local verificado con Docker: bucket `comprobante` publico con limite 10 MB y MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - Supabase local verificado con Docker: `public.comprobantes` tiene `uploaded_by` y `created_at`; `public.notificaciones` tiene `usuario_id`; `reservas` y `notificaciones` estan publicadas en `supabase_realtime`.
 - Supabase local verificado con Docker: `public.reservas` ya no tiene columnas antiguas `checkin_at`/`checkout_at`.
+- Supabase local verificado con Docker: `public.huespedes` ya no tiene `nombre_completo`, `email` ni `telefono`; `usuario_id` es obligatorio/unico.
+- Registro cliente actualizado: valida email/telefono duplicados en Auth, guarda telefono en `auth.users.phone` y crea `public.huespedes` automaticamente con documento temporal interno.
+- `/app/perfil` actualizado como panel editable con datos de Auth, `public.usuarios`, `public.huespedes`, reservas, pagos/comprobantes y notificaciones.
+- `DatePickerField` soporta selectores de mes/anio para fecha de nacimiento.
 - Supabase local limpiado para predespliegue preservando solo admin, habitaciones, imagenes, tarifas y configuracion.
 - `src/lib/env.ts` usa acceso directo a `process.env.NEXT_PUBLIC_*` para que Next exponga las variables publicas al bundle cliente.
 - `/app/reservas/[id]` corregido para no renderizar `Badge` dentro de `<p>`, evitando error de hidratacion.
@@ -367,6 +391,8 @@ Archivos:
 - `supabase/migrations/202607140002_drop_reservas_real_check_times.sql`
 - `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql`
 - `supabase/migrations/202607150001_add_comprobante_storage.sql`
+- `supabase/migrations/202607170001_drop_huespedes_identity_duplicates.sql`
+- `supabase/migrations/202607170002_backfill_auth_users_phone.sql`
 
 La primera migracion agrega:
 
@@ -397,12 +423,19 @@ La undecima agrega la configuracion de espera de comprobante.
 
 La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazabilidad de comprobantes/notificaciones y publica `reservas` y `notificaciones` en Supabase Realtime.
 
+La decimotercera cambia `public.huespedes` a ficha documental asociada a usuario: elimina `nombre_completo`, `email` y `telefono`, hace `usuario_id` obligatorio/unico y conserva datos documentales como tipo/numero de documento, pais, fecha de nacimiento y observaciones.
+
+La decimocuarta rellena `auth.users.phone` desde `auth.users.raw_user_meta_data.telefono` para usuarios existentes que hubieran quedado con telefono solo en metadata.
+
 ## Flujos Para Probar
 
 1. Registro cliente:
    - Ir a `/crear-cuenta`.
-   - Crear cuenta con nombre, email, password y datos opcionales.
-   - Debe crear `auth.users`, `public.usuarios` con rol `cliente` y `public.huespedes`.
+   - Crear cuenta con nombre, email, password y telefono obligatorio.
+   - Debe validar duplicados de email/telefono antes de crear y mostrar errores claros.
+   - Debe crear `auth.users` con `phone`, `public.usuarios` con rol `cliente` y redirigir a `/app`.
+   - Al entrar a `/app`, si falta ficha documental, debe abrir el dialog para completar tipo/numero de documento, fecha de nacimiento, pais y observaciones.
+   - Al guardar el dialog debe actualizar la fila existente de `public.huespedes` asociada a `auth.uid()`.
 
 2. Login:
    - Ir a `/login`.
@@ -427,8 +460,10 @@ La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazab
    - Login como `admin` o `recepcionista`.
    - Ir a `/admin/clientes/nuevo`.
    - Crear cliente con telefono obligatorio.
+   - Debe validar duplicados de email, telefono y documento antes de crear.
    - Password inicial = telefono normalizado.
    - `must_change_password = true`.
+   - Debe guardar telefono en `auth.users.phone`, nombre en `public.usuarios.nombre` y documento/pais en `public.huespedes`.
 
 5. Staff crea reserva:
    - Ir a `/admin/reservas/nueva`.
@@ -450,7 +485,7 @@ La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazab
    - Ir a `/admin/usuarios`.
    - Seleccionar reset de un cliente.
    - Confirmar en `/admin/usuarios/[id]/reset-password`.
-   - Password nueva = telefono normalizado.
+   - Password nueva = `auth.users.phone` normalizado.
    - `must_change_password = true`.
 
 8. Staff crea habitacion con imagenes:
@@ -466,6 +501,7 @@ La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazab
    - Usar el boton `Editar` del listado.
    - Guardar cambios desde la ruta `/editar`.
    - Debe actualizar el registro existente sin crear duplicados.
+   - En huespedes se edita la ficha documental; nombre/email/telefono se resuelven desde usuario/Auth.
    - En habitaciones, el dialog de edicion debe mostrar las imagenes actuales, permitir agregar nuevas imagenes sin borrar las existentes y eliminar fotos individuales.
 
 10. Tablas con paginacion server-side:

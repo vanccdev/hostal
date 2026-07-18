@@ -8,7 +8,12 @@ import { APP_TIME_ZONE } from "@/lib/datetime";
 import { calculateTurnoverMinutes, staySettingKeys } from "@/lib/stay-settings";
 import { habitacionSchema, huespedSchema, staySettingsSchema, tarifaSchema } from "@/schemas/crud";
 import type { ActionState } from "@/app/actions/types";
-import { formValue, validationErrors } from "@/app/actions/helpers";
+import {
+  duplicatedGuestDocumentState,
+  formValue,
+  isGuestDocumentUniqueError,
+  validationErrors,
+} from "@/app/actions/helpers";
 
 const ROOM_IMAGES_BUCKET = "habitaciones";
 const MAX_ROOM_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -230,12 +235,10 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
   }
 
   const parsed = huespedSchema.safeParse({
-    id: formValue(formData, "id") || undefined,
-    nombreCompleto: formValue(formData, "nombreCompleto"),
-    email: formValue(formData, "email"),
-    telefono: formValue(formData, "telefono"),
+    id: formValue(formData, "id"),
     tipoDocumento: formValue(formData, "tipoDocumento"),
     numeroDocumento: formValue(formData, "numeroDocumento"),
+    fechaNacimiento: formValue(formData, "fechaNacimiento"),
     pais: formValue(formData, "pais"),
   });
 
@@ -244,21 +247,36 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
   }
 
   const admin = createSupabaseAdminClient();
+
+  const { data: duplicateGuest, error: duplicateGuestError } = await admin
+    .from("huespedes")
+    .select("id")
+    .eq("numero_documento", parsed.data.numeroDocumento)
+    .neq("id", parsed.data.id)
+    .limit(1);
+
+  if (duplicateGuestError) {
+    return { ok: false, message: duplicateGuestError.message };
+  }
+
+  if (duplicateGuest.length > 0) {
+    return duplicatedGuestDocumentState();
+  }
+
   const payload = {
-    nombre_completo: parsed.data.nombreCompleto,
-    email: parsed.data.email || null,
-    telefono: parsed.data.telefono || null,
     tipo_documento: parsed.data.tipoDocumento,
     numero_documento: parsed.data.numeroDocumento,
+    fecha_nacimiento: parsed.data.fechaNacimiento || null,
     pais_origen: parsed.data.pais || null,
   };
 
-  const query = parsed.data.id
-    ? admin.from("huespedes").update(payload).eq("id", parsed.data.id)
-    : admin.from("huespedes").insert(payload);
-  const { error } = await query;
+  const { error } = await admin.from("huespedes").update(payload).eq("id", parsed.data.id);
 
   if (error) {
+    if (isGuestDocumentUniqueError(error)) {
+      return duplicatedGuestDocumentState();
+    }
+
     return { ok: false, message: error.message };
   }
 

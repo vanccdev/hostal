@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "@/lib/db/audit";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { authUserPhone } from "@/lib/auth/user-contact";
 import { isManagementRole } from "@/lib/permissions";
 import { normalizePhone } from "@/lib/phone";
 import { resetClientPasswordSchema } from "@/schemas/clientes";
@@ -44,17 +45,19 @@ export const resetClientPasswordToPhone = async (
     return { ok: false, message: "Solo se puede restablecer contraseña a clientes." };
   }
 
-  const { data: guest, error: guestError } = await admin
-    .from("huespedes")
-    .select("telefono,email")
-    .eq("usuario_id", parsed.data.userId)
-    .maybeSingle();
+  const { data: authData, error: authReadError } = await admin.auth.admin.getUserById(parsed.data.userId);
 
-  if (guestError || !guest?.telefono) {
-    return { ok: false, message: guestError?.message ?? "El cliente no tiene teléfono registrado." };
+  if (authReadError || !authData.user) {
+    return { ok: false, message: authReadError?.message ?? "Usuario Auth no encontrado." };
   }
 
-  const password = normalizePhone(guest.telefono);
+  const telefono = authUserPhone(authData.user);
+
+  if (!telefono) {
+    return { ok: false, message: "El cliente no tiene teléfono registrado." };
+  }
+
+  const password = normalizePhone(telefono);
   const { error: authError } = await admin.auth.admin.updateUserById(parsed.data.userId, {
     password,
   });
@@ -77,7 +80,7 @@ export const resetClientPasswordToPhone = async (
     accion: "cliente.password_restablecido",
     entidad: "usuarios",
     entidad_id: parsed.data.userId,
-    metadata: { email: guest.email ?? null },
+    metadata: { email: authData.user.email ?? null },
   });
 
   await emitEvent(admin, {
@@ -92,4 +95,3 @@ export const resetClientPasswordToPhone = async (
 
   return { ok: true, message: "Contraseña restablecida al número de celular del cliente." };
 };
-

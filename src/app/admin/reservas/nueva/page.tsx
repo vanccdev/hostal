@@ -1,8 +1,10 @@
 import { ReservaForm } from "@/components/forms/ReservaForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
+import { userContactsById } from "@/lib/auth/user-contact";
 import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { Usuario } from "@/types/database";
 
 export default async function NuevaReservaAdminPage() {
   await requireAdminModule("reservas");
@@ -17,7 +19,7 @@ export default async function NuevaReservaAdminPage() {
     supabase
       .from("huespedes")
       .select("*")
-      .order("nombre_completo"),
+      .order("created_at", { ascending: false }),
     supabase
       .from("reservas")
       .select("id,habitacion_id,fecha_ingreso,fecha_salida,estado,checkin_programado_at,checkout_programado_at")
@@ -34,6 +36,16 @@ export default async function NuevaReservaAdminPage() {
           .in("habitacion_id", habitacionIds)
           .order("created_at")
       : { data: [] };
+  const usuarioIds = Array.from(new Set((huespedes ?? []).map((huesped) => huesped.usuario_id)));
+  const { data: usuarios } =
+    usuarioIds.length > 0 ? await supabase.from("usuarios").select("id,nombre").in("id", usuarioIds) : { data: [] as Pick<Usuario, "id" | "nombre">[] };
+  const contactsById = await userContactsById(supabase, usuarios ?? []);
+  const huespedContacts = Object.fromEntries(
+    (huespedes ?? []).map((huesped) => {
+      const contact = contactsById.get(huesped.usuario_id);
+      return [huesped.id, { nombre: contact?.nombre ?? "Cliente sin nombre", email: contact?.email ?? null }];
+    }),
+  );
 
   return (
     <section className="space-y-6">
@@ -51,6 +63,7 @@ export default async function NuevaReservaAdminPage() {
             habitaciones={habitaciones ?? []}
             tarifas={tarifas ?? []}
             huespedes={huespedes ?? []}
+            huespedContacts={huespedContacts}
             imagenes={imagenes ?? []}
             reservas={reservas ?? []}
             bloqueos={bloqueos ?? []}

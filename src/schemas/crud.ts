@@ -13,12 +13,10 @@ export const habitacionSchema = z.object({
 });
 
 export const huespedSchema = z.object({
-  id: z.uuid().optional(),
-  nombreCompleto: z.string().min(2, "Ingresa el nombre completo"),
-  email: z.email("Email inválido").optional().or(z.literal("")),
-  telefono: z.string().optional(),
+  id: z.uuid("Huésped inválido"),
   tipoDocumento: z.enum(["CI", "Pasaporte", "DNI", "RUC", "Otro"], "Selecciona el tipo de documento"),
   numeroDocumento: z.string().min(2, "Ingresa el número de documento"),
+  fechaNacimiento: z.iso.date("Fecha de nacimiento inválida").optional().or(z.literal("")),
   pais: z.string().optional(),
 });
 

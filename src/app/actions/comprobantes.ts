@@ -102,8 +102,8 @@ export const uploadReservationProofAction = async (
 
   const fileNameBase = [
     sanitizeFilePart(reserva.codigo_reserva),
-    sanitizeFilePart(guest.nombre_completo),
-    sanitizeFilePart(guest.telefono),
+    sanitizeFilePart(currentUser.profile.nombre),
+    sanitizeFilePart(currentUser.phone),
     crypto.randomUUID().slice(0, 8),
   ].join("-");
   const objectPath = `${fileNameBase}.${extension}`;
@@ -162,7 +162,7 @@ export const uploadReservationProofAction = async (
   await emitEvent(admin, {
     event: "pago.registrado",
     title: "Comprobante recibido",
-    message: `Comprobante recibido para la reserva ${reserva.codigo_reserva}. Revisar depósito de ${guest.nombre_completo}.`,
+    message: `Comprobante recibido para la reserva ${reserva.codigo_reserva}. Revisar depósito de ${currentUser.profile.nombre}.`,
     payload: { reserva_id: reserva.id, codigo_reserva: reserva.codigo_reserva },
   });
 

@@ -31,17 +31,14 @@ export type Usuario = {
 
 export type Huesped = {
   id: string;
-  nombre_completo: string;
   tipo_documento: TipoDocumento;
   numero_documento: string;
   pais_origen: string | null;
-  telefono: string | null;
-  email: string | null;
   fecha_nacimiento: string | null;
   observaciones: string | null;
   created_at: string;
   updated_at: string;
-  usuario_id: string | null;
+  usuario_id: string;
 };
 
 export type Habitacion = {
@@ -235,8 +232,8 @@ export type Database = {
       huespedes: DbTable<
         Huesped,
         WithGeneratedId<Huesped> &
-          Pick<Huesped, "nombre_completo" | "tipo_documento" | "numero_documento"> &
-          Partial<Omit<Huesped, "id" | "nombre_completo" | "tipo_documento" | "numero_documento">>
+          Pick<Huesped, "usuario_id" | "tipo_documento" | "numero_documento"> &
+          Partial<Omit<Huesped, "id" | "usuario_id" | "tipo_documento" | "numero_documento">>
       >;
       habitaciones: DbTable<
         Habitacion,
