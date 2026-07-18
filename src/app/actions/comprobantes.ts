@@ -7,6 +7,7 @@ import { getGuestForUser } from "@/lib/db/current-guest";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { isManagementRole } from "@/lib/permissions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import type { ActionState } from "@/app/actions/types";
 
 const comprobanteBucket = "comprobante";
@@ -26,6 +27,46 @@ const sanitizeFilePart = (value: string | null | undefined) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 48) || "sin-dato";
+
+const sanitizeFolderPart = (value: string | null | undefined) =>
+  (value ?? "sin-correo")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9@._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || "sin-correo";
+
+const comprobanteCodeForReservation = (codigoReserva: string) =>
+  `${sanitizeFilePart(codigoReserva).slice(0, 12)}-${crypto.randomUUID().replace(/-/g, "").slice(0, 7)}`.slice(0, 20);
+
+const localDateTimeStamp = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "00";
+
+  return `${value("year")}${value("month")}${value("day")}-${value("hour")}${value("minute")}${value("second")}`;
+};
+
+const nextComprobanteSequence = async (
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  folderPath: string,
+) => {
+  const { data } = await admin.storage.from(comprobanteBucket).list(folderPath, {
+    limit: 1000,
+    sortBy: { column: "name", order: "asc" },
+  });
+  const comprobanteCount = (data ?? []).filter((item) => item.name.startsWith("comprobante-")).length;
+
+  return comprobanteCount + 1;
+};
 
 const comprobanteFileFromForm = (formData: FormData) => {
   const file = formData.get("comprobante");
@@ -100,13 +141,24 @@ export const uploadReservationProofAction = async (
     return { ok: false, message: "Esta reserva ya tiene un comprobante cargado." };
   }
 
+  await admin
+    .from("transacciones")
+    .delete()
+    .eq("reserva_id", reserva.id)
+    .eq("estado_verificacion", "por_verificar")
+    .eq("tipo", "pago")
+    .not("comprobante_url", "is", null);
+
+  const comprobanteCode = comprobanteCodeForReservation(reserva.codigo_reserva);
+  const folderPath = `${localISODate()}/${sanitizeFolderPart(currentUser.email)}`;
+  const sequence = await nextComprobanteSequence(admin, folderPath);
   const fileNameBase = [
-    sanitizeFilePart(reserva.codigo_reserva),
+    "comprobante",
     sanitizeFilePart(currentUser.profile.nombre),
-    sanitizeFilePart(currentUser.phone),
-    crypto.randomUUID().slice(0, 8),
+    localDateTimeStamp(),
+    String(sequence),
   ].join("-");
-  const objectPath = `${fileNameBase}.${extension}`;
+  const objectPath = `${folderPath}/${fileNameBase}.${extension}`;
   const { error: uploadError } = await admin.storage.from(comprobanteBucket).upload(objectPath, file, {
     contentType: file.type,
     upsert: false,
@@ -126,7 +178,7 @@ export const uploadReservationProofAction = async (
       metodo_pago: "qr_otro",
       estado_verificacion: "por_verificar",
       comprobante_url: comprobanteUrl,
-      referencia_externa: fileNameBase,
+      referencia_externa: comprobanteCode,
       tipo: "pago",
     })
     .select("id")
@@ -140,7 +192,7 @@ export const uploadReservationProofAction = async (
   const { error: comprobanteError } = await admin.from("comprobantes").insert({
     reserva_id: reserva.id,
     transaccion_id: transaccion.id,
-    numero_comprobante: fileNameBase,
+    numero_comprobante: comprobanteCode,
     emitido_at: new Date().toISOString(),
     pdf_url: comprobanteUrl,
     uploaded_by: currentUser.authUserId,
@@ -148,6 +200,7 @@ export const uploadReservationProofAction = async (
 
   if (comprobanteError) {
     await admin.storage.from(comprobanteBucket).remove([objectPath]);
+    await admin.from("transacciones").delete().eq("id", transaccion.id);
     return { ok: false, message: comprobanteError.message };
   }
 
@@ -170,6 +223,7 @@ export const uploadReservationProofAction = async (
   revalidatePath("/app/reservas");
   revalidatePath("/admin/notificaciones");
   revalidatePath("/admin/reserva-detalle");
+  revalidatePath("/admin/verificar-comprobantes");
 
   return { ok: true, message: "Comprobante subido. El hostal revisará el depósito." };
 };
@@ -266,6 +320,7 @@ export const verifyReservationProofAction = async (
   revalidatePath("/app/reservas");
   revalidatePath("/admin/reserva-detalle");
   revalidatePath("/admin/notificaciones");
+  revalidatePath("/admin/verificar-comprobantes");
 
   return { ok: true, message: approved ? "Reserva confirmada." : "Comprobante rechazado." };
 };

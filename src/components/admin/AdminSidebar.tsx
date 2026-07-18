@@ -33,6 +33,7 @@ const items: { href: string; label: string; module: AdminModule; icon: React.Com
   { href: "/admin/clientes/nuevo", label: "Nuevo cliente", module: "clientes", icon: UserPlus },
   { href: "/admin/reservas", label: "Reservas", module: "reservas", icon: CalendarDays },
   { href: "/admin/reserva-detalle", label: "Reserva detalle", module: "reservas", icon: FileText },
+  { href: "/admin/verificar-comprobantes", label: "Verificar pagos", module: "comprobantes", icon: FileCheck },
   { href: "/admin/tarifas", label: "Tarifas", module: "tarifas", icon: ClipboardList },
   { href: "/admin/transacciones", label: "Transacciones", module: "transacciones", icon: Banknote },
   { href: "/admin/comprobantes", label: "Comprobantes", module: "comprobantes", icon: FileCheck },

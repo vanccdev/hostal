@@ -50,7 +50,7 @@ Implementado:
   - Muestra habitaciones listas para seleccionar y restaura automaticamente la habitacion/fechas elegidas desde la home publica.
   - `/app/reservas/nueva` se mantiene disponible como ruta compatible del formulario.
   - Al crear reserva como cliente, redirige a `/app/reservas/[id]` para completar el pago.
-  - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen y actualizacion en tiempo real.
+  - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen con caja de arrastre, previsualizacion y actualizacion en tiempo real.
   - `/app/comprobantes` lista comprobantes subidos por el usuario mediante `comprobantes.uploaded_by`.
   - `/app/pagos` y `/app/cancelaciones` filtran por reservas del huesped y luego por `reserva_id`; no usan columnas inexistentes en tablas hijas.
   - `/app/perfil` fue convertido en panel editable:
@@ -123,10 +123,12 @@ Implementado:
   - Documentacion funcional en `FLUJO_RESERVA_COMPROBANTE.md`.
   - Bucket publico Supabase Storage `comprobante` para PDF/JPG/PNG/WEBP de hasta 10 MB.
   - `uploadReservationProofAction` valida pertenencia de la reserva, estado `pendiente_pago`, MIME y tamano antes de subir.
-  - El archivo se nombra con codigo de reserva, nombre del huesped, telefono y sufijo unico.
-  - Al subir se crean `public.transacciones` en `por_verificar` y `public.comprobantes` con `pdf_url` y `uploaded_by`.
+  - El archivo se guarda con estructura `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`, usando fecha/hora local `America/La_Paz`.
+  - `public.transacciones.referencia_externa` y `public.comprobantes.numero_comprobante` guardan un codigo corto compatible con limites SQL; la URL publica apunta al objeto real en Storage.
+  - Al subir se crean `public.transacciones` en `por_verificar` y `public.comprobantes` con `pdf_url`, `uploaded_by` y trazabilidad de la transaccion.
   - Se notifica a recepcion/admin mediante `public.notificaciones`.
-  - `/admin/reserva-detalle` permite abrir comprobante, confirmar reserva o rechazar comprobante.
+  - `/admin/verificar-comprobantes` es la cola dedicada para revisar pagos pendientes, abrir el archivo y confirmar o rechazar.
+  - `/admin/reserva-detalle` tambien permite abrir comprobante, confirmar reserva o rechazar comprobante desde el detalle operativo.
   - Confirmar marca `transacciones.estado_verificacion = aprobada`, guarda verificador y cambia `reservas.estado = confirmada`.
   - Rechazar marca `transacciones.estado_verificacion = rechazada`.
   - Cliente y staff usan Supabase Realtime para refrescar estado/notificaciones sin polling.
@@ -161,6 +163,7 @@ Implementado:
 - Navegacion responsive:
   - Portal cliente con menu movil en `src/components/app/UserNav.tsx`.
   - Admin con menu movil controlado en `src/components/admin/AdminSidebar.tsx`.
+  - El menu admin incluye "Verificar pagos" hacia `/admin/verificar-comprobantes`.
   - El menu movil admin se cierra al seleccionar una ruta.
   - El layout admin aplica grid solo desde `md` para evitar que el contenido quede visualmente centrado en movil.
 
@@ -324,6 +327,7 @@ Estado verificado del flujo completo:
 - `scripts/backup-supabase-local.sh` genera `database.dump` y `storage.tar` dentro de `backups/YYYYMMDDTHHMMSSZ`.
 - `CONFIRM_RESTORE=YES scripts/restore-supabase-local.sh backups/20260717T154907Z` restaura DB y Storage sin romper las imagenes.
 - El restore filtra entradas internas conflictivas de `pg_restore` que no conviene aplicar en Supabase self-hosted local, como privilegios/event triggers administrados por roles internos.
+- El restore tambien filtra entradas internas de particiones diarias de Realtime (`realtime.messages_YYYY_MM_DD`), incluyendo ACL/GRANTs, para evitar warnings cuando esas particiones ya no existen al restaurar.
 - El restore de Storage recompone xattrs dentro del contenedor con `fs-xattr`; sin esos xattrs Supabase Storage puede responder `500`/`ENODATA` o servir imagenes como corruptas.
 - URLs de prueba del bucket `habitaciones` responden `200 image/jpeg` despues del restore.
 
@@ -350,6 +354,7 @@ Verificaciones recientes:
 - `pnpm exec tsc --noEmit` pasa.
 - `bash -n scripts/backup-supabase-local.sh` pasa.
 - `bash -n scripts/restore-supabase-local.sh` pasa.
+- `scripts/restore-supabase-local.sh` actualizado para filtrar ACL/GRANTs de particiones diarias `realtime.messages_YYYY_MM_DD`; el filtro fue verificado contra un dump local.
 - Tablas/listados actualizados para usar paginacion server-side con Supabase y UI de busqueda/orden/columnas/filas por pagina.
 - Supabase local verificado: `public.tarifas` ya no tiene `habitacion_id`; `public.habitaciones` tiene `tarifa_id`.
 - Supabase local verificado: `public.tarifas` tiene `peso smallint NOT NULL DEFAULT 0`, constraint `tarifas_peso_check` e indice unico parcial `tarifas_tipo_temporada_peso_activa_uidx`.
@@ -368,6 +373,11 @@ Verificaciones recientes:
 - `src/lib/env.ts` usa acceso directo a `process.env.NEXT_PUBLIC_*` para que Next exponga las variables publicas al bundle cliente.
 - `/app/reservas/[id]` corregido para no renderizar `Badge` dentro de `<p>`, evitando error de hidratacion.
 - `/app/pagos` y `/app/cancelaciones` corregidos para no filtrar por columnas inexistentes en tablas hijas.
+- `/app/reservas/[id]` ahora usa caja de arrastre/seleccion para comprobante PDF o imagen, con previsualizador antes de subir y vista del comprobante subido.
+- Comprobantes subidos al bucket `comprobante` se ordenan en Storage por `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`.
+- `/admin/verificar-comprobantes` agregado como cola dedicada para aprobar/rechazar comprobantes pendientes y cambiar reservas a `confirmada`.
+- Logout del portal cliente corregido para ejecutar la Server Action desde cliente sin formulario desconectado.
+- Dialog "Completa tu perfil" corregido para conservar campos llenados ante excepciones/duplicados y no duplicar mensajes de validacion.
 - `/admin/backups` responde protegido con redirect a `/login` sin sesion; endpoints `/admin/backups/database` y `/admin/backups/imagenes` devuelven `401` sin sesion.
 - `/admin/habitaciones` responde protegido con redirect a `/login` sin sesion; `/login` responde `200`.
 - `/admin/usuarios` fue medido en viewport movil `390x844` con Chrome headless:
@@ -452,8 +462,9 @@ La decimocuarta rellena `auth.users.phone` desde `auth.users.raw_user_meta_data.
    - Confirmar reserva; la tarifa se deriva de la habitacion y la reserva se asocia al huesped de `auth.uid()`.
    - Debe redirigir a `/app/reservas/[id]`.
    - La pantalla debe mostrar contador de espera de comprobante segun `reserva_comprobante_espera_minutos`.
-   - Subir comprobante PDF/JPG/PNG/WEBP de hasta 10 MB.
+   - Subir comprobante PDF/JPG/PNG/WEBP de hasta 10 MB desde la caja de arrastre/seleccion y verificar la previsualizacion.
    - Deben crearse registros en `public.transacciones`, `public.comprobantes` y `public.notificaciones`.
+   - El archivo debe quedar en Storage bucket `comprobante` bajo `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`.
    - El cliente debe ver estado "comprobante recibido" mientras recepcion verifica.
 
 4. Staff crea cliente:
@@ -474,12 +485,13 @@ La decimocuarta rellena `auth.users.phone` desde `auth.users.raw_user_meta_data.
 6. Staff verifica comprobante:
    - Login como `admin` o `recepcionista`.
    - Ir a `/admin/notificaciones` y confirmar que aparece el aviso de comprobante pendiente.
-   - Ir a `/admin/reserva-detalle`.
+   - Ir a `/admin/verificar-comprobantes`.
    - Abrir el comprobante y revisar deposito manualmente.
    - Si es valido, pulsar "Confirmar reserva".
    - Debe actualizar `transacciones.estado_verificacion = aprobada` y `reservas.estado = confirmada`.
    - La pantalla del cliente en `/app/reservas/[id]` debe refrescarse por Realtime.
    - Si no es valido, pulsar "Rechazar comprobante" y validar `transacciones.estado_verificacion = rechazada`.
+   - `/admin/reserva-detalle` queda como vista alternativa para revisar la misma reserva con mas contexto.
 
 7. Reset password:
    - Ir a `/admin/usuarios`.

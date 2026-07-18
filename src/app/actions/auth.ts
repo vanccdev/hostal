@@ -15,6 +15,7 @@ import {
   loginSchema,
   signupSchema,
   updateClientProfileSchema,
+  type CompleteClientProfileInput,
   type UpdateClientProfileInput,
 } from "@/schemas/auth";
 import type { ActionState } from "@/app/actions/types";
@@ -33,6 +34,13 @@ const safeNextPath = (value: string | null) => {
 
   return value;
 };
+
+const clientDocumentTypes = ["CI", "Pasaporte", "DNI", "RUC", "Otro"] as const;
+
+const clientDocumentTypeFromValue = (value: string) =>
+  clientDocumentTypes.includes(value as (typeof clientDocumentTypes)[number])
+    ? (value as CompleteClientProfileInput["tipoDocumento"])
+    : undefined;
 
 const authErrorMessage = (error: { message?: string } | null | undefined, fallback: string) => {
   const message = error?.message?.trim();
@@ -205,19 +213,20 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
 export const completeClientProfileAction = async (
   _state: ActionState,
   formData: FormData,
-): Promise<ActionState> => {
-  const parsed = completeClientProfileSchema.safeParse({
+): Promise<ActionState<Partial<CompleteClientProfileInput>>> => {
+  const rawValues = {
     nombre: formValue(formData, "nombre"),
     telefono: formValue(formData, "telefono"),
-    tipoDocumento: formValue(formData, "tipoDocumento"),
+    tipoDocumento: clientDocumentTypeFromValue(formValue(formData, "tipoDocumento")),
     numeroDocumento: formValue(formData, "numeroDocumento"),
     fechaNacimiento: formValue(formData, "fechaNacimiento"),
     pais: formValue(formData, "pais"),
     observaciones: formValue(formData, "observaciones"),
-  });
+  };
+  const parsed = completeClientProfileSchema.safeParse(rawValues);
 
   if (!parsed.success) {
-    return { ok: false, errors: validationErrors(parsed.error) };
+    return { ok: false, errors: validationErrors(parsed.error), data: rawValues };
   }
 
   const currentUser = await getCurrentUser();
@@ -235,7 +244,7 @@ export const completeClientProfileAction = async (
   );
 
   if (duplicateDocument) {
-    return duplicateDocument;
+    return { ...duplicateDocument, data: parsed.data };
   }
 
   const { error: profileError } = await admin
@@ -244,7 +253,7 @@ export const completeClientProfileAction = async (
     .eq("id", currentUser.authUserId);
 
   if (profileError) {
-    return { ok: false, message: profileError.message };
+    return { ok: false, message: profileError.message, data: parsed.data };
   }
 
   const { error: authUpdateError } = await admin.auth.admin.updateUserById(currentUser.authUserId, {
@@ -256,7 +265,7 @@ export const completeClientProfileAction = async (
   });
 
   if (authUpdateError) {
-    return { ok: false, message: authUpdateError.message };
+    return { ok: false, message: authUpdateError.message, data: parsed.data };
   }
 
   const guestPayload = {
@@ -275,11 +284,15 @@ export const completeClientProfileAction = async (
     .maybeSingle();
 
   if (guestReadError) {
-    return { ok: false, message: guestReadError.message };
+    return { ok: false, message: guestReadError.message, data: parsed.data };
   }
 
   if (!existingGuest) {
-    return { ok: false, message: "No se encontró la ficha de huésped de tu cuenta. Vuelve a iniciar sesión." };
+    return {
+      ok: false,
+      message: "No se encontró la ficha de huésped de tu cuenta. Vuelve a iniciar sesión.",
+      data: parsed.data,
+    };
   }
 
   const guestQuery = admin.from("huespedes").update(guestPayload).eq("id", existingGuest.id);
@@ -288,10 +301,10 @@ export const completeClientProfileAction = async (
 
   if (guestError) {
     if (isGuestDocumentUniqueError(guestError)) {
-      return duplicatedGuestDocumentState();
+      return { ...duplicatedGuestDocumentState<Partial<CompleteClientProfileInput>>(), data: parsed.data };
     }
 
-    return { ok: false, message: guestError.message };
+    return { ok: false, message: guestError.message, data: parsed.data };
   }
 
   revalidatePath("/app");

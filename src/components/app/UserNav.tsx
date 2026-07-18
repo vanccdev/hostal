@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTransition } from "react";
 import { Bell, CalendarDays, CreditCard, Home, LogOut, Menu, User } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,13 @@ const items = [
 
 export const UserNav = () => {
   const pathname = usePathname();
+  const [isLoggingOut, startLogoutTransition] = useTransition();
+
+  const handleLogout = () => {
+    startLogoutTransition(() => {
+      void logoutAction();
+    });
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#d8d4c8] bg-white/95 backdrop-blur dark:border-[#314237] dark:bg-[#18251d]/95">
@@ -46,12 +54,10 @@ export const UserNav = () => {
               </Button>
             );
           })}
-          <form action={logoutAction}>
-            <Button type="submit" variant="ghost" size="sm">
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              Salir
-            </Button>
-          </form>
+          <Button type="button" variant="ghost" size="sm" disabled={isLoggingOut} onClick={handleLogout}>
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            Salir
+          </Button>
         </nav>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -71,14 +77,12 @@ export const UserNav = () => {
                 </DropdownMenuItem>
               );
             })}
-            <form action={logoutAction}>
-              <DropdownMenuItem asChild>
-                <button type="submit" className="w-full gap-2">
-                  <LogOut className="h-4 w-4" aria-hidden="true" />
-                  Salir
-                </button>
-              </DropdownMenuItem>
-            </form>
+            <DropdownMenuItem asChild disabled={isLoggingOut}>
+              <button type="button" className="w-full gap-2" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                Salir
+              </button>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

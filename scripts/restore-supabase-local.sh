@@ -44,7 +44,7 @@ docker cp "$BACKUP_DIR/$DB_DUMP" "$DB_CONTAINER:/tmp/$DB_DUMP"
 
 docker exec "$DB_CONTAINER" pg_restore -l "/tmp/$DB_DUMP" \
   | awk '
-    /realtime messages_[0-9]{4}_[0-9]{2}_[0-9]{2}/ { next }
+    /realtime.*messages_[0-9]{4}_[0-9]{2}_[0-9]{2}/ { next }
     /ACL graphql_public FUNCTION graphql/ { next }
     { print }
   ' \

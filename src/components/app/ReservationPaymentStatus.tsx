@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { type DragEvent, type FormEvent, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Clock, FileCheck2, FileUp, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Clock, FileCheck2, FileText, FileUp, ImagePlus, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { uploadReservationProofAction } from "@/app/actions/comprobantes";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
@@ -25,6 +26,16 @@ type ReservationPaymentStatusProps = {
   userId: string;
 };
 
+type ProofPreview = {
+  file: File;
+  name: string;
+  sizeLabel: string;
+  type: string;
+  url: string;
+};
+
+const allowedProofMimeTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+
 const formatRemaining = (milliseconds: number) => {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -37,6 +48,16 @@ const formatRemaining = (milliseconds: number) => {
 
   return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 };
+
+const formatFileSize = (bytes: number) => {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+};
+
+const isPdfUrl = (url: string) => url.toLowerCase().split("?")[0].endsWith(".pdf");
 
 export const ReservationPaymentStatus = ({
   reservaId,
@@ -54,6 +75,10 @@ export const ReservationPaymentStatus = ({
   const [currentHasProof, setCurrentHasProof] = useState(hasProof);
   const [lastMessage, setLastMessage] = useState("");
   const [now, setNow] = useState(() => Date.now());
+  const [proofPreview, setProofPreview] = useState<ProofPreview | null>(null);
+  const [clientFileError, setClientFileError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const proofPreviewRef = useRef<ProofPreview | null>(null);
   const deadline = useMemo(
     () => (timeoutMinutes > 0 ? new Date(createdAt).getTime() + timeoutMinutes * 60_000 : null),
     [createdAt, timeoutMinutes],
@@ -68,6 +93,14 @@ export const ReservationPaymentStatus = ({
     }, 1000);
 
     return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (proofPreviewRef.current) {
+        URL.revokeObjectURL(proofPreviewRef.current.url);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -109,7 +142,89 @@ export const ReservationPaymentStatus = ({
 
   const handleUploadSuccess = () => {
     setCurrentHasProof(true);
+    clearProofInput();
     router.refresh();
+  };
+
+  const syncFileInput = (file: File | null) => {
+    if (!fileInputRef.current) {
+      return;
+    }
+
+    if (!file) {
+      fileInputRef.current.value = "";
+      return;
+    }
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInputRef.current.files = dataTransfer.files;
+  };
+
+  const setProofPreviewState = (nextPreview: ProofPreview | null) => {
+    if (proofPreviewRef.current) {
+      URL.revokeObjectURL(proofPreviewRef.current.url);
+    }
+
+    proofPreviewRef.current = nextPreview;
+    setProofPreview(nextPreview);
+  };
+
+  const replaceProofSelection = (file: File | null) => {
+    setClientFileError("");
+
+    if (!file || file.size === 0) {
+      syncFileInput(null);
+      setProofPreviewState(null);
+      return;
+    }
+
+    if (!allowedProofMimeTypes.has(file.type)) {
+      syncFileInput(null);
+      setProofPreviewState(null);
+      setClientFileError("Sube un PDF o imagen JPG, PNG o WEBP.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      syncFileInput(null);
+      setProofPreviewState(null);
+      setClientFileError("El comprobante no puede superar 10 MB.");
+      return;
+    }
+
+    syncFileInput(file);
+    setProofPreviewState({
+      file,
+      name: file.name,
+      sizeLabel: formatFileSize(file.size),
+      type: file.type,
+      url: URL.createObjectURL(file),
+    });
+  };
+
+  const clearProofInput = () => {
+    setClientFileError("");
+    syncFileInput(null);
+    setProofPreviewState(null);
+  };
+
+  const handleProofDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!canUpload || pending) {
+      return;
+    }
+
+    replaceProofSelection(Array.from(event.dataTransfer.files)[0] ?? null);
+  };
+
+  const handleProofSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (!fileInputRef.current?.files?.[0]) {
+      event.preventDefault();
+      setClientFileError("Selecciona un comprobante.");
+    }
   };
 
   return (
@@ -150,9 +265,34 @@ export const ReservationPaymentStatus = ({
           <div className="space-y-1">
             <p>Comprobante recibido. Recepción verificará el depósito manualmente.</p>
             {proofUrl ? (
-              <a href={proofUrl} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
-                Ver comprobante subido
-              </a>
+              <div className="mt-3 space-y-3">
+                <a href={proofUrl} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
+                  Ver comprobante subido
+                </a>
+                <div className="overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]">
+                  {isPdfUrl(proofUrl) ? (
+                    <div className="h-72 bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                      <object data={proofUrl} type="application/pdf" className="h-full w-full">
+                        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-[#66736a] dark:text-[#b7c0b4]">
+                          <FileText className="h-8 w-8 text-[#c7a35a]" aria-hidden="true" />
+                          <span>Vista previa PDF del comprobante subido.</span>
+                        </div>
+                      </object>
+                    </div>
+                  ) : (
+                    <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                      <Image
+                        src={proofUrl}
+                        alt="Comprobante subido"
+                        fill
+                        sizes="(min-width: 768px) 640px, 100vw"
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : null}
           </div>
         </div>
@@ -174,15 +314,91 @@ export const ReservationPaymentStatus = ({
             </div>
           )}
 
-          <form action={action} className="space-y-3">
+          <form action={action} className="space-y-3" onSubmit={handleProofSubmit}>
             <input type="hidden" name="reservaId" value={reservaId} />
             <div className="space-y-2">
               <Label htmlFor="comprobante">Comprobante PDF o imagen</Label>
-              <Input id="comprobante" name="comprobante" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={!canUpload || pending} />
+              <label
+                htmlFor="comprobante"
+                className={`flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors ${
+                  canUpload && !pending
+                    ? "border-[#d8d4c8] bg-[#f6f1e6] hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
+                    : "cursor-not-allowed border-[#d8d4c8] bg-zinc-100 opacity-70 dark:border-[#314237] dark:bg-[#1d2c23]"
+                }`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                }}
+                onDrop={handleProofDrop}
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c7a35a] text-[#102317]">
+                  <ImagePlus className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="space-y-1">
+                  <span className="block text-sm font-semibold text-[#18221b] dark:text-zinc-100">
+                    Arrastra tu comprobante aquí o haz clic para seleccionar
+                  </span>
+                  <span className="block text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+                    {proofPreview ? proofPreview.name : "PDF, JPG, PNG o WEBP. Máximo 10 MB."}
+                  </span>
+                </span>
+              </label>
+              <Input
+                ref={fileInputRef}
+                id="comprobante"
+                name="comprobante"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                disabled={!canUpload}
+                className="sr-only"
+                onChange={(event) => replaceProofSelection(event.currentTarget.files?.[0] ?? null)}
+              />
               <FormMessage state={state} field="comprobante" />
+              {clientFileError ? <p className="text-sm text-red-600">{clientFileError}</p> : null}
               <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">PDF, JPG, PNG o WEBP. Máximo 10 MB.</p>
             </div>
-            <Button type="submit" disabled={!canUpload || pending}>
+            {proofPreview ? (
+              <div className="overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]">
+                <div className="flex items-center justify-between gap-3 border-b border-[#d8d4c8] px-3 py-2 dark:border-[#314237]">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#18221b] dark:text-zinc-100">{proofPreview.name}</p>
+                    <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">{proofPreview.sizeLabel}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={clearProofInput}
+                    disabled={pending}
+                    aria-label={`Quitar ${proofPreview.name}`}
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+                {proofPreview.type === "application/pdf" ? (
+                  <div className="h-72 bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                    <object data={proofPreview.url} type="application/pdf" className="h-full w-full">
+                      <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-[#66736a] dark:text-[#b7c0b4]">
+                        <FileText className="h-8 w-8 text-[#c7a35a]" aria-hidden="true" />
+                        <span>Vista previa PDF seleccionada.</span>
+                      </div>
+                    </object>
+                  </div>
+                ) : (
+                  <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
+                    <Image
+                      src={proofPreview.url}
+                      alt={`Vista previa de ${proofPreview.name}`}
+                      fill
+                      sizes="(min-width: 768px) 640px, 100vw"
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+                )}
+              </div>
+            ) : null}
+            <Button type="submit" disabled={!canUpload || pending || !proofPreview}>
               <FileUp className="h-4 w-4" aria-hidden="true" />
               {pending ? "Subiendo..." : expired ? "Tiempo agotado" : "Subir comprobante"}
             </Button>

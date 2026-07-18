@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { FormEvent, useActionState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Save } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { completeClientProfileAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
 import { DatePickerField } from "@/components/forms/DatePickerField";
@@ -39,7 +39,38 @@ export const CompleteClientProfileDialog = ({ guest, initialPhone, profileName }
       pais: guest?.pais_origen ?? "",
     },
   });
-  const localError = (field: keyof CompleteClientProfileInput) => form.formState.errors[field]?.message;
+  const fechaNacimiento = useWatch({ control: form.control, name: "fechaNacimiento" });
+  const tipoDocumento = useWatch({ control: form.control, name: "tipoDocumento" });
+  const clientErrors = form.formState.errors;
+  const localError = (field: keyof CompleteClientProfileInput) => clientErrors[field]?.message;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const parsed = completeClientProfileSchema.safeParse(form.getValues());
+
+    if (parsed.success) {
+      form.clearErrors();
+      return;
+    }
+
+    event.preventDefault();
+    form.clearErrors();
+
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+
+    for (const [field, messages] of Object.entries(fieldErrors) as [keyof CompleteClientProfileInput, string[]][]) {
+      const message = messages[0];
+
+      if (message) {
+        form.setError(field, { message });
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!state.ok && state.data) {
+      form.reset({ ...form.getValues(), ...state.data });
+    }
+  }, [form, state]);
 
   return (
     <Dialog open onOpenChange={() => undefined}>
@@ -51,14 +82,8 @@ export const CompleteClientProfileDialog = ({ guest, initialPhone, profileName }
         <form
           action={action}
           className="space-y-4"
-          onSubmit={async (event) => {
-            const isValid = await form.trigger();
-
-            if (!isValid) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-          }}
+          noValidate
+          onSubmit={handleSubmit}
         >
           <ActionToast state={state} successTitle="Perfil actualizado" errorTitle="No se pudo actualizar el perfil" />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -67,61 +92,64 @@ export const CompleteClientProfileDialog = ({ guest, initialPhone, profileName }
               <Label htmlFor="nombre">Nombre completo</Label>
               <Input id="nombre" autoComplete="name" {...form.register("nombre")} />
               {localError("nombre") ? <p className="text-sm text-red-600">{localError("nombre")}</p> : null}
-              <FormMessage state={state} field="nombre" />
+              {!localError("nombre") ? <FormMessage state={state} field="nombre" /> : null}
             </div>
             {!knownPhone ? (
               <div className="space-y-2">
                 <Label htmlFor="telefono">Número de celular o teléfono</Label>
                 <Input id="telefono" autoComplete="tel" {...form.register("telefono")} />
                 {localError("telefono") ? <p className="text-sm text-red-600">{localError("telefono")}</p> : null}
-                <FormMessage state={state} field="telefono" />
+                {!localError("telefono") ? <FormMessage state={state} field="telefono" /> : null}
               </div>
             ) : null}
             <div className="space-y-2">
               <Label htmlFor="tipoDocumento">Tipo documento</Label>
-              <Controller
-                control={form.control}
+              <Select
                 name="tipoDocumento"
-                render={({ field }) => (
-                  <Select
-                    name={field.name}
-                    value={field.value ?? "__none"}
-                    onValueChange={(value) => field.onChange(value === "__none" ? undefined : value)}
-                  >
-                    <SelectTrigger id="tipoDocumento">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">Seleccionar</SelectItem>
-                      <SelectItem value="CI">CI</SelectItem>
-                      <SelectItem value="Pasaporte">Pasaporte</SelectItem>
-                      <SelectItem value="DNI">DNI</SelectItem>
-                      <SelectItem value="RUC">RUC</SelectItem>
-                      <SelectItem value="Otro">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+                value={tipoDocumento ?? "__none"}
+                onValueChange={(value) =>
+                  form.setValue(
+                    "tipoDocumento",
+                    value === "__none"
+                      ? (undefined as unknown as CompleteClientProfileInput["tipoDocumento"])
+                      : (value as CompleteClientProfileInput["tipoDocumento"]),
+                    { shouldDirty: true },
+                  )
+                }
+              >
+                <SelectTrigger id="tipoDocumento">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">Seleccionar</SelectItem>
+                  <SelectItem value="CI">CI</SelectItem>
+                  <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+                  <SelectItem value="DNI">DNI</SelectItem>
+                  <SelectItem value="RUC">RUC</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
               {localError("tipoDocumento") ? <p className="text-sm text-red-600">{localError("tipoDocumento")}</p> : null}
-              <FormMessage state={state} field="tipoDocumento" />
+              {!localError("tipoDocumento") ? <FormMessage state={state} field="tipoDocumento" /> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="numeroDocumento">Número de documento / CI</Label>
               <Input id="numeroDocumento" {...form.register("numeroDocumento")} />
               {localError("numeroDocumento") ? <p className="text-sm text-red-600">{localError("numeroDocumento")}</p> : null}
-              <FormMessage state={state} field="numeroDocumento" />
+              {!localError("numeroDocumento") ? <FormMessage state={state} field="numeroDocumento" /> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
               <DatePickerField
                 id="fechaNacimiento"
                 name="fechaNacimiento"
-                defaultValue={form.getValues("fechaNacimiento")}
+                value={fechaNacimiento}
+                onChange={(value) => form.setValue("fechaNacimiento", value, { shouldDirty: true })}
                 placeholder="Seleccionar fecha"
                 showMonthYearSelect
               />
               {localError("fechaNacimiento") ? <p className="text-sm text-red-600">{localError("fechaNacimiento")}</p> : null}
-              <FormMessage state={state} field="fechaNacimiento" />
+              {!localError("fechaNacimiento") ? <FormMessage state={state} field="fechaNacimiento" /> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="pais">País</Label>

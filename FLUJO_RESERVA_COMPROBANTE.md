@@ -28,6 +28,7 @@ Este documento describe el flujo funcional para reservas creadas por clientes y 
 | `/app/comprobantes` | Historial de comprobantes subidos por el cliente. |
 | `/app/notificaciones` | Notificaciones del cliente. |
 | `/admin/notificaciones` | Avisos internos para personal. |
+| `/admin/verificar-comprobantes` | Cola dedicada para revisar comprobantes pendientes y cambiar el estado de la reserva. |
 | `/admin/reserva-detalle` | Revision de reserva, comprobantes, transacciones y confirmacion manual. |
 | `/admin/configuracion` | Configuracion del tiempo de espera del comprobante. |
 
@@ -90,18 +91,25 @@ El archivo se guarda en Supabase Storage:
 bucket: comprobante
 ```
 
-El nombre del archivo incluye:
-
-- Codigo de reserva.
-- Nombre del huesped.
-- Telefono del huesped.
-- Sufijo unico.
-
-Ejemplo conceptual:
+La ruta del objeto queda ordenada por fecha local y correo del cliente:
 
 ```text
-R260715ABCDE-juan-perez-77777777-a1b2c3d4.pdf
+comprobante/
+  YYYY-MM-DD/
+    cliente@correo.com/
+      comprobante-nombrecliente-YYYYMMDD-HHMMSS-1.pdf
+      comprobante-nombrecliente-YYYYMMDD-HHMMSS-2.webp
 ```
+
+Reglas de nombre:
+
+- Primer nivel: fecha del dia en zona `America/La_Paz`.
+- Segundo nivel: correo del cliente normalizado para Storage.
+- Nombre: `comprobante-<nombrecliente>-<fechahora>-<N>.<extension>`.
+- `N` se calcula contando archivos existentes en esa carpeta fecha/correo y sumando `1`.
+- La extension se deriva del archivo subido: `pdf`, `jpg`, `png` o `webp`.
+
+La UI muestra una caja donde se puede soltar o seleccionar el archivo y previsualiza PDF/imagen antes de subir.
 
 ## Registros creados al subir comprobante
 
@@ -115,7 +123,7 @@ monto = reserva.precio_total
 metodo_pago = qr_otro
 estado_verificacion = por_verificar
 comprobante_url = URL publica del archivo
-referencia_externa = nombre base del archivo
+referencia_externa = codigo corto interno compatible con varchar
 tipo = pago
 ```
 
@@ -124,11 +132,14 @@ tipo = pago
 ```text
 reserva_id = reserva.id
 transaccion_id = transacciones.id
-numero_comprobante = nombre base del archivo
+numero_comprobante = codigo corto interno compatible con varchar(20)
 emitido_at = fecha/hora de subida
 pdf_url = URL publica del archivo
 uploaded_by = auth.uid() del cliente
 ```
+
+Nota: el nombre completo ordenado vive en Storage y se consulta mediante `pdf_url`. Los campos `referencia_externa` y
+`numero_comprobante` se mantienen cortos porque la base local tiene limites `varchar`.
 
 ### `public.notificaciones`
 
@@ -136,11 +147,13 @@ Se crea una notificacion interna para recepcion/admin indicando que hay un compr
 
 ## Verificacion manual por personal
 
-El personal revisa desde:
+El personal revisa principalmente desde:
 
 ```text
-/admin/reserva-detalle
+/admin/verificar-comprobantes
 ```
+
+Tambien puede revisar desde `/admin/reserva-detalle` cuando esta viendo una reserva concreta.
 
 Si existe una transaccion con:
 
@@ -237,6 +250,8 @@ src/app/actions/reservas.ts
 src/app/actions/comprobantes.ts
 src/components/app/ReservationPaymentStatus.tsx
 src/app/app/reservas/[id]/page.tsx
+src/app/admin/verificar-comprobantes/page.tsx
+src/components/admin/ComprobanteVerificationActions.tsx
 src/components/admin/ReservaDetalleCard.tsx
 src/components/admin/RealtimeNotificationsRefresh.tsx
 src/lib/notifications/emit-event.ts
