@@ -23,6 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
+import { NotificationsNavBadge } from "@/components/admin/NotificationsNavBadge";
 import { PaymentVerificationNavBadge } from "@/components/admin/PaymentVerificationNavBadge";
 import { canAccessAdminModule, type AdminModule } from "@/lib/permissions";
 import type { UserRole } from "@/types/database";
@@ -73,11 +74,18 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
                 : "text-[#66736a] hover:bg-[#f6f1e6] hover:text-[#18221b] dark:text-[#b7c0b4] dark:hover:bg-[#223229] dark:hover:text-zinc-100"
             }`}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {item.href === "/admin/verificar-comprobantes" ? (
-              <PaymentVerificationNavBadge label={item.label} />
+            {item.href === "/admin/notificaciones" ? (
+              <NotificationsNavBadge icon={Icon} label={item.label} />
+            ) : item.href === "/admin/verificar-comprobantes" ? (
+              <>
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <PaymentVerificationNavBadge label={item.label} />
+              </>
             ) : (
-              <span className="truncate">{item.label}</span>
+              <>
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{item.label}</span>
+              </>
             )}
           </Link>
         );

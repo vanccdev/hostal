@@ -107,6 +107,48 @@ a {
   outline-color: var(--primary);
 }
 
+.auth-glass-card label {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.auth-glass-card input {
+  border-color: rgba(255, 255, 255, 0.26);
+  background-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.auth-glass-card input::placeholder {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.auth-glass-card input:focus-visible {
+  border-color: rgba(232, 213, 154, 0.82);
+  box-shadow: 0 0 0 4px rgba(232, 213, 154, 0.18);
+}
+
+.auth-glass-card p,
+.auth-glass-card a {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.auth-glass-card a {
+  color: #ffffff;
+}
+
+.auth-glass-card .text-red-600 {
+  color: #fecaca;
+}
+
+.auth-showcase-title {
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgba(16, 35, 23, 0.54);
+}
+
+.auth-home-link span {
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(16, 35, 23, 0.42);
+}
+
 @keyframes hostal-fade-up {
   from {
     opacity: 0;

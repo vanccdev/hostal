@@ -13,9 +13,11 @@ import {
   openNotificationDetailAction,
 } from "@/app/actions/notificaciones";
 import { RealtimeNotificationsRefresh } from "@/components/admin/RealtimeNotificationsRefresh";
+import { UserNotificationDetailDialog, type UserNotificationDetail } from "@/components/admin/UserNotificationDetailDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
+import { authUserPhone } from "@/lib/auth/user-contact";
 import { formatDateTime } from "@/lib/datetime";
 import { formatNotificacionTipo } from "@/lib/notificacion-tipo";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -98,17 +100,33 @@ const actorName = (notification: Notificacion, usersById: Map<string, Usuario>) 
 const actionLabel = (notification: Notificacion) =>
   notification.accion ? notification.accion.replaceAll(".", " · ") : formatNotificacionTipo(notification.tipo);
 
+const userIdForNotification = (notification: Notificacion) => {
+  if (notification.entidad === "usuarios" && notification.entidad_id) {
+    return notification.entidad_id;
+  }
+
+  if (notification.accion?.startsWith("cliente.") && notification.usuario_id) {
+    return notification.usuario_id;
+  }
+
+  return null;
+};
+
 const NotificationCard = ({
   notification,
   usersById,
   reservasById,
+  userDetailsById,
 }: {
   notification: Notificacion;
   usersById: Map<string, Usuario>;
   reservasById: Map<string, Pick<Reserva, "id" | "codigo_reserva">>;
+  userDetailsById: Map<string, UserNotificationDetail>;
 }) => {
   const href = hrefForNotification(notification, reservasById);
   const unread = notification.leida === false;
+  const userDetail = userIdForNotification(notification);
+  const detail = userDetail ? userDetailsById.get(userDetail) : null;
 
   return (
     <article
@@ -155,7 +173,9 @@ const NotificationCard = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            {href ? (
+            {detail ? (
+              <UserNotificationDetailDialog detail={detail} notificationId={notification.id} unread={unread} />
+            ) : href ? (
               <form action={openNotificationDetailAction}>
                 <input type="hidden" name="notificationId" value={notification.id} />
                 <input type="hidden" name="href" value={href} />
@@ -185,10 +205,12 @@ const NotificationFeed = ({
   notifications,
   usersById,
   reservasById,
+  userDetailsById,
 }: {
   notifications: Notificacion[];
   usersById: Map<string, Usuario>;
   reservasById: Map<string, Pick<Reserva, "id" | "codigo_reserva">>;
+  userDetailsById: Map<string, UserNotificationDetail>;
 }) => (
   <section className="max-w-3xl space-y-3">
     <div className="grid gap-3">
@@ -199,6 +221,7 @@ const NotificationFeed = ({
             notification={notification}
             usersById={usersById}
             reservasById={reservasById}
+            userDetailsById={userDetailsById}
           />
         ))
       ) : (
@@ -230,8 +253,46 @@ export default async function NotificacionesAdminPage() {
     reservaIds.length > 0
       ? await supabase.from("reservas").select("id,codigo_reserva").in("id", reservaIds)
       : { data: [] as Pick<Reserva, "id" | "codigo_reserva">[] };
+  const detailUserIds = compactIds(notifications.map(userIdForNotification));
+  const [{ data: detailUsuarios }, { data: detailHuespedes }, authDetails] = await Promise.all([
+    detailUserIds.length > 0
+      ? supabase.from("usuarios").select("*").in("id", detailUserIds)
+      : { data: [] as Usuario[] },
+    detailUserIds.length > 0
+      ? supabase.from("huespedes").select("usuario_id,tipo_documento,numero_documento,pais_origen,fecha_nacimiento,observaciones").in("usuario_id", detailUserIds)
+      : { data: [] as Pick<UserNotificationDetail["huesped"] & { usuario_id: string }, "usuario_id" | "tipo_documento" | "numero_documento" | "pais_origen" | "fecha_nacimiento" | "observaciones">[] },
+    Promise.all(
+      detailUserIds.map(async (userId) => {
+        const { data: authData } = await supabase.auth.admin.getUserById(userId);
+        return [userId, authData.user] as const;
+      }),
+    ),
+  ]);
   const usersById = byId(users);
   const reservasById = byId(reservas);
+  const detailUsuariosById = byId(detailUsuarios);
+  const detailHuespedesByUserId = new Map((detailHuespedes ?? []).map((huesped) => [huesped.usuario_id, huesped]));
+  const authById = new Map(authDetails);
+  const userDetailsById = new Map(
+    detailUserIds.map((userId) => {
+      const authUser = authById.get(userId);
+      return [
+        userId,
+        {
+          usuario: detailUsuariosById.get(userId) ?? null,
+          auth: authUser
+            ? {
+                email: authUser.email ?? null,
+                telefono: authUserPhone(authUser),
+                created_at: authUser.created_at ?? null,
+                last_sign_in_at: authUser.last_sign_in_at ?? null,
+              }
+            : null,
+          huesped: detailHuespedesByUserId.get(userId) ?? null,
+        },
+      ] as const;
+    }),
+  );
   const unread = notifications.filter((notification) => notification.leida === false);
 
   return (
@@ -256,7 +317,12 @@ export default async function NotificacionesAdminPage() {
         </form>
       </div>
 
-      <NotificationFeed notifications={notifications} usersById={usersById} reservasById={reservasById} />
+      <NotificationFeed
+        notifications={notifications}
+        usersById={usersById}
+        reservasById={reservasById}
+        userDetailsById={userDetailsById}
+      />
     </section>
   );
 }

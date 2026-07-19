@@ -58,7 +58,7 @@ export const AuthShowcase = ({
       <header className="flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-3 rounded-full bg-white/12 px-3 py-2 backdrop-blur-md transition hover:bg-white/18"
+          className="auth-home-link inline-flex items-center gap-3 rounded-full bg-white/12 px-3 py-2 backdrop-blur-md transition hover:bg-white/18"
         >
           <BrandLogo imageClassName="h-9 w-9" />
         </Link>
@@ -78,16 +78,16 @@ export const AuthShowcase = ({
             Hostal Plaza Camargo
           </p>
           <div className="max-w-2xl space-y-3">
-            <h1 className="text-4xl font-semibold leading-[1.05] text-white sm:text-5xl">
-              Tu estadía empieza con una vista tranquila del hostal.
-            </h1>
+              <h1 className="auth-showcase-title text-4xl font-semibold leading-[1.05] sm:text-5xl">
+                Tu estadía empieza con una vista tranquila del hostal.
+              </h1>
             <p className="text-base leading-7 text-[#f6f1e6]/88">{description}</p>
           </div>
 
           <div className="mx-auto grid w-full items-center gap-6 lg:grid-cols-2 lg:gap-10 xl:gap-14">
             <Card
               className={cn(
-                "mx-auto w-full max-w-[31rem] overflow-hidden rounded-[8px] border-white/24 bg-white/14 text-white shadow-[0_26px_70px_rgba(0,0,0,0.24)] backdrop-blur-2xl dark:border-white/18 dark:bg-[#102317]/38",
+                "auth-glass-card mx-auto w-full max-w-[31rem] overflow-hidden rounded-[8px] border-white/24 bg-white/14 text-white shadow-[0_26px_70px_rgba(0,0,0,0.24)] backdrop-blur-2xl dark:border-white/18 dark:bg-[#102317]/38",
                 cardClassName,
               )}
             >
