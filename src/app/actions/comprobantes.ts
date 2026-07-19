@@ -216,7 +216,11 @@ export const uploadReservationProofAction = async (
     event: "pago.registrado",
     title: "Comprobante recibido",
     message: `Comprobante recibido para la reserva ${reserva.codigo_reserva}. Revisar depósito de ${currentUser.profile.nombre}.`,
-    payload: { reserva_id: reserva.id, codigo_reserva: reserva.codigo_reserva },
+    userId: currentUser.authUserId,
+    actorId: currentUser.authUserId,
+    entity: "transacciones",
+    entityId: transaccion.id,
+    payload: { reserva_id: reserva.id, transaccion_id: transaccion.id, codigo_reserva: reserva.codigo_reserva },
   });
 
   revalidatePath(`/app/reservas/${reserva.id}`);
@@ -305,6 +309,9 @@ export const verifyReservationProofAction = async (
       ? `Tu reserva ${reserva.codigo_reserva} fue verificada y confirmada.`
       : `El comprobante de la reserva ${reserva.codigo_reserva} fue rechazado. Contacta al hostal o sube un comprobante válido.`,
     userId: guest?.usuario_id ?? null,
+    actorId: currentUser.authUserId,
+    entity: "reservas",
+    entityId: reserva.id,
     payload: { reserva_id: reserva.id, codigo_reserva: reserva.codigo_reserva },
   });
 

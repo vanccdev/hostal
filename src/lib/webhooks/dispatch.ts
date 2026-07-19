@@ -2,13 +2,21 @@ import { serverEnv } from "@/lib/env";
 import type { Json } from "@/types/database";
 
 export type DomainEvent =
+  | "cliente.cuenta_creada"
   | "reserva.creada"
   | "reserva.confirmada"
   | "reserva.cancelada"
+  | "reserva.estado_actualizado"
   | "pago.registrado"
   | "pago.aprobado"
   | "pago.rechazado"
+  | "habitacion.guardada"
+  | "habitacion.imagen_eliminada"
   | "habitacion.estado_actualizado"
+  | "huesped.actualizado"
+  | "tarifa.guardada"
+  | "sistema.configuracion_actualizada"
+  | "cliente.perfil_actualizado"
   | "cliente.cuenta_creada_por_personal"
   | "cliente.password_restablecido";
 
@@ -59,4 +67,3 @@ export const dispatchWebhook = async (event: DomainEvent, payload: Json) => {
     return { ok: false, status: 0 };
   }
 };
-

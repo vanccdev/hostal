@@ -6,6 +6,14 @@ export const notificacionTipoLabels: Record<NotificacionTipo, string> = {
   checkin_hoy: "Check-in hoy",
   checkout_hoy: "Check-out hoy",
   mantenimiento: "Mantenimiento",
+  cliente: "Cliente",
+  reserva: "Reserva",
+  pago: "Pago",
+  habitacion: "Habitación",
+  huesped: "Huésped",
+  tarifa: "Tarifa",
+  sistema: "Sistema",
+  seguridad: "Seguridad",
 };
 
 export const formatNotificacionTipo = (tipo: string | null | undefined) => {

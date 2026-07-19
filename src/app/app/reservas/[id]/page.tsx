@@ -65,6 +65,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
         hasProof={Boolean(comprobante)}
         proofUrl={comprobante?.pdf_url}
         userId={currentUser.authUserId}
+        paymentVerificationStatus={transaccion?.estado_verificacion}
       />
       <Card>
         <CardHeader>

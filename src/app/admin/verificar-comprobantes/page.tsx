@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Banknote, BedDouble, CalendarDays, FileCheck2, FileText, UserRound } from "lucide-react";
 import { ComprobanteVerificationActions } from "@/components/admin/ComprobanteVerificationActions";
+import { RealtimePaymentVerificationRefresh } from "@/components/admin/RealtimePaymentVerificationRefresh";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,6 +140,7 @@ export default async function VerifyComprobantesPage({
 
   return (
     <section className="space-y-6">
+      <RealtimePaymentVerificationRefresh />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Verificar comprobantes</h1>

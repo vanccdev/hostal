@@ -132,6 +132,9 @@ export const createClientAccountByStaff = async (
     title: "Cuenta de cliente creada",
     message: `Se creó la cuenta para ${parsed.data.nombreCompleto}.`,
     userId: created.user.id,
+    actorId: currentUser.authUserId,
+    entity: "usuarios",
+    entityId: created.user.id,
     payload: { user_id: created.user.id, email: parsed.data.email },
   });
 

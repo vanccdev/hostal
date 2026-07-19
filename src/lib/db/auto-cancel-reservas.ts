@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { emitEvent } from "@/lib/notifications/emit-event";
 import { getStaySettings } from "@/lib/stay-settings";
 import type { Database } from "@/types/database";
 
@@ -29,7 +30,7 @@ export const cancelExpiredPendingReservations = async (
   const cutoff = cutoffDate.toISOString();
   const { data: pendingReservations, error: reservationsError } = await supabase
     .from("reservas")
-    .select("id,notas_internas")
+    .select("id,codigo_reserva,huesped_id,notas_internas")
     .eq("estado", "pendiente_pago")
     .lte("created_at", cutoff)
     .limit(200);
@@ -96,6 +97,28 @@ export const cancelExpiredPendingReservations = async (
 
   if (updateError) {
     throw new Error(updateError.message);
+  }
+
+  if (expiredReservations.length > 0) {
+    const { data: guests } = await supabase
+      .from("huespedes")
+      .select("id,usuario_id")
+      .in("id", expiredReservations.map((reservation) => reservation.huesped_id));
+    const userIdByGuestId = new Map((guests ?? []).map((guest) => [guest.id, guest.usuario_id]));
+
+    await Promise.all(
+      expiredReservations.map((reservation) =>
+        emitEvent(supabase, {
+          event: "reserva.cancelada",
+          title: "Reserva cancelada automáticamente",
+          message: `La reserva ${reservation.codigo_reserva} fue cancelada por falta de comprobante dentro del tiempo configurado.`,
+          userId: userIdByGuestId.get(reservation.huesped_id) ?? null,
+          entity: "reservas",
+          entityId: reservation.id,
+          payload: { reserva_id: reservation.id, codigo_reserva: reservation.codigo_reserva, motivo: "comprobante_vencido" },
+        }),
+      ),
+    );
   }
 
   return {

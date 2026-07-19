@@ -23,6 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
+import { PaymentVerificationNavBadge } from "@/components/admin/PaymentVerificationNavBadge";
 import { canAccessAdminModule, type AdminModule } from "@/lib/permissions";
 import type { UserRole } from "@/types/database";
 
@@ -73,7 +74,11 @@ export const AdminSidebar = ({ role }: AdminSidebarProps) => {
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{item.label}</span>
+            {item.href === "/admin/verificar-comprobantes" ? (
+              <PaymentVerificationNavBadge label={item.label} />
+            ) : (
+              <span className="truncate">{item.label}</span>
+            )}
           </Link>
         );
       })}

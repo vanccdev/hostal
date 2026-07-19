@@ -8,6 +8,7 @@ import { redirectByRole } from "@/lib/auth/redirect-by-role";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { authUserExistsByEmailOrPhone } from "@/lib/auth/user-contact";
 import { pendingDocumentNumberForUser } from "@/lib/client-profile";
+import { emitEvent } from "@/lib/notifications/emit-event";
 import { normalizePhone } from "@/lib/phone";
 import {
   changePasswordSchema,
@@ -206,6 +207,17 @@ export const signupAction = async (_state: ActionState, formData: FormData): Pro
     return { ok: false, message: guestError.message };
   }
 
+  await emitEvent(admin, {
+    event: "cliente.cuenta_creada",
+    title: "Cliente registrado",
+    message: `${parsed.data.nombre} creó una cuenta desde el portal público.`,
+    userId: data.user.id,
+    actorId: data.user.id,
+    entity: "usuarios",
+    entityId: data.user.id,
+    payload: { user_id: data.user.id, email: parsed.data.email },
+  });
+
   const nextPath = safeNextPath(formValue(formData, "next"));
   redirect(nextPath?.startsWith("/app") ? nextPath : "/app");
 };
@@ -306,6 +318,17 @@ export const completeClientProfileAction = async (
 
     return { ok: false, message: guestError.message, data: parsed.data };
   }
+
+  await emitEvent(admin, {
+    event: "cliente.perfil_actualizado",
+    title: "Perfil de cliente completado",
+    message: `${parsed.data.nombre} completó su perfil de huésped.`,
+    userId: currentUser.authUserId,
+    actorId: currentUser.authUserId,
+    entity: "usuarios",
+    entityId: currentUser.authUserId,
+    payload: { user_id: currentUser.authUserId, huesped_id: existingGuest.id },
+  });
 
   revalidatePath("/app");
   revalidatePath("/app/perfil");
@@ -408,6 +431,17 @@ export const updateClientProfileAction = async (
 
     return { ok: false, message: guestError.message };
   }
+
+  await emitEvent(admin, {
+    event: "cliente.perfil_actualizado",
+    title: "Perfil de cliente actualizado",
+    message: `${parsed.data.nombre} actualizó sus datos de perfil.`,
+    userId: currentUser.authUserId,
+    actorId: currentUser.authUserId,
+    entity: "usuarios",
+    entityId: currentUser.authUserId,
+    payload: { user_id: currentUser.authUserId, huesped_id: existingGuest.id },
+  });
 
   revalidatePath("/app");
   revalidatePath("/app/perfil");

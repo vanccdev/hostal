@@ -4,6 +4,7 @@ import { type DragEvent, type FormEvent, useActionState, useEffect, useMemo, use
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Clock, FileCheck2, FileText, FileUp, ImagePlus, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import { toast } from "sonner";
 import { uploadReservationProofAction } from "@/app/actions/comprobantes";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
@@ -12,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { ReservaEstado } from "@/types/database";
+import type { EstadoVerificacionPago, ReservaEstado } from "@/types/database";
 
 type ReservationPaymentStatusProps = {
   reservaId: string;
@@ -24,6 +26,7 @@ type ReservationPaymentStatusProps = {
   hasProof: boolean;
   proofUrl?: string | null;
   userId: string;
+  paymentVerificationStatus?: EstadoVerificacionPago | null;
 };
 
 type ProofPreview = {
@@ -59,6 +62,64 @@ const formatFileSize = (bytes: number) => {
 
 const isPdfUrl = (url: string) => url.toLowerCase().split("?")[0].endsWith(".pdf");
 
+const estadoBadgeVariant = (estado: ReservaEstado) => {
+  if (estado === "confirmada" || estado === "checkin" || estado === "checkout") {
+    return "default";
+  }
+
+  if (estado === "cancelada" || estado === "no_show") {
+    return "destructive";
+  }
+
+  return "secondary";
+};
+
+const reservationStatusMessage: Record<ReservaEstado, { title: string; description: string; tone: "info" | "success" | "warning" | "danger" }> = {
+  pendiente_pago: {
+    title: "Pago pendiente",
+    description: "Tu reserva está pendiente hasta que recepción verifique el comprobante.",
+    tone: "warning",
+  },
+  confirmada: {
+    title: "Reserva confirmada",
+    description: "Tu comprobante fue verificado y la reserva está confirmada. Ya puedes cerrar esta pantalla o cerrar sesión.",
+    tone: "success",
+  },
+  checkin: {
+    title: "Check-in registrado",
+    description: "Tu estadía ya figura con check-in registrado.",
+    tone: "success",
+  },
+  checkout: {
+    title: "Check-out registrado",
+    description: "Tu estadía fue marcada con check-out.",
+    tone: "info",
+  },
+  cancelada: {
+    title: "Reserva cancelada",
+    description: "La reserva fue cancelada. Si ya pagaste, comunícate con recepción.",
+    tone: "danger",
+  },
+  no_show: {
+    title: "No se presentó",
+    description: "La reserva fue marcada como no presentada.",
+    tone: "danger",
+  },
+};
+
+const paymentStatusMessage: Record<EstadoVerificacionPago, string> = {
+  por_verificar: "Comprobante recibido. Mantén esta pantalla abierta mientras administración verifica el pago y confirma tu reserva.",
+  aprobada: "Pago aprobado.",
+  rechazada: "Comprobante rechazado. Contacta al hostal para regularizar la reserva.",
+};
+
+const statusPanelClass = {
+  info: "bg-sky-50 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
+  success: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+  warning: "bg-[#f6f1e6] text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]",
+  danger: "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200",
+} satisfies Record<(typeof reservationStatusMessage)[ReservaEstado]["tone"], string>;
+
 export const ReservationPaymentStatus = ({
   reservaId,
   codigoReserva,
@@ -68,11 +129,13 @@ export const ReservationPaymentStatus = ({
   hasProof,
   proofUrl,
   userId,
+  paymentVerificationStatus = null,
 }: ReservationPaymentStatusProps) => {
   const router = useRouter();
   const [state, action, pending] = useActionState(uploadReservationProofAction, initialActionState);
   const [currentEstado, setCurrentEstado] = useState<ReservaEstado>(estado);
   const [currentHasProof, setCurrentHasProof] = useState(hasProof);
+  const [currentPaymentStatus, setCurrentPaymentStatus] = useState<EstadoVerificacionPago | null>(paymentVerificationStatus);
   const [lastMessage, setLastMessage] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [proofPreview, setProofPreview] = useState<ProofPreview | null>(null);
@@ -86,6 +149,7 @@ export const ReservationPaymentStatus = ({
   const remaining = deadline ? deadline - now : null;
   const expired = remaining !== null && remaining <= 0;
   const canUpload = currentEstado === "pendiente_pago" && !currentHasProof && !expired;
+  const currentStatusInfo = reservationStatusMessage[currentEstado];
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -114,7 +178,19 @@ export const ReservationPaymentStatus = ({
           const nextEstado = payload.new.estado;
 
           if (typeof nextEstado === "string") {
-            setCurrentEstado(nextEstado as ReservaEstado);
+            const typedEstado = nextEstado as ReservaEstado;
+            setCurrentEstado(typedEstado);
+
+            const statusInfo = reservationStatusMessage[typedEstado];
+            if (statusInfo) {
+              if (statusInfo.tone === "danger") {
+                toast.error(statusInfo.title, { description: statusInfo.description });
+              } else if (statusInfo.tone === "success") {
+                toast.success(statusInfo.title, { description: statusInfo.description });
+              } else {
+                toast(statusInfo.title, { description: statusInfo.description });
+              }
+            }
           }
 
           router.refresh();
@@ -128,6 +204,7 @@ export const ReservationPaymentStatus = ({
 
           if (typeof message === "string") {
             setLastMessage(message);
+            toast("Actualización de tu reserva", { description: message });
           }
 
           router.refresh();
@@ -142,6 +219,7 @@ export const ReservationPaymentStatus = ({
 
   const handleUploadSuccess = () => {
     setCurrentHasProof(true);
+    setCurrentPaymentStatus("por_verificar");
     clearProofInput();
     router.refresh();
   };
@@ -240,22 +318,17 @@ export const ReservationPaymentStatus = ({
           <h2 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">Pago de la reserva</h2>
           <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Código {codigoReserva}</p>
         </div>
-        <Badge variant={currentEstado === "confirmada" ? "default" : currentEstado === "cancelada" ? "destructive" : "secondary"}>
-          {currentEstado === "confirmada" ? "Confirmada" : currentEstado === "cancelada" ? "Cancelada" : "Pendiente de pago"}
-        </Badge>
+        <Badge variant={estadoBadgeVariant(currentEstado)}>{formatReservaEstado(currentEstado)}</Badge>
       </div>
 
-      {currentEstado === "confirmada" ? (
-        <div className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <p>{lastMessage || "Tu comprobante fue verificado y la reserva fue confirmada."}</p>
-        </div>
-      ) : null}
-
-      {currentEstado === "cancelada" ? (
-        <div className="flex items-start gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
-          <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <p>La reserva fue cancelada. Si ya pagaste, comunícate con recepción.</p>
+      {currentEstado !== "pendiente_pago" ? (
+        <div className={`flex items-start gap-3 rounded-xl p-4 text-sm ${statusPanelClass[currentStatusInfo.tone]}`}>
+          {currentStatusInfo.tone === "danger" ? (
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          ) : (
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          )}
+          <p>{lastMessage || currentStatusInfo.description}</p>
         </div>
       ) : null}
 
@@ -263,7 +336,12 @@ export const ReservationPaymentStatus = ({
         <div className="flex items-start gap-3 rounded-xl bg-[#f6f1e6] p-4 text-sm text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
           <FileCheck2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <div className="space-y-1">
-            <p>Comprobante recibido. Recepción verificará el depósito manualmente.</p>
+            <p>
+              {lastMessage ||
+                (currentPaymentStatus
+                  ? paymentStatusMessage[currentPaymentStatus]
+                  : "Comprobante recibido. Mantén esta pantalla abierta mientras administración verifica el pago y confirma tu reserva.")}
+            </p>
             {proofUrl ? (
               <div className="mt-3 space-y-3">
                 <a href={proofUrl} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">

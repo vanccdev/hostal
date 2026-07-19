@@ -109,7 +109,10 @@ export const createClientReservation = async (
       title: "Reserva creada",
       message: "Tu reserva fue registrada y está pendiente de confirmación.",
       userId: currentUser.authUserId,
-      payload: { reserva_id: reservation.id, origen: "cliente" },
+      actorId: currentUser.authUserId,
+      entity: "reservas",
+      entityId: reservation.id,
+      payload: { reserva_id: reservation.id, origen: "cliente", precio_total: total },
     });
 
     createdReservationId = reservation.id;
@@ -195,7 +198,10 @@ export const createStaffReservation = async (
       event: "reserva.creada",
       title: "Reserva creada por personal",
       message: "Se creó una reserva desde el panel administrativo.",
-      payload: { reserva_id: reservation.id, origen: "staff" },
+      actorId: currentUser.authUserId,
+      entity: "reservas",
+      entityId: reservation.id,
+      payload: { reserva_id: reservation.id, origen: "staff", precio_total: total },
     });
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "No se pudo crear la reserva." };

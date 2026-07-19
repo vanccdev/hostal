@@ -17,7 +17,20 @@ export type MetodoPago = "qr_simple_tigo" | "qr_simple_bnb" | "qr_otro";
 export type EstadoVerificacionPago = "por_verificar" | "aprobada" | "rechazada";
 export type TransaccionTipo = "pago" | "reembolso_50" | "reembolso_total";
 export type PoliticaCancelacion = "sin_reembolso" | "reembolso_50" | "reembolso_total";
-export type NotificacionTipo = "overbooking" | "pago_pendiente" | "checkin_hoy" | "checkout_hoy" | "mantenimiento";
+export type NotificacionTipo =
+  | "overbooking"
+  | "pago_pendiente"
+  | "checkin_hoy"
+  | "checkout_hoy"
+  | "mantenimiento"
+  | "cliente"
+  | "reserva"
+  | "pago"
+  | "habitacion"
+  | "huesped"
+  | "tarifa"
+  | "sistema"
+  | "seguridad";
 export type NotificacionDestinatarioRol = "admin" | "recepcionista" | "todos";
 
 export type Usuario = {
@@ -186,8 +199,14 @@ export type AuditLog = {
 export type Notificacion = {
   id: string;
   tipo: NotificacionTipo;
+  titulo: string | null;
   reserva_id: string | null;
   usuario_id: string | null;
+  actor_id: string | null;
+  entidad: string | null;
+  entidad_id: string | null;
+  accion: string | null;
+  metadata: Json;
   mensaje: string;
   leida: boolean | null;
   destinatario_rol: NotificacionDestinatarioRol;
@@ -326,7 +345,12 @@ export type Database = {
         Notificacion,
         WithGeneratedId<Notificacion> &
           Pick<Notificacion, "tipo" | "mensaje" | "destinatario_rol"> &
-          Partial<Pick<Notificacion, "reserva_id" | "usuario_id" | "leida" | "created_at">>
+          Partial<
+            Pick<
+              Notificacion,
+              "titulo" | "reserva_id" | "usuario_id" | "actor_id" | "entidad" | "entidad_id" | "accion" | "metadata" | "leida" | "created_at"
+            >
+          >
       >;
     };
     Views: Record<string, never>;

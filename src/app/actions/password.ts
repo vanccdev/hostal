@@ -88,6 +88,9 @@ export const resetClientPasswordToPhone = async (
     title: "Contraseña restablecida",
     message: "La contraseña del cliente fue restablecida por personal autorizado.",
     userId: parsed.data.userId,
+    actorId: currentUser.authUserId,
+    entity: "usuarios",
+    entityId: parsed.data.userId,
     payload: { user_id: parsed.data.userId },
   });
 

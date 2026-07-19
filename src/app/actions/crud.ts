@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canAccessAdminModule, isManagementRole } from "@/lib/permissions";
 import { APP_TIME_ZONE } from "@/lib/datetime";
+import { emitEvent } from "@/lib/notifications/emit-event";
 import { calculateTurnoverMinutes, staySettingKeys } from "@/lib/stay-settings";
 import { habitacionSchema, huespedSchema, staySettingsSchema, tarifaSchema } from "@/schemas/crud";
 import type { ActionState } from "@/app/actions/types";
@@ -181,6 +182,16 @@ export const upsertHabitacionAction = async (
     }
   }
 
+  await emitEvent(admin, {
+    event: "habitacion.guardada",
+    title: parsed.data.id ? "Habitación actualizada" : "Habitación creada",
+    message: `Habitación ${parsed.data.numero} guardada por ${currentUser.profile.nombre}.`,
+    actorId: currentUser.authUserId,
+    entity: "habitaciones",
+    entityId: habitacion.id,
+    payload: { habitacion_id: habitacion.id, numero: parsed.data.numero, imagenes_subidas: imageFiles.length },
+  });
+
   return {
     ok: true,
     message: imageFiles.length > 0 ? "Habitación guardada con imágenes." : "Habitación guardada.",
@@ -223,6 +234,16 @@ export const deleteHabitacionImageAction = async (imageId: string): Promise<Acti
 
   revalidatePath("/admin/habitaciones");
   revalidatePath(`/admin/habitaciones/${image.habitacion_id}/editar`);
+
+  await emitEvent(admin, {
+    event: "habitacion.imagen_eliminada",
+    title: "Imagen de habitación eliminada",
+    message: "Se eliminó una imagen de habitación.",
+    actorId: currentUser.authUserId,
+    entity: "habitaciones",
+    entityId: image.habitacion_id,
+    payload: { habitacion_id: image.habitacion_id, image_id: image.id },
+  });
 
   return { ok: true, message: "Imagen eliminada." };
 };
@@ -279,6 +300,16 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
 
     return { ok: false, message: error.message };
   }
+
+  await emitEvent(admin, {
+    event: "huesped.actualizado",
+    title: "Ficha de huésped actualizada",
+    message: `Se actualizó el documento ${parsed.data.tipoDocumento} ${parsed.data.numeroDocumento}.`,
+    actorId: currentUser.authUserId,
+    entity: "huespedes",
+    entityId: parsed.data.id,
+    payload: { huesped_id: parsed.data.id },
+  });
 
   return { ok: true, message: "Huésped guardado." };
 };
@@ -348,13 +379,23 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
   };
 
   const query = parsed.data.id
-    ? admin.from("tarifas").update(payload).eq("id", parsed.data.id)
-    : admin.from("tarifas").insert(payload);
-  const { error } = await query;
+    ? admin.from("tarifas").update(payload).eq("id", parsed.data.id).select("id").single()
+    : admin.from("tarifas").insert(payload).select("id").single();
+  const { data: tarifa, error } = await query;
 
-  if (error) {
-    return { ok: false, message: error.message };
+  if (error || !tarifa) {
+    return { ok: false, message: error?.message ?? "No se pudo guardar la tarifa." };
   }
+
+  await emitEvent(admin, {
+    event: "tarifa.guardada",
+    title: parsed.data.id ? "Tarifa actualizada" : "Tarifa creada",
+    message: `Tarifa ${parsed.data.habitacionTipo} ${parsed.data.temporada} guardada.`,
+    actorId: currentUser.authUserId,
+    entity: "tarifas",
+    entityId: tarifa.id,
+    payload: { tarifa_id: tarifa.id, habitacion_tipo: parsed.data.habitacionTipo, temporada: parsed.data.temporada },
+  });
 
   return { ok: true, message: "Tarifa guardada." };
 };
@@ -414,6 +455,19 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
   }
 
   revalidatePath("/admin/configuracion");
+
+  await emitEvent(admin, {
+    event: "sistema.configuracion_actualizada",
+    title: "Configuración actualizada",
+    message: "Se actualizó la configuración operativa de estadía y comprobantes.",
+    actorId: currentUser.authUserId,
+    entity: "configuracion_hostal",
+    payload: {
+      checkin_time: parsed.data.checkinTime,
+      checkout_time: parsed.data.checkoutTime,
+      payment_proof_timeout_minutes: parsed.data.paymentProofTimeoutMinutes,
+    },
+  });
 
   return { ok: true, message: "Configuración de estadía guardada." };
 };
