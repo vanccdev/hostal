@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
 import { getRoomAvailabilityStatus, intervalsOverlap } from "@/lib/room-availability";
-import { defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
+import { cancellationPolicyText, defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
 import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
 import type { Habitacion, HabitacionTipo, Huesped, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
@@ -453,6 +453,7 @@ export const ReservaForm = ({
       <div className="max-w-2xl space-y-2">
         <Label>Fechas</Label>
         <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{cancellationPolicyText(staySettings)}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="fechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">

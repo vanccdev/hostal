@@ -1,10 +1,14 @@
+import { connection } from "next/server";
 import { ReservaForm } from "@/components/forms/ReservaForm";
+import { AvailabilityRealtimeRefresh } from "@/components/reservations/AvailabilityRealtimeRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function NuevaReservaClientePage() {
+  await connection();
+
   await requirePasswordReady();
   const supabase = createSupabaseAdminClient();
   const [{ data: habitaciones }, { data: tarifas }, { data: reservas }, { data: bloqueos }, staySettings] = await Promise.all([
@@ -33,6 +37,7 @@ export default async function NuevaReservaClientePage() {
 
   return (
     <section className="space-y-6">
+      <AvailabilityRealtimeRefresh channelName="client-new-reservation-availability-refresh" />
       <div>
         <h1 className="text-2xl font-semibold">Nueva reserva</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">La reserva se asociará automáticamente a tu cuenta.</p>

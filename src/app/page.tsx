@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowRight, ExternalLink, LogIn, MapPin } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HostalLocationMap } from "@/components/public/HostalLocationMap";
 import { HostalPhotoShowcase } from "@/components/public/HostalPhotoShowcase";
 import { PublicBookingCatalog } from "@/components/public/PublicBookingCatalog";
+import { AvailabilityRealtimeRefresh } from "@/components/reservations/AvailabilityRealtimeRefresh";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getPathByRole } from "@/lib/auth/redirect-by-role";
@@ -12,6 +14,8 @@ import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function Home() {
+  await connection();
+
   const [currentUser, supabase] = await Promise.all([
     getCurrentUser(),
     Promise.resolve(createSupabaseAdminClient()),
@@ -65,6 +69,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[#f6f1e6] text-[#18221b] dark:bg-[#101a14] dark:text-zinc-100">
+      <AvailabilityRealtimeRefresh channelName="public-availability-refresh" />
       <header className="sticky top-0 z-30 border-b border-[#d8d4c8] bg-white/95 backdrop-blur dark:border-[#314237] dark:bg-[#101a14]/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2 font-semibold">

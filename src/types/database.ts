@@ -16,7 +16,7 @@ export type EstadoHabitacion = "disponible" | "ocupada" | "limpieza" | "mantenim
 export type MetodoPago = "qr_simple_tigo" | "qr_simple_bnb" | "qr_otro";
 export type EstadoVerificacionPago = "por_verificar" | "aprobada" | "rechazada";
 export type TransaccionTipo = "pago" | "reembolso_50" | "reembolso_total";
-export type PoliticaCancelacion = "sin_reembolso" | "reembolso_50" | "reembolso_total";
+export type PoliticaCancelacion = "sin_reembolso" | "reembolso_50" | "reembolso_total" | "reembolso_parcial";
 export type NotificacionTipo =
   | "overbooking"
   | "pago_pendiente"
@@ -132,7 +132,10 @@ export type Cancelacion = {
   motivo: string;
   horas_anticipacion: number;
   politica_aplicada: PoliticaCancelacion;
+  monto_pagado_aprobado: number;
+  retencion_porcentaje_aplicado: number;
   monto_reembolso: number | null;
+  monto_retenido: number;
   gestionado_por: string;
   created_at: string;
 };
@@ -354,7 +357,36 @@ export type Database = {
       >;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      auto_cancel_expired_pending_reservations: {
+        Args: {
+          p_timeout_minutes: number;
+          p_cutoff: string;
+          p_reservation_id?: string | null;
+        };
+        Returns: Array<{
+          reserva_id: string;
+          codigo_reserva: string;
+          huesped_id: string;
+        }>;
+      };
+      cancel_reservation_with_accounting: {
+        Args: {
+          p_reserva_id: string;
+          p_motivo: string;
+          p_horas_anticipacion: number;
+          p_politica_aplicada: PoliticaCancelacion;
+          p_monto_pagado_aprobado: number;
+          p_retencion_porcentaje_aplicado: number;
+          p_monto_reembolso: number;
+          p_monto_retenido: number;
+          p_gestionado_por: string;
+          p_motivo_ajuste: string;
+          p_nota: string;
+        };
+        Returns: Array<{ reserva_id: string }>;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

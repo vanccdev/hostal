@@ -1,4 +1,6 @@
+import { connection } from "next/server";
 import { ReservaForm } from "@/components/forms/ReservaForm";
+import { AvailabilityRealtimeRefresh } from "@/components/reservations/AvailabilityRealtimeRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { userContactsById } from "@/lib/auth/user-contact";
@@ -7,6 +9,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Usuario } from "@/types/database";
 
 export default async function NuevaReservaAdminPage() {
+  await connection();
+
   await requireAdminModule("reservas");
   const supabase = createSupabaseAdminClient();
   const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }, { data: reservas }, { data: bloqueos }, staySettings] = await Promise.all([
@@ -49,6 +53,7 @@ export default async function NuevaReservaAdminPage() {
 
   return (
     <section className="space-y-6">
+      <AvailabilityRealtimeRefresh channelName="admin-new-reservation-availability-refresh" />
       <div>
         <h1 className="text-2xl font-semibold">Nueva reserva</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Selecciona un huésped existente para no duplicar cuentas.</p>

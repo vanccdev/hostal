@@ -41,8 +41,10 @@ Implementado:
   - Usa Realtime y refresco server-side para recibir actividad reciente sin depender solo de recargar.
 - Vista administrativa `/admin/reserva-detalle`:
   - Menu lateral "Reserva detalle" con permiso del modulo `reservas`.
-  - Muestra reservas en tarjetas paginadas server-side.
-  - Presenta datos relacionados de reserva, cliente/usuario, habitacion con imagen principal, tarifa, transacciones, comprobantes, cancelaciones, notificaciones y auditoria.
+  - Muestra reservas en tarjetas paginadas server-side con imagen de habitacion, borde distintivo, estado, codigo y metricas operativas.
+  - El primer vistazo queda compacto: fechas, total, pagado, seguimiento, cliente, habitacion y operacion.
+  - Los detalles completos se abren en dialogs: reserva, cliente, habitacion/tarifa, transacciones, comprobantes, cancelaciones, notificaciones y auditoria.
+  - Si hay comprobante pendiente, la tarjeta muestra una banda de accion para abrir archivo, confirmar o rechazar.
   - Busca por codigo, estado, canal, nombre del huesped, email, telefono, documento y nombre de usuario cliente.
   - Mantiene paginacion por query params y no carga todas las reservas en cliente.
 - Backups administrativos bajo `/admin/backups`:
@@ -56,13 +58,16 @@ Implementado:
   - Ya no depende de un boton "Nueva reserva" para iniciar el flujo.
   - Muestra habitaciones listas para seleccionar y restaura automaticamente la habitacion/fechas elegidas desde la home publica.
   - `/app/reservas/nueva` se mantiene disponible como ruta compatible del formulario.
+  - `/app/reservas` muestra tarjetas paginadas, no tabla: imagen de habitacion, codigo, estado, fechas, huespedes, total, pago aprobado, comprobante y cancelacion si existe.
+  - Desde `/app/reservas` el cliente puede cancelar reservas propias en estado `pendiente_pago` o `confirmada`; la accion valida pertenencia server-side.
   - Al crear reserva como cliente, redirige a `/app/reservas/[id]` para completar el pago.
   - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen con caja de arrastre, previsualizacion y actualizacion en tiempo real.
   - Mientras el comprobante esta en revision, pide mantener la pantalla abierta hasta que administracion confirme o rechace.
   - Si administracion aprueba/rechaza el comprobante, el cliente ve toast y estado actualizado sin recargar manualmente.
   - El estado cliente combina WebSocket con polling protegido a `/api/app/reservas/[id]/status` cada 5 segundos y al recuperar foco.
   - `/app/comprobantes` lista comprobantes subidos por el usuario mediante `comprobantes.uploaded_by`.
-  - `/app/pagos` y `/app/cancelaciones` filtran por reservas del huesped y luego por `reserva_id`; no usan columnas inexistentes en tablas hijas.
+  - `/app/pagos` muestra tarjetas paginadas con imagen de habitacion, monto, estado de verificacion, reserva asociada, comprobante y acceso a la reserva.
+  - `/app/cancelaciones` filtra por reservas del huesped y luego por `reserva_id`; no usa columnas inexistentes en tablas hijas.
   - `/app/perfil` fue convertido en panel editable:
     - Muestra datos relacionados de Auth, `public.usuarios`, `public.huespedes`, reservas, comprobantes/pagos y notificaciones.
     - Permite editar nombre, email, telefono, tipo/numero de documento, fecha de nacimiento, pais y observaciones.
@@ -128,9 +133,18 @@ Implementado:
   - `/admin/configuracion` administra check-in, check-out y espera de comprobante.
   - `configuracion_hostal.reserva_comprobante_espera_minutos` define cuantos minutos se espera el comprobante antes de cancelar una reserva `pendiente_pago`.
   - Valor `0` desactiva la cancelacion automatica.
+  - Tambien administra politica de cancelacion: `cancelacion_reembolso_horas` y `cancelacion_retencion_porcentaje`.
   - Endpoint protegido para cron: `/api/jobs/cancelar-reservas-vencidas`, con `Authorization: Bearer <CRON_SECRET>`.
   - La cancelacion automatica solo afecta reservas `pendiente_pago` vencidas sin comprobante, sin `comprobante_url` y sin transaccion aprobada.
-  - Documentacion operativa en `OPERACION_RESERVAS.md`.
+  - La disponibilidad se refresca con `/api/availability/version`, Realtime y revalidacion client-side para liberar habitaciones en navegadores abiertos.
+  - Documentacion operativa en `OPERACION_RESERVAS.md` y `FLUJO_CANCELACIONES.md`.
+- Flujo de cancelaciones:
+  - Documentacion funcional en `FLUJO_CANCELACIONES.md`.
+  - La cancelacion automatica por falta de comprobante crea `public.cancelaciones` con politica `sin_reembolso` y montos contables en `0`.
+  - La cancelacion manual por personal o cliente usa el RPC `public.cancel_reservation_with_accounting`.
+  - El sistema no controla movimientos externos de dinero; guarda el resultado contable del flujo.
+  - `public.cancelaciones` guarda snapshot de `monto_pagado_aprobado`, `retencion_porcentaje_aplicado`, `monto_reembolso` y `monto_retenido`.
+  - `public.reservas.precio_ajustado` guarda el monto final que quedo para el hostal; `precio_total` conserva el monto original.
 - Flujo de comprobantes de reserva:
   - Documentacion funcional en `FLUJO_RESERVA_COMPROBANTE.md`.
   - Bucket publico Supabase Storage `comprobante` para PDF/JPG/PNG/WEBP de hasta 10 MB.
@@ -278,9 +292,17 @@ Notas de esquema:
   - `cliente`, `reserva`, `pago`, `habitacion`, `huesped`, `tarifa`, `sistema`, `seguridad`.
   - Mantiene tipos historicos para compatibilidad.
 - `supabase/migrations/202607190003_add_payment_tables_to_realtime.sql` agrega `public.transacciones` y `public.comprobantes` a `supabase_realtime`.
+- `supabase/migrations/202607190004_allow_multiple_comprobantes_per_reserva.sql` permite historial de varios comprobantes por reserva.
+- `supabase/migrations/202607190005_add_availability_tables_to_realtime.sql` publica tablas de disponibilidad en Realtime.
+- `supabase/migrations/202607190006_atomic_auto_cancel_reservations.sql` agrega RPC atomico para cancelar reservas vencidas y registrar `public.cancelaciones`.
+- `supabase/migrations/202607190007_add_cancellation_policy_settings.sql` agrega configuracion de horas/porcentaje de cancelacion.
+- `supabase/migrations/202607190008_add_partial_cancellation_accounting.sql` agrega `cancelaciones.monto_retenido` y politica `reembolso_parcial`.
+- `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql` agrega RPC atomico para cancelacion manual con contabilidad.
+- `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql` agrega snapshot de monto pagado aprobado y porcentaje aplicado en `public.cancelaciones`.
 - Endpoints protegidos recientes:
   - `/api/admin/payment-verification/pending`: usado por el sidebar admin para saber si hay pagos por verificar.
   - `/api/app/reservas/[id]/status`: usado por la pantalla cliente de reserva para sincronizar estado de reserva, comprobante y verificacion de pago.
+  - `/api/availability/version`: usado por catalogos de disponibilidad para disparar barrido de reservas vencidas y refrescar vistas abiertas.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes` queda como ficha documental del usuario:
@@ -402,6 +424,10 @@ Verificaciones recientes:
 - `/app/reservas/[id]` corregido para no renderizar `Badge` dentro de `<p>`, evitando error de hidratacion.
 - `/app/pagos` y `/app/cancelaciones` corregidos para no filtrar por columnas inexistentes en tablas hijas.
 - `/app/reservas/[id]` ahora usa caja de arrastre/seleccion para comprobante PDF o imagen, con previsualizador antes de subir y vista del comprobante subido.
+- `/app/reservas` ahora muestra tarjetas paginadas con imagen, detalle compacto de reserva/pago/cancelacion y accion de cancelacion propia.
+- `/app/pagos` ahora muestra tarjetas paginadas con contexto de reserva, habitacion, comprobante y enlaces operativos.
+- `/admin/reserva-detalle` fue redisenado como tarjetas compactas por reserva con detalles en dialogs para reducir saturacion visual.
+- `FLUJO_CANCELACIONES.md` agregado como documento fuente para cancelaciones y contabilidad de montos retenidos/no retenidos.
 - Comprobantes subidos al bucket `comprobante` se ordenan en Storage por `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`.
 - `/admin/verificar-comprobantes` agregado como cola dedicada para aprobar/rechazar comprobantes pendientes y cambiar reservas a `confirmada`.
 - Logout del portal cliente corregido para ejecutar la Server Action desde cliente sin formulario desconectado.
@@ -431,6 +457,16 @@ Archivos:
 - `supabase/migrations/202607150001_add_comprobante_storage.sql`
 - `supabase/migrations/202607170001_drop_huespedes_identity_duplicates.sql`
 - `supabase/migrations/202607170002_backfill_auth_users_phone.sql`
+- `supabase/migrations/202607190001_enrich_notificaciones_feed.sql`
+- `supabase/migrations/202607190002_expand_notificacion_tipos.sql`
+- `supabase/migrations/202607190003_add_payment_tables_to_realtime.sql`
+- `supabase/migrations/202607190004_allow_multiple_comprobantes_per_reserva.sql`
+- `supabase/migrations/202607190005_add_availability_tables_to_realtime.sql`
+- `supabase/migrations/202607190006_atomic_auto_cancel_reservations.sql`
+- `supabase/migrations/202607190007_add_cancellation_policy_settings.sql`
+- `supabase/migrations/202607190008_add_partial_cancellation_accounting.sql`
+- `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql`
+- `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql`
 
 La primera migracion agrega:
 
@@ -464,6 +500,10 @@ La duodecima crea/configura el bucket `comprobante`, agrega columnas para trazab
 La decimotercera cambia `public.huespedes` a ficha documental asociada a usuario: elimina `nombre_completo`, `email` y `telefono`, hace `usuario_id` obligatorio/unico y conserva datos documentales como tipo/numero de documento, pais, fecha de nacimiento y observaciones.
 
 La decimocuarta rellena `auth.users.phone` desde `auth.users.raw_user_meta_data.telefono` para usuarios existentes que hubieran quedado con telefono solo en metadata.
+
+Las migraciones `202607190001` a `202607190003` enriquecen notificaciones, amplian tipos operativos y agregan tablas de pagos/comprobantes a Realtime.
+
+Las migraciones `202607190004` a `202607190010` corrigen el flujo de comprobantes multiples, actualizacion de disponibilidad, cancelacion automatica atomica y contabilidad de cancelaciones con snapshot de montos.
 
 ## Flujos Para Probar
 

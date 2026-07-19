@@ -411,6 +411,8 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
     checkinTime: formValue(formData, "checkinTime"),
     checkoutTime: formValue(formData, "checkoutTime"),
     paymentProofTimeoutMinutes: formValue(formData, "paymentProofTimeoutMinutes"),
+    cancellationRefundHours: formValue(formData, "cancellationRefundHours"),
+    cancellationRetentionPercent: formValue(formData, "cancellationRetentionPercent"),
   });
 
   if (!parsed.success) {
@@ -444,6 +446,16 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
       valor: String(parsed.data.paymentProofTimeoutMinutes),
       descripcion: "Minutos de espera para recibir comprobante antes de cancelar automáticamente una reserva pendiente de pago. Usa 0 para desactivar.",
     },
+    {
+      clave: staySettingKeys.cancellationRefundHours,
+      valor: String(parsed.data.cancellationRefundHours),
+      descripcion: "Horas antes del check-in programado hasta las que una cancelación de huésped aplica a reembolso total.",
+    },
+    {
+      clave: staySettingKeys.cancellationRetentionPercent,
+      valor: String(parsed.data.cancellationRetentionPercent),
+      descripcion: "Porcentaje retenido del monto pagado cuando la cancelación ocurre después del corte de reembolso total.",
+    },
   ];
 
   const { error } = await admin
@@ -455,6 +467,10 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
   }
 
   revalidatePath("/admin/configuracion");
+  revalidatePath("/");
+  revalidatePath("/app");
+  revalidatePath("/app/reservas/nueva");
+  revalidatePath("/admin/reservas/nueva");
 
   await emitEvent(admin, {
     event: "sistema.configuracion_actualizada",
@@ -466,6 +482,8 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
       checkin_time: parsed.data.checkinTime,
       checkout_time: parsed.data.checkoutTime,
       payment_proof_timeout_minutes: parsed.data.paymentProofTimeoutMinutes,
+      cancellation_refund_hours: parsed.data.cancellationRefundHours,
+      cancellation_retention_percent: parsed.data.cancellationRetentionPercent,
     },
   });
 

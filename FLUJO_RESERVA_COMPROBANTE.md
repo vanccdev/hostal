@@ -14,7 +14,8 @@ Este documento describe el flujo funcional para reservas creadas por clientes y 
 8. Se notifica al personal encargado mediante `public.notificaciones`.
 9. Admin o recepcionista revisa el deposito manualmente.
 10. Si el pago es valido, confirma la reserva.
-11. El cliente recibe la actualizacion en pantalla y en notificaciones.
+11. Si el comprobante es rechazado, la reserva sigue `pendiente_pago` y el cliente puede subir otro comprobante mientras no venza el tiempo de espera.
+12. El cliente recibe la actualizacion en pantalla y en notificaciones.
 
 ## Rutas involucradas
 
@@ -44,6 +45,19 @@ La tabla `public.reservas` usa estos estados relevantes para el flujo:
 
 Nota: aunque operativamente se hable de "reservado", el estado tecnico usado actualmente es `confirmada`.
 
+## Relacion con cancelaciones
+
+Las reservas pueden terminar canceladas por dos caminos principales:
+
+- Automaticamente, si vence el tiempo de espera y no hay comprobante activo.
+- Manualmente, si personal cancela la reserva desde el detalle administrativo.
+
+El detalle de reglas, politica configurable y montos persistidos esta en:
+
+```text
+FLUJO_CANCELACIONES.md
+```
+
 ## Configuracion de tiempo de espera
 
 El tiempo disponible para subir comprobante se guarda en:
@@ -57,7 +71,11 @@ Reglas:
 - Si el valor es mayor a `0`, la pantalla del cliente muestra un contador.
 - Si el valor es `0`, la cancelacion automatica por falta de comprobante queda desactivada.
 - El contador se calcula desde `reservas.created_at`.
-- El job de cancelacion cancela reservas `pendiente_pago` vencidas sin comprobante.
+- El job de cancelacion cancela reservas `pendiente_pago` vencidas sin comprobante activo.
+- La pantalla de pago tambien consulta `/api/app/reservas/[id]/status`; si esa reserva puntual ya vencio, el endpoint ejecuta la misma cancelacion para que no dependa solo del cron.
+- Las pantallas que muestran disponibilidad consultan `/api/availability/version`; ese endpoint ejecuta primero el barrido de reservas vencidas para liberar habitaciones en otros navegadores.
+- Un comprobante activo es una transaccion de pago con `estado_verificacion = por_verificar` o `aprobada` y `comprobante_url`.
+- Los comprobantes rechazados quedan como historial, pero no bloquean la cancelacion automatica cuando vence el tiempo.
 
 La documentacion operativa del job esta en:
 
@@ -77,7 +95,9 @@ Validaciones:
 
 - La reserva debe pertenecer al cliente autenticado.
 - La reserva debe estar en estado `pendiente_pago`.
-- No debe existir ya un comprobante para esa reserva.
+- No debe existir un comprobante activo en revision para esa reserva.
+- Si el comprobante anterior fue rechazado, el cliente puede subir otro mientras la reserva siga `pendiente_pago` y no haya vencido el tiempo de espera.
+- La validacion de vencimiento se aplica tambien del lado servidor, no solo en la UI.
 - Tipos permitidos:
   - `application/pdf`
   - `image/jpeg`
@@ -188,19 +208,33 @@ Al rechazar:
 transacciones.estado_verificacion = rechazada
 transacciones.verificado_por = usuario actual
 transacciones.verificado_at = now()
+reservas.estado permanece pendiente_pago
 ```
 
-La reserva permanece pendiente hasta que se defina la siguiente accion operativa.
+La reserva permanece `pendiente_pago`; la habitacion sigue bloqueada para ese rango mientras la reserva no sea cancelada.
+El cliente ve el rechazo en `/app/reservas/[id]` y puede subir otro comprobante valido si todavia esta dentro del tiempo de espera.
+
+Si el tiempo de espera vence y no hay un comprobante activo `por_verificar` o `aprobada`, el job de cancelacion o el endpoint de estado del cliente cambia:
+
+```text
+reservas.estado = cancelada
+public.cancelaciones = registro con politica sin_reembolso y montos contables en 0
+```
+
+Al cancelarse la reserva, la habitacion vuelve a estar disponible para nuevas reservas en ese rango.
 
 ## Notificaciones y tiempo real
 
-Para actualizaciones dentro de la app se usa Supabase Realtime, no polling.
+Para actualizaciones dentro de la app se usa Supabase Realtime reforzado con polling protegido en las pantallas criticas.
 
 Suscripciones usadas:
 
 - Cliente en `/app/reservas/[id]`:
   - `public.reservas` filtrado por `id`.
+  - `public.transacciones` filtrado por `reserva_id`.
+  - `public.comprobantes` filtrado por `reserva_id`.
   - `public.notificaciones` filtrado por `usuario_id`.
+  - Polling a `/api/app/reservas/[id]/status` cada 5 segundos, al recuperar foco y al volver visible la pestana.
 - Personal en `/admin/notificaciones`:
   - `public.notificaciones` para refrescar al recibir avisos nuevos.
 

@@ -25,7 +25,23 @@ export const localISODate = (date = new Date()) => {
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
 
-const parseTimestamp = (value: string) => {
+export const localISODateTime = (date = new Date()) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "00";
+
+  return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}:${value("second")}`;
+};
+
+export const parseAppTimestamp = (value: string) => {
   const normalized = value.includes(" ") ? value.replace(" ", "T") : value;
 
   if (dateOnlyPattern.test(normalized)) {
@@ -39,12 +55,14 @@ const parseTimestamp = (value: string) => {
   return new Date(`${normalized}-04:00`);
 };
 
+export const appTimestampToMs = (value: string) => parseAppTimestamp(value).getTime();
+
 export const formatDate = (value: string | null | undefined) => {
   if (!value) {
     return "-";
   }
 
-  const date = parseTimestamp(value);
+  const date = parseAppTimestamp(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -63,7 +81,7 @@ export const formatDateTime = (value: string | null | undefined) => {
     return "-";
   }
 
-  const date = parseTimestamp(value);
+  const date = parseAppTimestamp(value);
 
   if (Number.isNaN(date.getTime())) {
     return value;

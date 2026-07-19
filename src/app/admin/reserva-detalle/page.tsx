@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { authUserIdsMatchingContact, userContactsById } from "@/lib/auth/user-contact";
+import { getStaySettings } from "@/lib/stay-settings";
 import { ilikePattern } from "@/lib/table-server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -112,6 +113,7 @@ export default async function ReservaDetallePage({
   await requireAdminModule("reservas");
 
   const supabase = createSupabaseAdminClient();
+  const staySettings = await getStaySettings(supabase);
   const query = parseQuery(await searchParams);
   let searchHuespedIds: string[] = [];
 
@@ -237,6 +239,7 @@ export default async function ReservaDetallePage({
       notificaciones: notificacionesByReserva.get(reserva.id) ?? [],
       auditoria: auditoriaByReserva.get(reserva.id) ?? [],
       usuariosById,
+      staySettings,
     };
   });
 

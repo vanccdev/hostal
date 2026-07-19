@@ -40,6 +40,16 @@ export const staySettingsSchema = z
       .int("Ingresa minutos completos")
       .min(0, "Usa 0 para desactivar o un tiempo válido")
       .max(10080, "El máximo es 10080 minutos"),
+    cancellationRefundHours: z.coerce
+      .number()
+      .int("Ingresa horas completas")
+      .min(0, "Usa 0 o una cantidad válida de horas")
+      .max(8760, "El máximo es 8760 horas"),
+    cancellationRetentionPercent: z.coerce
+      .number()
+      .int("Ingresa un porcentaje completo")
+      .min(0, "El porcentaje mínimo es 0")
+      .max(100, "El porcentaje máximo es 100"),
   })
   .refine((value) => calculateTurnoverMinutes(value.checkoutTime, value.checkinTime) >= 1, {
     path: ["checkinTime"],

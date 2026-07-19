@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { localISODateTime } from "@/lib/datetime";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { getStaySettings } from "@/lib/stay-settings";
 import type { Database } from "@/types/database";
@@ -13,11 +14,13 @@ type AutoCancelResult = {
   cutoff?: string;
 };
 
-const autoCancelNote = (cutoff: string, timeoutMinutes: number) =>
-  `Cancelada automáticamente por falta de comprobante después de ${timeoutMinutes} minutos. Corte: ${cutoff}.`;
+type AutoCancelOptions = {
+  reservationId?: string;
+};
 
 export const cancelExpiredPendingReservations = async (
   supabase: SupabaseClient<Database>,
+  options: AutoCancelOptions = {},
 ): Promise<AutoCancelResult> => {
   const settings = await getStaySettings(supabase);
   const timeoutMinutes = settings.paymentProofTimeoutMinutes;
@@ -26,104 +29,72 @@ export const cancelExpiredPendingReservations = async (
     return { checked: 0, canceled: 0, disabled: true, timeoutMinutes };
   }
 
-  const cutoffDate = new Date(Date.now() - timeoutMinutes * 60_000);
-  const cutoff = cutoffDate.toISOString();
-  const { data: pendingReservations, error: reservationsError } = await supabase
+  const cutoff = localISODateTime(new Date(Date.now() - timeoutMinutes * 60_000));
+  let reservationsQuery = supabase
     .from("reservas")
-    .select("id,codigo_reserva,huesped_id,notas_internas")
+    .select("id")
     .eq("estado", "pendiente_pago")
     .lte("created_at", cutoff)
     .limit(200);
+
+  if (options.reservationId) {
+    reservationsQuery = reservationsQuery.eq("id", options.reservationId);
+  }
+
+  const { data: pendingReservations, error: reservationsError } = await reservationsQuery;
 
   if (reservationsError) {
     throw new Error(reservationsError.message);
   }
 
-  const reservationIds = (pendingReservations ?? []).map((reservation) => reservation.id);
+  const checked = pendingReservations?.length ?? 0;
 
-  if (reservationIds.length === 0) {
+  if (checked === 0) {
     return { checked: 0, canceled: 0, disabled: false, timeoutMinutes, cutoff };
   }
 
-  const [{ data: comprobantes, error: comprobantesError }, { data: transacciones, error: transaccionesError }] =
-    await Promise.all([
-      supabase.from("comprobantes").select("reserva_id").in("reserva_id", reservationIds),
-      supabase
-        .from("transacciones")
-        .select("reserva_id,comprobante_url,estado_verificacion")
-        .in("reserva_id", reservationIds),
-    ]);
-
-  if (comprobantesError) {
-    throw new Error(comprobantesError.message);
-  }
-
-  if (transaccionesError) {
-    throw new Error(transaccionesError.message);
-  }
-
-  const reservationIdsWithProof = new Set<string>();
-
-  for (const comprobante of comprobantes ?? []) {
-    reservationIdsWithProof.add(comprobante.reserva_id);
-  }
-
-  for (const transaccion of transacciones ?? []) {
-    if (transaccion.comprobante_url || transaccion.estado_verificacion === "aprobada") {
-      reservationIdsWithProof.add(transaccion.reserva_id);
-    }
-  }
-
-  const expiredReservations = (pendingReservations ?? []).filter(
-    (reservation) => !reservationIdsWithProof.has(reservation.id),
+  const { data: canceledReservations, error: cancelError } = await supabase.rpc(
+    "auto_cancel_expired_pending_reservations",
+    {
+      p_timeout_minutes: timeoutMinutes,
+      p_cutoff: cutoff,
+      p_reservation_id: options.reservationId ?? null,
+    },
   );
 
-  const updateResults = await Promise.all(
-    expiredReservations.map((reservation) => {
-      const note = autoCancelNote(cutoff, timeoutMinutes);
-      const notasInternas = reservation.notas_internas ? `${reservation.notas_internas}\n${note}` : note;
-
-      return supabase
-        .from("reservas")
-        .update({
-          estado: "cancelada",
-          notas_internas: notasInternas,
-        })
-        .eq("id", reservation.id)
-        .eq("estado", "pendiente_pago");
-    }),
-  );
-  const updateError = updateResults.find((result) => result.error)?.error;
-
-  if (updateError) {
-    throw new Error(updateError.message);
+  if (cancelError) {
+    throw new Error(cancelError.message);
   }
 
-  if (expiredReservations.length > 0) {
+  if ((canceledReservations ?? []).length > 0) {
     const { data: guests } = await supabase
       .from("huespedes")
       .select("id,usuario_id")
-      .in("id", expiredReservations.map((reservation) => reservation.huesped_id));
+      .in("id", (canceledReservations ?? []).map((reservation) => reservation.huesped_id));
     const userIdByGuestId = new Map((guests ?? []).map((guest) => [guest.id, guest.usuario_id]));
 
     await Promise.all(
-      expiredReservations.map((reservation) =>
+      (canceledReservations ?? []).map((reservation) =>
         emitEvent(supabase, {
           event: "reserva.cancelada",
           title: "Reserva cancelada automáticamente",
           message: `La reserva ${reservation.codigo_reserva} fue cancelada por falta de comprobante dentro del tiempo configurado.`,
           userId: userIdByGuestId.get(reservation.huesped_id) ?? null,
           entity: "reservas",
-          entityId: reservation.id,
-          payload: { reserva_id: reservation.id, codigo_reserva: reservation.codigo_reserva, motivo: "comprobante_vencido" },
+          entityId: reservation.reserva_id,
+          payload: {
+            reserva_id: reservation.reserva_id,
+            codigo_reserva: reservation.codigo_reserva,
+            motivo: "comprobante_vencido",
+          },
         }),
       ),
     );
   }
 
   return {
-    checked: reservationIds.length,
-    canceled: expiredReservations.length,
+    checked,
+    canceled: canceledReservations?.length ?? 0,
     disabled: false,
     timeoutMinutes,
     cutoff,

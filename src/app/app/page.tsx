@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { ReservaForm } from "@/components/forms/ReservaForm";
+import { AvailabilityRealtimeRefresh } from "@/components/reservations/AvailabilityRealtimeRefresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { formatDate } from "@/lib/datetime";
@@ -9,6 +11,8 @@ import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function ClientDashboardPage() {
+  await connection();
+
   const currentUser = await requirePasswordReady();
   const supabase = createSupabaseAdminClient();
   const guest = await getGuestForUser(currentUser.authUserId);
@@ -53,6 +57,7 @@ export default async function ClientDashboardPage() {
 
   return (
     <section className="space-y-6">
+      <AvailabilityRealtimeRefresh channelName="client-dashboard-availability-refresh" />
       <div>
         <h1 className="text-2xl font-semibold">Hola, {currentUser.profile?.nombre}</h1>
         <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">

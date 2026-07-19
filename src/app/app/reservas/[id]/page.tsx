@@ -33,22 +33,25 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
     notFound();
   }
 
-  const [{ data: comprobante }, { data: transaccion }] = await Promise.all([
-    supabase
-      .from("comprobantes")
-      .select("id,pdf_url")
-      .eq("reserva_id", reserva.id)
-      .order("emitido_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("transacciones")
-      .select("id,estado_verificacion")
-      .eq("reserva_id", reserva.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const { data: transaccion } = await supabase
+    .from("transacciones")
+    .select("id,estado_verificacion,comprobante_url")
+    .eq("reserva_id", reserva.id)
+    .eq("tipo", "pago")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const { data: comprobante } = transaccion?.id
+    ? await supabase
+        .from("comprobantes")
+        .select("id,pdf_url")
+        .eq("transaccion_id", transaccion.id)
+        .maybeSingle()
+    : { data: null };
+  const activeProof =
+    Boolean(transaccion?.comprobante_url ?? comprobante?.pdf_url) &&
+    transaccion?.estado_verificacion !== "rechazada";
+  const activeProofUrl = activeProof ? (transaccion?.comprobante_url ?? comprobante?.pdf_url ?? null) : null;
 
   return (
     <section className="space-y-6">
@@ -62,8 +65,8 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
         estado={reserva.estado}
         createdAt={reserva.created_at}
         timeoutMinutes={staySettings.paymentProofTimeoutMinutes}
-        hasProof={Boolean(comprobante)}
-        proofUrl={comprobante?.pdf_url}
+        hasProof={activeProof}
+        proofUrl={activeProofUrl}
         userId={currentUser.authUserId}
         paymentVerificationStatus={transaccion?.estado_verificacion}
       />
@@ -79,7 +82,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
           <p>Habitación: {reserva.habitacion_id}</p>
           <p>Check-in programado: {formatDateTime(reserva.checkin_programado_at)}</p>
           <p>Check-out programado: {formatDateTime(reserva.checkout_programado_at)}</p>
-          <p>Comprobante: {comprobante ? "Subido" : "Pendiente"}</p>
+          <p>Comprobante: {activeProof ? "Subido" : transaccion?.estado_verificacion === "rechazada" ? "Rechazado" : "Pendiente"}</p>
           <p>Verificación de pago: {transaccion?.estado_verificacion ?? "Pendiente"}</p>
           <div className="flex items-center gap-2">
             <span>Estado:</span>

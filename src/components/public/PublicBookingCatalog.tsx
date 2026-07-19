@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
 import { getRoomAvailabilityStatus, intervalsOverlap } from "@/lib/room-availability";
-import { defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
+import { cancellationPolicyText, defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
 import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
 import type { Habitacion, HabitacionTipo, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
@@ -243,6 +243,7 @@ export const PublicBookingCatalog = ({
           <div className="space-y-2">
             <Label>Fechas</Label>
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
+            <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{cancellationPolicyText(staySettings)}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="publicFechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">

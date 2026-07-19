@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { appTimestampToMs } from "@/lib/datetime";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { EstadoVerificacionPago, ReservaEstado } from "@/types/database";
@@ -118,7 +119,7 @@ const reservationStatusMessage: Record<ReservaEstado, { title: string; descripti
 const paymentStatusMessage: Record<EstadoVerificacionPago, string> = {
   por_verificar: "Comprobante recibido. Mantén esta pantalla abierta mientras administración verifica el pago y confirma tu reserva.",
   aprobada: "Pago aprobado.",
-  rechazada: "Comprobante rechazado. Contacta al hostal para regularizar la reserva.",
+  rechazada: "Comprobante rechazado. Puedes subir otro comprobante válido mientras la reserva siga dentro del tiempo de espera.",
 };
 
 const statusPanelClass = {
@@ -154,7 +155,7 @@ export const ReservationPaymentStatus = ({
   const currentEstadoRef = useRef(currentEstado);
   const currentPaymentStatusRef = useRef(currentPaymentStatus);
   const deadline = useMemo(
-    () => (timeoutMinutes > 0 ? new Date(createdAt).getTime() + timeoutMinutes * 60_000 : null),
+    () => (timeoutMinutes > 0 ? appTimestampToMs(createdAt) + timeoutMinutes * 60_000 : null),
     [createdAt, timeoutMinutes],
   );
   const remaining = deadline ? deadline - now : null;
@@ -490,11 +491,18 @@ export const ReservationPaymentStatus = ({
 
       {currentEstado === "pendiente_pago" && !currentHasProof ? (
         <div className="space-y-4">
+          {currentPaymentStatus === "rechazada" ? (
+            <div className="flex items-start gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+              <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+              <p>{lastMessage || paymentStatusMessage.rechazada}</p>
+            </div>
+          ) : null}
           {timeoutMinutes > 0 ? (
             <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
               <Clock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
               <p>
-                Tienes <span className="font-semibold">{expired ? "0m 00s" : formatRemaining(remaining ?? 0)}</span> para subir tu comprobante.
+                Tienes <span className="font-semibold">{expired ? "0m 00s" : formatRemaining(remaining ?? 0)}</span> para subir
+                {currentPaymentStatus === "rechazada" ? " un nuevo comprobante" : " tu comprobante"}.
                 Si no lo subes a tiempo, la reserva puede cancelarse automáticamente.
               </p>
             </div>
@@ -525,7 +533,7 @@ export const ReservationPaymentStatus = ({
                 </span>
                 <span className="space-y-1">
                   <span className="block text-sm font-semibold text-[#18221b] dark:text-zinc-100">
-                    Arrastra tu comprobante aquí o haz clic para seleccionar
+                    Arrastra {currentPaymentStatus === "rechazada" ? "un nuevo comprobante" : "tu comprobante"} aquí o haz clic para seleccionar
                   </span>
                   <span className="block text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
                     {proofPreview ? proofPreview.name : "PDF, JPG, PNG o WEBP. Máximo 10 MB."}

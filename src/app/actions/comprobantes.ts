@@ -6,8 +6,9 @@ import { writeAuditLog } from "@/lib/db/audit";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { emitEvent } from "@/lib/notifications/emit-event";
 import { isManagementRole } from "@/lib/permissions";
+import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
+import { APP_TIME_ZONE, appTimestampToMs, localISODate } from "@/lib/datetime";
 import type { ActionState } from "@/app/actions/types";
 
 const comprobanteBucket = "comprobante";
@@ -114,7 +115,7 @@ export const uploadReservationProofAction = async (
 
   const { data: reserva, error: reservaError } = await admin
     .from("reservas")
-    .select("id,codigo_reserva,huesped_id,precio_total,estado")
+    .select("id,codigo_reserva,huesped_id,precio_total,estado,created_at")
     .eq("id", reservaId)
     .eq("huesped_id", guest.id)
     .maybeSingle();
@@ -127,27 +128,36 @@ export const uploadReservationProofAction = async (
     return { ok: false, message: "Solo puedes subir comprobantes de reservas pendientes de pago." };
   }
 
-  const { data: existingProof, error: existingProofError } = await admin
-    .from("comprobantes")
-    .select("id")
-    .eq("reserva_id", reserva.id)
-    .maybeSingle();
+  const staySettings = await getStaySettings(admin);
+  const paymentProofDeadline =
+    staySettings.paymentProofTimeoutMinutes > 0
+      ? appTimestampToMs(reserva.created_at) + staySettings.paymentProofTimeoutMinutes * 60_000
+      : null;
 
-  if (existingProofError) {
-    return { ok: false, message: existingProofError.message };
+  if (paymentProofDeadline !== null && paymentProofDeadline <= Date.now()) {
+    return {
+      ok: false,
+      message: "El tiempo para subir el comprobante venció. La reserva puede cancelarse automáticamente.",
+    };
   }
 
-  if (existingProof) {
-    return { ok: false, message: "Esta reserva ya tiene un comprobante cargado." };
-  }
-
-  await admin
+  const { data: pendingProof, error: pendingProofError } = await admin
     .from("transacciones")
-    .delete()
+    .select("id")
     .eq("reserva_id", reserva.id)
     .eq("estado_verificacion", "por_verificar")
     .eq("tipo", "pago")
-    .not("comprobante_url", "is", null);
+    .not("comprobante_url", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (pendingProofError) {
+    return { ok: false, message: pendingProofError.message };
+  }
+
+  if (pendingProof) {
+    return { ok: false, message: "Esta reserva ya tiene un comprobante en revisión." };
+  }
 
   const comprobanteCode = comprobanteCodeForReservation(reserva.codigo_reserva);
   const folderPath = `${localISODate()}/${sanitizeFolderPart(currentUser.email)}`;
@@ -201,6 +211,12 @@ export const uploadReservationProofAction = async (
   if (comprobanteError) {
     await admin.storage.from(comprobanteBucket).remove([objectPath]);
     await admin.from("transacciones").delete().eq("id", transaccion.id);
+    if (comprobanteError.message.includes("comprobantes_reserva_id_key")) {
+      return {
+        ok: false,
+        message: "La base de datos todavía no permite más de un comprobante por reserva. Aplica la migración 202607190004.",
+      };
+    }
     return { ok: false, message: comprobanteError.message };
   }
 
@@ -307,7 +323,7 @@ export const verifyReservationProofAction = async (
     title: approved ? "Reserva confirmada" : "Comprobante rechazado",
     message: approved
       ? `Tu reserva ${reserva.codigo_reserva} fue verificada y confirmada.`
-      : `El comprobante de la reserva ${reserva.codigo_reserva} fue rechazado. Contacta al hostal o sube un comprobante válido.`,
+      : `El comprobante de la reserva ${reserva.codigo_reserva} fue rechazado. Puedes subir otro comprobante válido mientras la reserva siga dentro del tiempo de espera.`,
     userId: guest?.usuario_id ?? null,
     actorId: currentUser.authUserId,
     entity: "reservas",
