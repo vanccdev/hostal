@@ -32,6 +32,13 @@ Implementado:
   - `src/app/actions/password.ts`
   - `src/app/actions/crud.ts`
 - Panel admin con rutas principales bajo `/admin`.
+- Notificaciones administrativas en `/admin/notificaciones`:
+  - Ya no usa tabla generica; muestra un feed tipo notificaciones con tarjetas ordenadas por fecha.
+  - Las notificaciones no leidas usan fondo destacado; al abrir "Ver detalle" se marcan como leidas y cambian al estilo normal.
+  - Incluye conteo de nuevas/total y accion "Marcar todo como leido".
+  - Cada tarjeta muestra tipo etiquetado, titulo, mensaje, actor, accion, fecha y enlace contextual cuando aplica.
+  - Para reservas, el detalle abre `/admin/reserva-detalle` filtrado por `codigo_reserva`.
+  - Usa Realtime y refresco server-side para recibir actividad reciente sin depender solo de recargar.
 - Vista administrativa `/admin/reserva-detalle`:
   - Menu lateral "Reserva detalle" con permiso del modulo `reservas`.
   - Muestra reservas en tarjetas paginadas server-side.
@@ -51,6 +58,9 @@ Implementado:
   - `/app/reservas/nueva` se mantiene disponible como ruta compatible del formulario.
   - Al crear reserva como cliente, redirige a `/app/reservas/[id]` para completar el pago.
   - `/app/reservas/[id]` muestra estado, contador de espera de comprobante, subida de PDF/imagen con caja de arrastre, previsualizacion y actualizacion en tiempo real.
+  - Mientras el comprobante esta en revision, pide mantener la pantalla abierta hasta que administracion confirme o rechace.
+  - Si administracion aprueba/rechaza el comprobante, el cliente ve toast y estado actualizado sin recargar manualmente.
+  - El estado cliente combina WebSocket con polling protegido a `/api/app/reservas/[id]/status` cada 5 segundos y al recuperar foco.
   - `/app/comprobantes` lista comprobantes subidos por el usuario mediante `comprobantes.uploaded_by`.
   - `/app/pagos` y `/app/cancelaciones` filtran por reservas del huesped y luego por `reserva_id`; no usan columnas inexistentes en tablas hijas.
   - `/app/perfil` fue convertido en panel editable:
@@ -93,7 +103,9 @@ Implementado:
 - Estados y tipos tecnicos:
   - `src/lib/reserva-estado.ts` muestra `reservas.estado` como texto legible sin cambiar el valor guardado.
   - `pendiente_pago` se muestra como `Pendiente de pago`, `no_show` como `No se presento`, etc.
-  - `src/lib/notificacion-tipo.ts` muestra tipos de notificacion como `pago_pendiente` en texto legible.
+  - `src/lib/notificacion-tipo.ts` muestra tipos de notificacion en texto legible.
+  - Tipos vigentes de notificacion: `cliente`, `reserva`, `pago`, `habitacion`, `huesped`, `tarifa`, `sistema`, `seguridad`, ademas de los historicos `overbooking`, `pago_pendiente`, `checkin_hoy`, `checkout_hoy`, `mantenimiento`.
+  - `public.notificaciones` guarda tambien `titulo`, `actor_id`, `entidad`, `entidad_id`, `accion` y `metadata` para alimentar el feed administrativo.
 - Tablas/listados administrativos:
   - El componente base de tabla evita saltos de linea en headers y celdas.
   - Las tablas usan scroll horizontal para mostrar contenido completo.
@@ -128,13 +140,18 @@ Implementado:
   - Al subir se crean `public.transacciones` en `por_verificar` y `public.comprobantes` con `pdf_url`, `uploaded_by` y trazabilidad de la transaccion.
   - Se notifica a recepcion/admin mediante `public.notificaciones`.
   - `/admin/verificar-comprobantes` es la cola dedicada para revisar pagos pendientes, abrir el archivo y confirmar o rechazar.
+  - El sidebar admin muestra una insignia roja junto a "Verificar pagos" cuando hay pagos por verificar.
+  - La insignia consulta el endpoint protegido `/api/admin/payment-verification/pending` y se actualiza por WebSocket, intervalo de 5 segundos y eventos de foco/visibilidad.
+  - `/admin/verificar-comprobantes` tambien combina Realtime con refresco periodico para mostrar comprobantes nuevos sin recargar manualmente.
   - `/admin/reserva-detalle` tambien permite abrir comprobante, confirmar reserva o rechazar comprobante desde el detalle operativo.
   - Confirmar marca `transacciones.estado_verificacion = aprobada`, guarda verificador y cambia `reservas.estado = confirmada`.
   - Rechazar marca `transacciones.estado_verificacion = rechazada`.
-  - Cliente y staff usan Supabase Realtime para refrescar estado/notificaciones sin polling.
+  - Cliente y staff usan Supabase Realtime reforzado con endpoints server-side protegidos para evitar depender solo de eventos WebSocket.
 - Flujo base `createClientAccountByStaff`.
 - Flujo base `resetClientPasswordToPhone`.
 - Eventos internos y dispatch de webhooks sin romper la operacion principal si el webhook falla.
+  - `src/lib/notifications/emit-event.ts` centraliza el registro de eventos del sistema en `public.notificaciones`.
+  - Se registran eventos de cuenta cliente, perfil, reservas, comprobantes/pagos, cancelacion automatica, habitaciones, huespedes, tarifas, configuracion y seguridad.
 - Migraciones SQL iniciales en `supabase/migrations`.
 - Migracion de imagenes de habitaciones:
   - `supabase/migrations/202607040001_add_img_habitaciones_storage.sql`
@@ -179,6 +196,7 @@ Pendiente o siguiente iteracion:
 - Definir metodos de pago reales para reemplazar el default tecnico `qr_otro`.
 - Agregar administracion completa de imagenes de habitaciones existentes: ordenar galeria. La visualizacion, carga nueva y eliminacion de fotos al editar ya estan implementadas.
 - Agregar eliminacion/desactivacion controlada en CRUD principales.
+- Evaluar una estrategia mas fina de paginacion/filtros para el feed de notificaciones si crece mucho; actualmente carga las 80 mas recientes.
 - Revisar y endurecer RLS con el esquema final real.
 - Agregar pruebas automatizadas cuando el backend este disponible.
 
@@ -253,6 +271,16 @@ Notas de esquema:
   - Elimina `public.huespedes.nombre_completo`, `public.huespedes.email` y `public.huespedes.telefono`.
   - Hace `public.huespedes.usuario_id` obligatorio y unico.
 - `supabase/migrations/202607170002_backfill_auth_users_phone.sql` copia telefonos de metadata hacia `auth.users.phone` para registros antiguos.
+- `supabase/migrations/202607190001_enrich_notificaciones_feed.sql` enriquece `public.notificaciones` para feed:
+  - Agrega `titulo`, `actor_id`, `entidad`, `entidad_id`, `accion` y `metadata`.
+  - Agrega indices por lectura/fecha, accion/fecha, entidad y actor.
+- `supabase/migrations/202607190002_expand_notificacion_tipos.sql` amplia `notificaciones.tipo` para categorias operativas:
+  - `cliente`, `reserva`, `pago`, `habitacion`, `huesped`, `tarifa`, `sistema`, `seguridad`.
+  - Mantiene tipos historicos para compatibilidad.
+- `supabase/migrations/202607190003_add_payment_tables_to_realtime.sql` agrega `public.transacciones` y `public.comprobantes` a `supabase_realtime`.
+- Endpoints protegidos recientes:
+  - `/api/admin/payment-verification/pending`: usado por el sidebar admin para saber si hay pagos por verificar.
+  - `/api/app/reservas/[id]/status`: usado por la pantalla cliente de reserva para sincronizar estado de reserva, comprobante y verificacion de pago.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes` queda como ficha documental del usuario:
