@@ -41,6 +41,20 @@ export const PaymentVerificationNavBadge = ({ label }: PaymentVerificationNavBad
       )
       .on(
         "postgres_changes",
+        { event: "*", schema: "public", table: "transacciones" },
+        () => {
+          void refreshPendingPayments();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "comprobantes" },
+        () => {
+          void refreshPendingPayments();
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "UPDATE", schema: "public", table: "reservas" },
         () => {
           void refreshPendingPayments();
