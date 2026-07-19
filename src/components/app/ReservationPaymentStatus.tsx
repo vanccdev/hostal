@@ -1,6 +1,6 @@
 "use client";
 
-import { type DragEvent, type FormEvent, useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent, type FormEvent, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Clock, FileCheck2, FileText, FileUp, ImagePlus, ShieldCheck, TriangleAlert, X } from "lucide-react";
@@ -35,6 +35,14 @@ type ProofPreview = {
   sizeLabel: string;
   type: string;
   url: string;
+};
+
+type ReservationStatusPayload = {
+  ok: boolean;
+  estado?: ReservaEstado;
+  hasProof?: boolean;
+  proofUrl?: string | null;
+  paymentVerificationStatus?: EstadoVerificacionPago | null;
 };
 
 const allowedProofMimeTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
@@ -136,12 +144,15 @@ export const ReservationPaymentStatus = ({
   const [currentEstado, setCurrentEstado] = useState<ReservaEstado>(estado);
   const [currentHasProof, setCurrentHasProof] = useState(hasProof);
   const [currentPaymentStatus, setCurrentPaymentStatus] = useState<EstadoVerificacionPago | null>(paymentVerificationStatus);
+  const [currentProofUrl, setCurrentProofUrl] = useState<string | null | undefined>(proofUrl);
   const [lastMessage, setLastMessage] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [proofPreview, setProofPreview] = useState<ProofPreview | null>(null);
   const [clientFileError, setClientFileError] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const proofPreviewRef = useRef<ProofPreview | null>(null);
+  const currentEstadoRef = useRef(currentEstado);
+  const currentPaymentStatusRef = useRef(currentPaymentStatus);
   const deadline = useMemo(
     () => (timeoutMinutes > 0 ? new Date(createdAt).getTime() + timeoutMinutes * 60_000 : null),
     [createdAt, timeoutMinutes],
@@ -150,6 +161,72 @@ export const ReservationPaymentStatus = ({
   const expired = remaining !== null && remaining <= 0;
   const canUpload = currentEstado === "pendiente_pago" && !currentHasProof && !expired;
   const currentStatusInfo = reservationStatusMessage[currentEstado];
+
+  useEffect(() => {
+    currentEstadoRef.current = currentEstado;
+  }, [currentEstado]);
+
+  useEffect(() => {
+    currentPaymentStatusRef.current = currentPaymentStatus;
+  }, [currentPaymentStatus]);
+
+  const applyReservationStatus = useCallback((payload: ReservationStatusPayload, notify: boolean) => {
+    const nextEstado = payload.estado;
+    const nextPaymentStatus = payload.paymentVerificationStatus;
+
+    if (nextEstado && nextEstado !== currentEstadoRef.current) {
+      setCurrentEstado(nextEstado);
+      const statusInfo = reservationStatusMessage[nextEstado];
+
+      if (notify) {
+        if (statusInfo.tone === "danger") {
+          toast.error(statusInfo.title, { description: statusInfo.description });
+        } else if (statusInfo.tone === "success") {
+          toast.success(statusInfo.title, { description: statusInfo.description });
+        } else {
+          toast(statusInfo.title, { description: statusInfo.description });
+        }
+      }
+    }
+
+    if (typeof payload.hasProof === "boolean") {
+      setCurrentHasProof(payload.hasProof);
+    }
+
+    if ("proofUrl" in payload) {
+      setCurrentProofUrl(payload.proofUrl);
+    }
+
+    if (nextPaymentStatus !== undefined && nextPaymentStatus !== currentPaymentStatusRef.current) {
+      setCurrentPaymentStatus(nextPaymentStatus ?? null);
+
+      if (notify && nextPaymentStatus) {
+        if (nextPaymentStatus === "rechazada") {
+          toast.error("Comprobante rechazado", { description: paymentStatusMessage.rechazada });
+        } else if (nextPaymentStatus === "aprobada") {
+          toast.success("Pago aprobado", { description: paymentStatusMessage.aprobada });
+        } else {
+          toast("Pago en revisión", { description: paymentStatusMessage.por_verificar });
+        }
+      }
+    }
+  }, []);
+
+  const refreshReservationStatus = useCallback(async (notify: boolean) => {
+    const response = await fetch(`/api/app/reservas/${reservaId}/status`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = (await response.json()) as ReservationStatusPayload;
+
+    if (payload.ok) {
+      applyReservationStatus(payload, notify);
+    }
+  }, [applyReservationStatus, reservaId]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -168,6 +245,9 @@ export const ReservationPaymentStatus = ({
   }, []);
 
   useEffect(() => {
+    const refresh = () => {
+      void refreshReservationStatus(true);
+    };
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
       .channel(`reservation-payment-${reservaId}`)
@@ -198,6 +278,22 @@ export const ReservationPaymentStatus = ({
       )
       .on(
         "postgres_changes",
+        { event: "*", schema: "public", table: "transacciones", filter: `reserva_id=eq.${reservaId}` },
+        () => {
+          refresh();
+          router.refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "comprobantes", filter: `reserva_id=eq.${reservaId}` },
+        () => {
+          refresh();
+          router.refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "INSERT", schema: "public", table: "notificaciones", filter: `usuario_id=eq.${userId}` },
         (payload) => {
           const message = payload.new.mensaje;
@@ -211,15 +307,31 @@ export const ReservationPaymentStatus = ({
         },
       )
       .subscribe();
+    const intervalId = window.setInterval(refresh, 5000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    queueMicrotask(() => {
+      void refreshReservationStatus(false);
+    });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", refresh);
 
     return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", refresh);
       void supabase.removeChannel(channel);
     };
-  }, [reservaId, router, userId]);
+  }, [refreshReservationStatus, reservaId, router, userId]);
 
   const handleUploadSuccess = () => {
     setCurrentHasProof(true);
     setCurrentPaymentStatus("por_verificar");
+    void refreshReservationStatus(false);
     clearProofInput();
     router.refresh();
   };
@@ -342,15 +454,15 @@ export const ReservationPaymentStatus = ({
                   ? paymentStatusMessage[currentPaymentStatus]
                   : "Comprobante recibido. Mantén esta pantalla abierta mientras administración verifica el pago y confirma tu reserva.")}
             </p>
-            {proofUrl ? (
+            {currentProofUrl ? (
               <div className="mt-3 space-y-3">
-                <a href={proofUrl} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
+                <a href={currentProofUrl} target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-4">
                   Ver comprobante subido
                 </a>
                 <div className="overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]">
-                  {isPdfUrl(proofUrl) ? (
+                  {isPdfUrl(currentProofUrl) ? (
                     <div className="h-72 bg-[#f6f1e6] dark:bg-[#1d2c23]">
-                      <object data={proofUrl} type="application/pdf" className="h-full w-full">
+                      <object data={currentProofUrl} type="application/pdf" className="h-full w-full">
                         <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-[#66736a] dark:text-[#b7c0b4]">
                           <FileText className="h-8 w-8 text-[#c7a35a]" aria-hidden="true" />
                           <span>Vista previa PDF del comprobante subido.</span>
@@ -360,7 +472,7 @@ export const ReservationPaymentStatus = ({
                   ) : (
                     <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
                       <Image
-                        src={proofUrl}
+                        src={currentProofUrl}
                         alt="Comprobante subido"
                         fill
                         sizes="(min-width: 768px) 640px, 100vw"

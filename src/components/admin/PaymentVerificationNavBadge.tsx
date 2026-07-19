@@ -11,22 +11,28 @@ export const PaymentVerificationNavBadge = ({ label }: PaymentVerificationNavBad
   const [hasPendingPayments, setHasPendingPayments] = useState(false);
 
   const refreshPendingPayments = useCallback(async () => {
-    const supabase = createSupabaseBrowserClient();
-    const { count, error } = await supabase
-      .from("transacciones")
-      .select("id", { count: "exact", head: true })
-      .eq("estado_verificacion", "por_verificar")
-      .eq("tipo", "pago")
-      .not("comprobante_url", "is", null);
+    const response = await fetch("/api/admin/payment-verification/pending", {
+      cache: "no-store",
+    });
 
-    if (!error) {
-      setHasPendingPayments((count ?? 0) > 0);
+    if (!response.ok) {
+      return;
+    }
+
+    const payload: unknown = await response.json();
+
+    if (payload && typeof payload === "object" && "hasPendingPayments" in payload) {
+      setHasPendingPayments(payload.hasPendingPayments === true);
     }
   }, []);
 
   useEffect(() => {
-    queueMicrotask(() => {
+    const refresh = () => {
       void refreshPendingPayments();
+    };
+
+    queueMicrotask(() => {
+      refresh();
     });
 
     const supabase = createSupabaseBrowserClient();
@@ -36,33 +42,45 @@ export const PaymentVerificationNavBadge = ({ label }: PaymentVerificationNavBad
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notificaciones" },
         () => {
-          void refreshPendingPayments();
+          refresh();
         },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "transacciones" },
         () => {
-          void refreshPendingPayments();
+          refresh();
         },
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "comprobantes" },
         () => {
-          void refreshPendingPayments();
+          refresh();
         },
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "reservas" },
         () => {
-          void refreshPendingPayments();
+          refresh();
         },
       )
       .subscribe();
+    const intervalId = window.setInterval(refresh, 5000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", refresh);
 
     return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", refresh);
       void supabase.removeChannel(channel);
     };
   }, [refreshPendingPayments]);
