@@ -2,6 +2,7 @@ import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
+import { UsuarioStaffForm } from "@/components/forms/UsuarioStaffForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
@@ -44,8 +45,20 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Admin gestiona todos; recepción solo clientes.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Admin gestiona personal y clientes; recepción solo clientes.
+        </p>
       </div>
+      {currentUser.profile!.rol === "admin" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Crear usuario del sistema</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UsuarioStaffForm />
+          </CardContent>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Listado</CardTitle>

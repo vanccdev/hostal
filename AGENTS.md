@@ -53,6 +53,21 @@ Ya existe una base funcional con:
   - El listado de `/admin/habitaciones` muestra miniatura de la primera imagen y conteo de fotos.
   - El formulario tiene zona visual para arrastrar y seleccionar imagenes; la carga sigue siendo server-side.
 - Reservas por cliente y por staff.
+- Creacion de reservas por staff:
+  - `/admin/clientes/nuevo` ofrece crear reserva al terminar de crear cliente.
+  - `/admin/huespedes` incluye accion para crear reserva al huesped.
+  - `/admin/reservas/nueva?huespedId=...` preselecciona huesped.
+  - Tras crear reserva como staff, redirige a `/admin/reserva-detalle?q=<codigo_reserva>`.
+- Pagos/comprobantes administrativos desde `/admin/reserva-detalle`:
+  - Si la reserva esta `pendiente_pago` sin comprobante, staff/admin puede subir comprobante recibido o confirmar pago manual.
+  - La subida usa dialog con caja para arrastrar/seleccionar archivo y previsualizador PDF/imagen.
+  - Confirmar pago manual crea `public.transacciones` aprobada sin archivo y marca la reserva como `confirmada`.
+  - Metodos de pago vigentes: `qr`, `tarjeta`, `efectivo`; `src/lib/payment-method.ts` muestra valores historicos como `QR`.
+- Usuarios del sistema en `/admin/usuarios`:
+  - Solo rol `admin` ve "Crear usuario del sistema".
+  - Crea `admin`, `recepcionista` o `limpieza` en Auth y `public.usuarios`; no crea `public.huespedes`.
+  - Usa contraseña temporal y `must_change_password = true`.
+  - La accion `src/app/actions/usuarios.ts` usa `upsert` porque la DB local tiene trigger `on_auth_user_created` que crea `public.usuarios` al crear Auth.
 - Logica actual de tarifas/reservas:
   - La relacion vigente es `public.habitaciones.tarifa_id -> public.tarifas.id`.
   - Una tarifa puede usarse en muchas habitaciones.
@@ -104,6 +119,11 @@ Ya existe una base funcional con:
   - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql` elimina `public.tarifas.habitacion_id`.
   - `supabase/migrations/202607120001_add_tarifas_peso.sql` agrega `public.tarifas.peso`, constraint de valores `0..3`, indices de prioridad/vigencia y el indice unico parcial para no repetir `habitacion_tipo + temporada + peso` en tarifas activas.
   - Se migro 1 asignacion antigua desde `tarifas.habitacion_id` hacia `habitaciones.tarifa_id`.
+- Se aplico en la DB local `supabase/migrations/202607200001_normalize_metodo_pago_values.sql`:
+  - Reemplaza `transacciones_metodo_pago_check` para aceptar solo `qr`, `tarjeta`, `efectivo`.
+  - Normaliza valores historicos `qr_simple_tigo`, `qr_simple_bnb`, `qr_otro` a `qr`.
+- Supabase local verificado con Docker:
+  - `auth.users` tiene trigger `on_auth_user_created` que ejecuta `public.handle_new_usuario()` e inserta `public.usuarios` desde metadata.
 - Se aplico `supabase/migrations/202607090002_set_lapaz_timezone.sql` en DB local:
   - `ALTER DATABASE postgres SET timezone TO 'America/La_Paz'`.
   - `ALTER ROLE postgres SET timezone TO 'America/La_Paz'`.
@@ -151,6 +171,7 @@ Validar esquema real/local y completar datos base:
    - `supabase/migrations/202607090002_set_lapaz_timezone.sql`
    - `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`
    - `supabase/migrations/202607120001_add_tarifas_peso.sql`
+   - `supabase/migrations/202607200001_normalize_metodo_pago_values.sql`
 3. Generar tipos desde Supabase real si el CLI esta disponible y comparar con `src/types/database.ts`.
 4. Probar home publica `/`, seleccion de fechas/habitacion sin sesion, login/registro con `next`, restauracion en `/app/reservas/nueva`, creacion de reserva cliente y creacion de cliente por staff.
 5. Probar subida de imagenes desde `/admin/habitaciones` con usuario `admin`.
@@ -167,8 +188,8 @@ Validar esquema real/local y completar datos base:
 - Administracion completa de imagenes de habitaciones existentes: agregar fotos despues de crear, borrar fotos y ordenar galeria.
 - Eliminacion/desactivacion controlada de registros en CRUD principales, con reglas segun reservas existentes.
 - Estrategia de backup programado en produccion y almacenamiento externo cifrado.
-- CRUD completo para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones, configuracion y usuarios.
-- Carga de comprobantes con Supabase Storage si aplica.
+- CRUD avanzado restante para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones y configuracion; en usuarios ya existe creacion de personal y reset de clientes, falta edicion/desactivacion controlada.
+- Carga de comprobantes con Supabase Storage ya existe para cliente y staff/admin; falta reemplazo de comprobantes rechazados desde UI cliente si se decide.
 - RLS final endurecido segun columnas reales.
 - Pruebas automatizadas.
 

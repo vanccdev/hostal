@@ -75,6 +75,19 @@ const comprobanteFileFromForm = (formData: FormData) => {
   return file instanceof File && file.size > 0 ? file : null;
 };
 
+const adminRevalidationPaths = (reservaId: string) => {
+  revalidatePath(`/app/reservas/${reservaId}`);
+  revalidatePath("/app/reservas");
+  revalidatePath("/admin/comprobantes");
+  revalidatePath("/admin/transacciones");
+  revalidatePath("/admin/notificaciones");
+  revalidatePath("/admin/reserva-detalle");
+  revalidatePath("/admin/verificar-comprobantes");
+};
+
+const validMetodoPago = (value: FormDataEntryValue | null) =>
+  value === "qr" || value === "tarjeta" || value === "efectivo" ? value : null;
+
 export const uploadReservationProofAction = async (
   _state: ActionState,
   formData: FormData,
@@ -185,7 +198,7 @@ export const uploadReservationProofAction = async (
     .insert({
       reserva_id: reserva.id,
       monto: reserva.precio_total,
-      metodo_pago: "qr_otro",
+      metodo_pago: "qr",
       estado_verificacion: "por_verificar",
       comprobante_url: comprobanteUrl,
       referencia_externa: comprobanteCode,
@@ -350,4 +363,273 @@ export const verifyReservationProofAction = async (
 
 export const verifyReservationProofFormAction = async (formData: FormData) => {
   await verifyReservationProofAction({ ok: false }, formData);
+};
+
+export const uploadReservationProofByStaffAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
+    return { ok: false, message: "No tienes permiso para registrar comprobantes de reservas." };
+  }
+
+  const reservaId = formData.get("reservaId");
+  const metodoPago = validMetodoPago(formData.get("metodoPago"));
+  const file = comprobanteFileFromForm(formData);
+
+  if (typeof reservaId !== "string" || !reservaId) {
+    return { ok: false, errors: { reservaId: ["Reserva inválida."] } };
+  }
+
+  if (!metodoPago) {
+    return { ok: false, errors: { metodoPago: ["Selecciona el método de pago."] } };
+  }
+
+  if (!file) {
+    return { ok: false, errors: { comprobante: ["Selecciona un comprobante."] } };
+  }
+
+  const extension = allowedComprobanteMimeTypes.get(file.type);
+
+  if (!extension) {
+    return { ok: false, errors: { comprobante: ["Sube un PDF o imagen JPG, PNG o WEBP."] } };
+  }
+
+  if (file.size > maxComprobanteSize) {
+    return { ok: false, errors: { comprobante: ["El comprobante no puede superar 10 MB."] } };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: reserva, error: reservaError } = await admin
+    .from("reservas")
+    .select("id,codigo_reserva,huesped_id,precio_total,estado")
+    .eq("id", reservaId)
+    .maybeSingle();
+
+  if (reservaError || !reserva) {
+    return { ok: false, message: reservaError?.message ?? "No se encontró la reserva." };
+  }
+
+  if (reserva.estado !== "pendiente_pago") {
+    return { ok: false, message: "Solo se puede registrar comprobante en reservas pendientes de pago." };
+  }
+
+  const { data: existingPayment, error: existingPaymentError } = await admin
+    .from("transacciones")
+    .select("id,estado_verificacion")
+    .eq("reserva_id", reserva.id)
+    .eq("tipo", "pago")
+    .in("estado_verificacion", ["por_verificar", "aprobada"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPaymentError) {
+    return { ok: false, message: existingPaymentError.message };
+  }
+
+  if (existingPayment?.estado_verificacion === "aprobada") {
+    return { ok: false, message: "Esta reserva ya tiene un pago aprobado." };
+  }
+
+  if (existingPayment?.estado_verificacion === "por_verificar") {
+    return { ok: false, message: "Esta reserva ya tiene un comprobante en revisión." };
+  }
+
+  const comprobanteCode = comprobanteCodeForReservation(reserva.codigo_reserva);
+  const folderPath = `${localISODate()}/staff-${sanitizeFolderPart(currentUser.email)}`;
+  const sequence = await nextComprobanteSequence(admin, folderPath);
+  const fileNameBase = [
+    "comprobante",
+    sanitizeFilePart(reserva.codigo_reserva),
+    localDateTimeStamp(),
+    String(sequence),
+  ].join("-");
+  const objectPath = `${folderPath}/${fileNameBase}.${extension}`;
+  const { error: uploadError } = await admin.storage.from(comprobanteBucket).upload(objectPath, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+
+  if (uploadError) {
+    return { ok: false, message: uploadError.message };
+  }
+
+  const { data: publicUrlData } = admin.storage.from(comprobanteBucket).getPublicUrl(objectPath);
+  const comprobanteUrl = publicUrlData.publicUrl;
+  const { data: transaccion, error: transaccionError } = await admin
+    .from("transacciones")
+    .insert({
+      reserva_id: reserva.id,
+      monto: reserva.precio_total,
+      metodo_pago: metodoPago,
+      estado_verificacion: "por_verificar",
+      comprobante_url: comprobanteUrl,
+      referencia_externa: comprobanteCode,
+      tipo: "pago",
+      notas_admin: "Comprobante cargado por recepción.",
+    })
+    .select("id")
+    .single();
+
+  if (transaccionError) {
+    await admin.storage.from(comprobanteBucket).remove([objectPath]);
+    return { ok: false, message: transaccionError.message };
+  }
+
+  const { error: comprobanteError } = await admin.from("comprobantes").insert({
+    reserva_id: reserva.id,
+    transaccion_id: transaccion.id,
+    numero_comprobante: comprobanteCode,
+    emitido_at: new Date().toISOString(),
+    pdf_url: comprobanteUrl,
+    uploaded_by: currentUser.authUserId,
+  });
+
+  if (comprobanteError) {
+    await admin.storage.from(comprobanteBucket).remove([objectPath]);
+    await admin.from("transacciones").delete().eq("id", transaccion.id);
+    return { ok: false, message: comprobanteError.message };
+  }
+
+  await writeAuditLog(admin, {
+    actor_id: currentUser.authUserId,
+    accion: "comprobante.subido_staff",
+    entidad: "comprobantes",
+    entidad_id: reserva.id,
+    metadata: { reserva_id: reserva.id, codigo_reserva: reserva.codigo_reserva, archivo: objectPath },
+  });
+
+  await emitEvent(admin, {
+    event: "pago.registrado",
+    title: "Comprobante registrado por recepción",
+    message: `Recepción registró un comprobante para la reserva ${reserva.codigo_reserva}.`,
+    userId: null,
+    actorId: currentUser.authUserId,
+    entity: "transacciones",
+    entityId: transaccion.id,
+    payload: { reserva_id: reserva.id, transaccion_id: transaccion.id, codigo_reserva: reserva.codigo_reserva },
+  });
+
+  adminRevalidationPaths(reserva.id);
+
+  return { ok: true, message: "Comprobante registrado. Queda pendiente de verificación." };
+};
+
+export const confirmManualReservationPaymentAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
+    return { ok: false, message: "No tienes permiso para confirmar pagos de reservas." };
+  }
+
+  const reservaId = formData.get("reservaId");
+  const metodoPago = validMetodoPago(formData.get("metodoPago"));
+  const notasAdmin = formData.get("notasAdmin");
+  const cleanNotes = typeof notasAdmin === "string" ? notasAdmin.trim().slice(0, 500) : null;
+
+  if (typeof reservaId !== "string" || !reservaId) {
+    return { ok: false, errors: { reservaId: ["Reserva inválida."] } };
+  }
+
+  if (!metodoPago) {
+    return { ok: false, errors: { metodoPago: ["Selecciona el método de pago."] } };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: reserva, error: reservaError } = await admin
+    .from("reservas")
+    .select("id,codigo_reserva,huesped_id,precio_total,estado")
+    .eq("id", reservaId)
+    .maybeSingle();
+
+  if (reservaError || !reserva) {
+    return { ok: false, message: reservaError?.message ?? "No se encontró la reserva." };
+  }
+
+  if (reserva.estado !== "pendiente_pago") {
+    return { ok: false, message: "Solo se puede confirmar pago en reservas pendientes de pago." };
+  }
+
+  const { data: approvedPayment, error: approvedPaymentError } = await admin
+    .from("transacciones")
+    .select("id")
+    .eq("reserva_id", reserva.id)
+    .eq("tipo", "pago")
+    .eq("estado_verificacion", "aprobada")
+    .limit(1)
+    .maybeSingle();
+
+  if (approvedPaymentError) {
+    return { ok: false, message: approvedPaymentError.message };
+  }
+
+  if (approvedPayment) {
+    return { ok: false, message: "Esta reserva ya tiene un pago aprobado." };
+  }
+
+  const referencia = comprobanteCodeForReservation(reserva.codigo_reserva);
+  const { data: transaccion, error: transaccionError } = await admin
+    .from("transacciones")
+    .insert({
+      reserva_id: reserva.id,
+      monto: reserva.precio_total,
+      metodo_pago: metodoPago,
+      estado_verificacion: "aprobada",
+      referencia_externa: referencia,
+      verificado_por: currentUser.authUserId,
+      verificado_at: new Date().toISOString(),
+      notas_admin: cleanNotes || "Pago confirmado manualmente por recepción sin archivo de comprobante.",
+      tipo: "pago",
+    })
+    .select("id")
+    .single();
+
+  if (transaccionError) {
+    return { ok: false, message: transaccionError.message };
+  }
+
+  const { error: updateReservaError } = await admin
+    .from("reservas")
+    .update({ estado: "confirmada" })
+    .eq("id", reserva.id);
+
+  if (updateReservaError) {
+    await admin.from("transacciones").delete().eq("id", transaccion.id);
+    return { ok: false, message: updateReservaError.message };
+  }
+
+  const { data: guest } = await admin
+    .from("huespedes")
+    .select("usuario_id")
+    .eq("id", reserva.huesped_id)
+    .maybeSingle();
+
+  await emitEvent(admin, {
+    event: "pago.aprobado",
+    title: "Reserva confirmada",
+    message: `El pago de la reserva ${reserva.codigo_reserva} fue confirmado por recepción.`,
+    userId: guest?.usuario_id ?? null,
+    actorId: currentUser.authUserId,
+    entity: "reservas",
+    entityId: reserva.id,
+    payload: { reserva_id: reserva.id, transaccion_id: transaccion.id, codigo_reserva: reserva.codigo_reserva },
+  });
+
+  await writeAuditLog(admin, {
+    actor_id: currentUser.authUserId,
+    accion: "pago.manual_confirmado",
+    entidad: "reservas",
+    entidad_id: reserva.id,
+    metadata: { reserva_id: reserva.id, transaccion_id: transaccion.id, metodo_pago: metodoPago },
+  });
+
+  adminRevalidationPaths(reserva.id);
+
+  return { ok: true, message: "Pago confirmado y reserva marcada como confirmada." };
 };

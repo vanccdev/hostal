@@ -30,6 +30,7 @@ Implementado:
   - `src/app/actions/comprobantes.ts`
   - `src/app/actions/reservas.ts`
   - `src/app/actions/password.ts`
+  - `src/app/actions/usuarios.ts`
   - `src/app/actions/crud.ts`
 - Panel admin con rutas principales bajo `/admin`.
 - Notificaciones administrativas en `/admin/notificaciones`:
@@ -45,6 +46,9 @@ Implementado:
   - El primer vistazo queda compacto: fechas, total, pagado, seguimiento, cliente, habitacion y operacion.
   - Los detalles completos se abren en dialogs: reserva, cliente, habitacion/tarifa, transacciones, comprobantes, cancelaciones, notificaciones y auditoria.
   - Si hay comprobante pendiente, la tarjeta muestra una banda de accion para abrir archivo, confirmar o rechazar.
+  - Si una reserva de staff queda `pendiente_pago` sin comprobante, administracion puede subir comprobante recibido o confirmar pago manual directamente.
+  - La subida administrativa de comprobante usa dialog con caja de arrastre/seleccion, validacion previa y previsualizador PDF/imagen antes de guardar.
+  - La confirmacion manual crea una transaccion aprobada sin archivo y cambia la reserva a `confirmada`.
   - Busca por codigo, estado, canal, nombre del huesped, email, telefono, documento y nombre de usuario cliente.
   - Mantiene paginacion por query params y no carga todas las reservas en cliente.
 - Backups administrativos bajo `/admin/backups`:
@@ -129,6 +133,10 @@ Implementado:
   - Panel de resumen con fechas, noches, tarifa y total.
   - Fechas pasadas bloqueadas en UI y validadas en servidor.
   - Habitaciones ocupadas o bloqueadas no se pueden reservar para el rango elegido.
+  - En modo staff se puede iniciar desde `/admin/reservas/nueva?huespedId=...` con un huesped preseleccionado.
+  - Desde `/admin/clientes/nuevo`, al crear un cliente correctamente se ofrece crear su reserva.
+  - `/admin/huespedes` incluye accion para crear reserva al huesped.
+  - Al crear reserva como staff, el redireccionamiento va a `/admin/reserva-detalle?q=<codigo_reserva>`.
 - Configuracion operativa de reservas:
   - `/admin/configuracion` administra check-in, check-out y espera de comprobante.
   - `configuracion_hostal.reserva_comprobante_espera_minutos` define cuantos minutos se espera el comprobante antes de cancelar una reserva `pendiente_pago`.
@@ -149,9 +157,13 @@ Implementado:
   - Documentacion funcional en `FLUJO_RESERVA_COMPROBANTE.md`.
   - Bucket publico Supabase Storage `comprobante` para PDF/JPG/PNG/WEBP de hasta 10 MB.
   - `uploadReservationProofAction` valida pertenencia de la reserva, estado `pendiente_pago`, MIME y tamano antes de subir.
+  - Metodos de pago vigentes en `public.transacciones.metodo_pago`: `qr`, `tarjeta`, `efectivo`.
+  - Los valores historicos `qr_simple_tigo`, `qr_simple_bnb` y `qr_otro` se normalizan/visualizan como `QR`.
   - El archivo se guarda con estructura `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`, usando fecha/hora local `America/La_Paz`.
   - `public.transacciones.referencia_externa` y `public.comprobantes.numero_comprobante` guardan un codigo corto compatible con limites SQL; la URL publica apunta al objeto real en Storage.
   - Al subir se crean `public.transacciones` en `por_verificar` y `public.comprobantes` con `pdf_url`, `uploaded_by` y trazabilidad de la transaccion.
+  - Staff/admin puede subir comprobante desde `/admin/reserva-detalle`; se guarda en Storage con carpeta `staff-<email>`, queda `por_verificar` y luego se aprueba/rechaza como cualquier comprobante.
+  - Staff/admin puede confirmar pago manual sin archivo desde `/admin/reserva-detalle`; se crea `public.transacciones` aprobada y la reserva pasa a `confirmada`.
   - Se notifica a recepcion/admin mediante `public.notificaciones`.
   - `/admin/verificar-comprobantes` es la cola dedicada para revisar pagos pendientes, abrir el archivo y confirmar o rechazar.
   - El sidebar admin muestra una insignia roja junto a "Verificar pagos" cuando hay pagos por verificar.
@@ -163,6 +175,13 @@ Implementado:
   - Cliente y staff usan Supabase Realtime reforzado con endpoints server-side protegidos para evitar depender solo de eventos WebSocket.
 - Flujo base `createClientAccountByStaff`.
 - Flujo base `resetClientPasswordToPhone`.
+- Creacion de usuarios del sistema en `/admin/usuarios`:
+  - Solo rol `admin` ve el formulario "Crear usuario del sistema".
+  - Crea usuarios `admin`, `recepcionista` o `limpieza` en Supabase Auth y `public.usuarios`.
+  - No crea fila en `public.huespedes`; esos usuarios no son clientes.
+  - Usa contraseña temporal definida por el admin y guarda `must_change_password = true`.
+  - La accion usa `upsert` porque la DB local tiene trigger `on_auth_user_created` que crea `public.usuarios` automaticamente al crear Auth.
+  - Si falla el perfil interno, se intenta revertir Auth y `public.usuarios`.
 - Eventos internos y dispatch de webhooks sin romper la operacion principal si el webhook falla.
   - `src/lib/notifications/emit-event.ts` centraliza el registro de eventos del sistema en `public.notificaciones`.
   - Se registran eventos de cuenta cliente, perfil, reservas, comprobantes/pagos, cancelacion automatica, habitaciones, huespedes, tarifas, configuracion y seguridad.
@@ -202,12 +221,11 @@ Pendiente o siguiente iteracion:
 
 - Seguir validando nombres/tipos exactos de columnas contra la instancia Supabase local/self-hosted.
 - Comparar `src/types/database.ts` con tipos generados desde Supabase cuando el CLI este disponible.
-- Completar CRUD avanzado para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones, configuracion y usuarios.
+- Completar CRUD avanzado restante para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones y configuracion; en usuarios ya existe creacion de personal y reset de clientes, falta edicion/desactivacion controlada.
 - Definir estrategia de backup programado en produccion y almacenamiento externo cifrado.
 - Implementar busqueda avanzada de cliente por nombre, email, telefono y documento en `/admin/reservas/nueva`.
 - Implementar flujo combinado "crear cliente nuevo + crear reserva" desde `/admin/reservas/nueva`.
 - Permitir reemplazar comprobante rechazado desde UI cliente, si se decide operativamente.
-- Definir metodos de pago reales para reemplazar el default tecnico `qr_otro`.
 - Agregar administracion completa de imagenes de habitaciones existentes: ordenar galeria. La visualizacion, carga nueva y eliminacion de fotos al editar ya estan implementadas.
 - Agregar eliminacion/desactivacion controlada en CRUD principales.
 - Evaluar una estrategia mas fina de paginacion/filtros para el feed de notificaciones si crece mucho; actualmente carga las 80 mas recientes.
@@ -299,11 +317,13 @@ Notas de esquema:
 - `supabase/migrations/202607190008_add_partial_cancellation_accounting.sql` agrega `cancelaciones.monto_retenido` y politica `reembolso_parcial`.
 - `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql` agrega RPC atomico para cancelacion manual con contabilidad.
 - `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql` agrega snapshot de monto pagado aprobado y porcentaje aplicado en `public.cancelaciones`.
+- `supabase/migrations/202607200001_normalize_metodo_pago_values.sql` normaliza `transacciones.metodo_pago` a `qr`, `tarjeta`, `efectivo` y reemplaza el constraint `transacciones_metodo_pago_check`.
 - Endpoints protegidos recientes:
   - `/api/admin/payment-verification/pending`: usado por el sidebar admin para saber si hay pagos por verificar.
   - `/api/app/reservas/[id]/status`: usado por la pantalla cliente de reserva para sincronizar estado de reserva, comprobante y verificacion de pago.
   - `/api/availability/version`: usado por catalogos de disponibilidad para disparar barrido de reservas vencidas y refrescar vistas abiertas.
 - La DB local usa timezone `America/La_Paz`; `supabase-rest` fue reiniciado despues del cambio de schema/timezone.
+- La DB local tiene trigger `on_auth_user_created` en `auth.users`, que ejecuta `public.handle_new_usuario()` e inserta `public.usuarios` desde metadata al crear usuarios Auth.
 - `src/types/database.ts` todavia debe validarse/generarse contra el esquema real.
 - En la DB local, `public.huespedes` queda como ficha documental del usuario:
   - Columnas vigentes: `id`, `usuario_id`, `tipo_documento`, `numero_documento`, `pais_origen`, `fecha_nacimiento`, `observaciones`, `created_at`, `updated_at`.
@@ -414,6 +434,8 @@ Verificaciones recientes:
 - Supabase local verificado con Docker: despues del restore sano existen 21 objetos en Storage `habitaciones` y 21 filas en `public.img_habitaciones`; las habitaciones tienen entre 2 y 3 fotos.
 - Supabase local verificado con Docker: bucket `comprobante` publico con limite 10 MB y MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - Supabase local verificado con Docker: `public.comprobantes` tiene `uploaded_by` y `created_at`; `public.notificaciones` tiene `usuario_id`; `reservas` y `notificaciones` estan publicadas en `supabase_realtime`.
+- Supabase local verificado con Docker: `transacciones_metodo_pago_check` acepta `qr`, `tarjeta` y `efectivo`; se normalizaron 2 transacciones antiguas a `qr`.
+- Supabase local verificado con Docker: `auth.users` tiene trigger `on_auth_user_created`; la creacion de usuarios del sistema usa `upsert` en `public.usuarios` para convivir con ese trigger.
 - Supabase local verificado con Docker: `public.reservas` ya no tiene columnas antiguas `checkin_at`/`checkout_at`.
 - Supabase local verificado con Docker: `public.huespedes` ya no tiene `nombre_completo`, `email` ni `telefono`; `usuario_id` es obligatorio/unico.
 - Registro cliente actualizado: valida email/telefono duplicados en Auth, guarda telefono en `auth.users.phone` y crea `public.huespedes` automaticamente con documento temporal interno.
@@ -427,6 +449,8 @@ Verificaciones recientes:
 - `/app/reservas` ahora muestra tarjetas paginadas con imagen, detalle compacto de reserva/pago/cancelacion y accion de cancelacion propia.
 - `/app/pagos` ahora muestra tarjetas paginadas con contexto de reserva, habitacion, comprobante y enlaces operativos.
 - `/admin/reserva-detalle` fue redisenado como tarjetas compactas por reserva con detalles en dialogs para reducir saturacion visual.
+- `/admin/reserva-detalle` ahora permite a staff/admin subir comprobante recibido con caja de arrastre y previsualizador, o confirmar pago manual sin archivo para dejar la reserva `confirmada`.
+- `/admin/usuarios` ahora permite a `admin` crear usuarios del sistema con rol `admin`, `recepcionista` o `limpieza`; no crea huesped y fuerza cambio de contraseña.
 - `FLUJO_CANCELACIONES.md` agregado como documento fuente para cancelaciones y contabilidad de montos retenidos/no retenidos.
 - Comprobantes subidos al bucket `comprobante` se ordenan en Storage por `YYYY-MM-DD/email-cliente/comprobante-nombrecliente-fechahora-N.ext`.
 - `/admin/verificar-comprobantes` agregado como cola dedicada para aprobar/rechazar comprobantes pendientes y cambiar reservas a `confirmada`.
@@ -467,6 +491,7 @@ Archivos:
 - `supabase/migrations/202607190008_add_partial_cancellation_accounting.sql`
 - `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql`
 - `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql`
+- `supabase/migrations/202607200001_normalize_metodo_pago_values.sql`
 
 La primera migracion agrega:
 
@@ -504,6 +529,8 @@ La decimocuarta rellena `auth.users.phone` desde `auth.users.raw_user_meta_data.
 Las migraciones `202607190001` a `202607190003` enriquecen notificaciones, amplian tipos operativos y agregan tablas de pagos/comprobantes a Realtime.
 
 Las migraciones `202607190004` a `202607190010` corrigen el flujo de comprobantes multiples, actualizacion de disponibilidad, cancelacion automatica atomica y contabilidad de cancelaciones con snapshot de montos.
+
+La migracion `202607200001` normaliza metodos de pago historicos a `qr` y cambia `transacciones_metodo_pago_check` para aceptar solo `qr`, `tarjeta` y `efectivo`.
 
 ## Flujos Para Probar
 

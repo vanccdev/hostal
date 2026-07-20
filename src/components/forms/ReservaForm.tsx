@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { BedDouble, CalendarCheck, CalendarPlus, CheckCircle2, ImageIcon, Users, XCircle } from "lucide-react";
+import { BedDouble, CalendarCheck, CalendarPlus, CheckCircle2, ImageIcon, Mail, Phone, Search, UserRound, Users, XCircle } from "lucide-react";
 import { createClientReservation, createStaffReservation } from "@/app/actions/reservas";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
@@ -11,6 +11,7 @@ import { DatePickerField } from "@/components/forms/DatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
@@ -38,7 +39,8 @@ type ReservaFormProps = {
   habitaciones: Habitacion[];
   tarifas: Tarifa[];
   huespedes?: Huesped[];
-  huespedContacts?: Record<string, { nombre: string; email: string | null }>;
+  huespedContacts?: Record<string, { nombre: string; email: string | null; telefono?: string | null }>;
+  initialHuespedId?: string;
   imagenes?: RoomImage[];
   reservas?: RoomReservation[];
   bloqueos?: RoomBlock[];
@@ -86,6 +88,13 @@ const roomTypeLabel: Record<HabitacionTipo, string> = {
   familiar: "Familiar",
 };
 
+const channelLabel = {
+  recepcion: "Recepción",
+  whatsapp: "WhatsApp",
+  walkin: "Walk-in",
+  web: "Web",
+} as const;
+
 const isPendingReservation = (value: unknown): value is {
   habitacionId: string;
   fechaIngreso: string;
@@ -110,6 +119,7 @@ export const ReservaForm = ({
   tarifas,
   huespedes = [],
   huespedContacts = {},
+  initialHuespedId = "",
   imagenes = [],
   reservas = [],
   bloqueos = [],
@@ -119,6 +129,9 @@ export const ReservaForm = ({
   const action = mode === "cliente" ? createClientReservation : createStaffReservation;
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const [habitacionId, setHabitacionId] = useState("");
+  const [huespedId, setHuespedId] = useState(initialHuespedId);
+  const [huespedSearch, setHuespedSearch] = useState("");
+  const [canalOrigen, setCanalOrigen] = useState<keyof typeof channelLabel>("recepcion");
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
   const [now, setNow] = useState(() => new Date());
@@ -130,6 +143,36 @@ export const ReservaForm = ({
     () => habitaciones.find((habitacion) => habitacion.id === habitacionId) ?? null,
     [habitacionId, habitaciones],
   );
+  const selectedGuest = useMemo(
+    () => huespedes.find((huesped) => huesped.id === huespedId) ?? null,
+    [huespedId, huespedes],
+  );
+  const filteredGuests = useMemo(() => {
+    const search = huespedSearch.trim().toLowerCase();
+
+    if (!search) {
+      return huespedes.slice(0, 8);
+    }
+
+    return huespedes
+      .filter((huesped) => {
+        const contact = huespedContacts[huesped.id];
+        const text = [
+          contact?.nombre,
+          contact?.email,
+          contact?.telefono,
+          huesped.tipo_documento,
+          huesped.numero_documento,
+          huesped.pais_origen,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return text.includes(search);
+      })
+      .slice(0, 12);
+  }, [huespedContacts, huespedSearch, huespedes]);
   const imagesByRoom = useMemo(() => {
     const grouped = new Map<string, RoomImage[]>();
 
@@ -195,11 +238,12 @@ export const ReservaForm = ({
         return intervalsOverlap(checkinAt, checkoutAt, targetInterval.checkinAt, targetInterval.checkoutAt);
       }) ||
       bloqueos.some((bloqueo) => {
+        const isGlobalBlock = bloqueo.habitacion_id === null;
         const habitacionId = stringValue(bloqueo.habitacion_id);
         const fechaInicio = stringValue(bloqueo.fecha_inicio);
         const fechaFin = stringValue(bloqueo.fecha_fin);
 
-        return habitacionId === roomId && Boolean(fechaInicio && fechaFin) && overlaps(fechaInicio, fechaFin, start, end);
+        return (habitacionId === roomId || isGlobalBlock) && Boolean(fechaInicio && fechaFin) && overlaps(fechaInicio, fechaFin, start, end);
       })
     );
   };
@@ -220,7 +264,8 @@ export const ReservaForm = ({
   const selectedRoomUnavailable = selectedRoom ? isRoomUnavailable(selectedRoom.id, fechaIngreso, fechaSalida) : false;
   const selectedRoomInactive = selectedRoom?.activa === false;
   const hasSelectedDateRange = nights > 0;
-  const canSubmit = Boolean(selectedRoom && selectedTarifa && nights > 0 && !selectedRoomUnavailable && !selectedRoomInactive);
+  const hasRequiredGuest = mode === "cliente" || Boolean(selectedGuest);
+  const canSubmit = Boolean(selectedRoom && selectedTarifa && nights > 0 && !selectedRoomUnavailable && !selectedRoomInactive && hasRequiredGuest);
   const visibleRoomGroups = useMemo(
     () =>
       roomGroups
@@ -431,22 +476,80 @@ export const ReservaForm = ({
         errorTitle={mode === "staff" ? "No se pudo crear la reserva" : "No se pudo completar la reserva"}
       />
       {mode === "staff" ? (
-        <div className="space-y-2">
-          <Label htmlFor="huespedId">Huésped</Label>
-          <Select name="huespedId" required>
-            <SelectTrigger id="huespedId">
-              <SelectValue placeholder="Seleccionar huésped" />
-            </SelectTrigger>
-            <SelectContent>
-              {huespedes.map((huesped) => (
-                <SelectItem key={huesped.id} value={huesped.id}>
-                  {huespedContacts[huesped.id]?.nombre ?? "Cliente sin nombre"}{" "}
-                  {huespedContacts[huesped.id]?.email ? `- ${huespedContacts[huesped.id]?.email}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage state={state} field="huespedId" />
+        <div className="space-y-4 rounded-2xl border border-[#d8d4c8] bg-[#f8f5ec] p-4 dark:border-[#314237] dark:bg-[#142019]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="buscarHuesped">Cliente / huésped</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+                <input name="huespedId" type="hidden" value={huespedId} readOnly />
+                <input name="canalOrigen" type="hidden" value={canalOrigen} readOnly />
+                <Input
+                  id="buscarHuesped"
+                  type="search"
+                  value={huespedSearch}
+                  onChange={(event) => setHuespedSearch(event.target.value)}
+                  placeholder="Buscar por nombre, email, teléfono o documento"
+                  className="pl-9"
+                />
+              </div>
+              <FormMessage state={state} field="huespedId" />
+            </div>
+            <div className="space-y-2 lg:w-56">
+              <Label htmlFor="canalOrigen">Canal</Label>
+              <Select value={canalOrigen} onValueChange={(value) => setCanalOrigen(value as keyof typeof channelLabel)}>
+                <SelectTrigger id="canalOrigen">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recepcion">Recepción</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="walkin">Walk-in</SelectItem>
+                  <SelectItem value="web">Web</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage state={state} field="canalOrigen" />
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/admin/clientes/nuevo">Crear cliente</Link>
+            </Button>
+          </div>
+
+          {selectedGuest ? (
+            <div className="rounded-xl border border-[#c7a35a] bg-white p-3 dark:bg-[#18251d]">
+              <p className="text-xs font-semibold uppercase text-[#66736a] dark:text-[#b7c0b4]">Cliente seleccionado</p>
+              <GuestSummary huesped={selectedGuest} contact={huespedContacts[selectedGuest.id]} />
+            </div>
+          ) : null}
+
+          <div className="grid max-h-80 gap-3 overflow-y-auto pr-1 md:grid-cols-2 xl:grid-cols-3">
+            {filteredGuests.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#d8d4c8] bg-white p-4 text-sm text-[#66736a] dark:border-[#314237] dark:bg-[#18251d] dark:text-[#b7c0b4] md:col-span-2 xl:col-span-3">
+                No se encontró un cliente. Crea la cuenta desde “Crear cliente” y vuelve a esta pantalla.
+              </div>
+            ) : (
+              filteredGuests.map((huesped) => {
+                const selected = huesped.id === huespedId;
+
+                return (
+                  <button
+                    key={huesped.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setHuespedId(huesped.id)}
+                    className={cn(
+                      "rounded-xl border bg-white p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:bg-[#18251d]",
+                      selected
+                        ? "border-[#c7a35a] ring-2 ring-[#c7a35a]"
+                        : "border-[#d8d4c8] hover:border-[#c7a35a] dark:border-[#314237]",
+                    )}
+                  >
+                    <GuestSummary huesped={huesped} contact={huespedContacts[huesped.id]} selected={selected} />
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       ) : null}
 
@@ -492,7 +595,7 @@ export const ReservaForm = ({
       <input name="tarifaId" type="hidden" value={selectedTarifa?.id ?? ""} readOnly />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div ref={roomsSectionRef} className="scroll-mt-4 space-y-4">
+        <div ref={roomsSectionRef} className="scroll-mt-24 space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones disponibles</h2>
@@ -544,6 +647,22 @@ export const ReservaForm = ({
             </div>
 
             <div className="space-y-3 rounded-xl border border-[#d8d4c8] p-4 text-sm dark:border-[#314237]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[#66736a] dark:text-[#b7c0b4]">Cliente</span>
+                <span className="text-right font-semibold text-[#18221b] dark:text-zinc-100">
+                  {mode === "staff"
+                    ? selectedGuest
+                      ? huespedContacts[selectedGuest.id]?.nombre ?? "Cliente sin nombre"
+                      : "Pendiente"
+                    : "Cuenta propia"}
+                </span>
+              </div>
+              {mode === "staff" ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[#66736a] dark:text-[#b7c0b4]">Canal</span>
+                  <span className="font-semibold text-[#18221b] dark:text-zinc-100">{channelLabel[canalOrigen]}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[#66736a] dark:text-[#b7c0b4]">Habitación</span>
                 <span className="font-semibold text-[#18221b] dark:text-zinc-100">
@@ -619,6 +738,13 @@ export const ReservaForm = ({
               </div>
             ) : null}
 
+            {mode === "staff" && !selectedGuest ? (
+              <div className="flex items-start gap-2 rounded-xl bg-[#f4ecd8] p-3 text-sm text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
+                <UserRound className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                Selecciona el cliente antes de crear la reserva.
+              </div>
+            ) : null}
+
             <FormMessage state={state} />
             <Button type="submit" className="w-full" disabled={pending || !canSubmit}>
               <CalendarPlus className="h-4 w-4" aria-hidden="true" />
@@ -630,6 +756,43 @@ export const ReservaForm = ({
     </form>
   );
 };
+
+const GuestSummary = ({
+  contact,
+  huesped,
+  selected = false,
+}: {
+  contact?: { nombre: string; email: string | null; telefono?: string | null };
+  huesped: Huesped;
+  selected?: boolean;
+}) => (
+  <div className="space-y-2">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="font-semibold text-[#18221b] dark:text-zinc-100">{contact?.nombre ?? "Cliente sin nombre"}</p>
+        <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
+          {huesped.tipo_documento} {huesped.numero_documento}
+        </p>
+      </div>
+      {selected ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#c7a35a]" aria-hidden="true" /> : null}
+    </div>
+    <div className="grid gap-1 text-xs text-[#66736a] dark:text-[#b7c0b4]">
+      {contact?.email ? (
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{contact.email}</span>
+        </span>
+      ) : null}
+      {contact?.telefono ? (
+        <span className="inline-flex min-w-0 items-center gap-1">
+          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{contact.telefono}</span>
+        </span>
+      ) : null}
+      {huesped.pais_origen ? <span>{huesped.pais_origen}</span> : null}
+    </div>
+  </div>
+);
 
 const HoverRoomImageCarousel = ({
   images,

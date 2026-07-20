@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CalendarPlus } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
 import type { Column } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
@@ -109,6 +110,18 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
             columns={[
               ...contactColumns,
               ...columnsForTable<Huesped>("huespedes", huespedes, { userNamesById }),
+              {
+                key: "crear_reserva",
+                header: "Crear reserva",
+                render: (row) => (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/reservas/nueva?huespedId=${row.id}`}>
+                      <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+                      Crear reserva
+                    </Link>
+                  </Button>
+                ),
+              },
               {
                 key: "acciones",
                 header: "Acciones",

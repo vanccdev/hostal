@@ -9,6 +9,7 @@ export const reservaClienteSchema = z.object({
 
 export const reservaStaffSchema = reservaClienteSchema.extend({
   huespedId: z.uuid("Huésped inválido"),
+  canalOrigen: z.enum(["whatsapp", "recepcion", "walkin", "web"]).default("recepcion"),
 });
 
 export type ReservaClienteInput = z.infer<typeof reservaClienteSchema>;

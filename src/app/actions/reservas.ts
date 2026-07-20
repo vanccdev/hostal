@@ -39,6 +39,7 @@ export const createClientReservation = async (
     tarifaId: formValue(formData, "tarifaId"),
     fechaIngreso: formValue(formData, "fechaIngreso"),
     fechaSalida: formValue(formData, "fechaSalida"),
+    canalOrigen: formValue(formData, "canalOrigen") || "recepcion",
   });
 
   if (!parsed.success) {
@@ -89,7 +90,7 @@ export const createClientReservation = async (
         estado: "pendiente_pago",
         registrado_por: currentUser.authUserId,
       })
-      .select("id")
+      .select("id,codigo_reserva")
       .single();
 
     if (error) {
@@ -147,6 +148,7 @@ export const createStaffReservation = async (
   }
 
   const admin = createSupabaseAdminClient();
+  let createdReservationCode = "";
 
   try {
     const nights = assertReservationDates(parsed.data.fechaIngreso, parsed.data.fechaSalida);
@@ -174,24 +176,26 @@ export const createStaffReservation = async (
         checkout_programado_at: stayInterval.checkoutAt,
         num_noches: nights,
         num_huespedes: 1,
-        canal_origen: "recepcion",
+        canal_origen: parsed.data.canalOrigen,
         precio_total: total,
         estado: "pendiente_pago",
         registrado_por: currentUser.authUserId,
       })
-      .select("id")
+      .select("id,codigo_reserva")
       .single();
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
+    createdReservationCode = reservation.codigo_reserva;
+
     await writeAuditLog(admin, {
       actor_id: currentUser.authUserId,
       accion: "reserva.creada",
       entidad: "reservas",
       entidad_id: reservation.id,
-      metadata: { origen: "staff", precio_total: total },
+      metadata: { origen: "staff", canal_origen: parsed.data.canalOrigen, precio_total: total },
     });
 
     await emitEvent(admin, {
@@ -201,12 +205,13 @@ export const createStaffReservation = async (
       actorId: currentUser.authUserId,
       entity: "reservas",
       entityId: reservation.id,
-      payload: { reserva_id: reservation.id, origen: "staff", precio_total: total },
+      payload: { reserva_id: reservation.id, origen: "staff", canal_origen: parsed.data.canalOrigen, precio_total: total },
     });
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : "No se pudo crear la reserva." };
   }
 
   revalidatePath("/admin/reservas");
-  redirect("/admin/reservas");
+  revalidatePath("/admin/reserva-detalle");
+  redirect(createdReservationCode ? `/admin/reserva-detalle?q=${encodeURIComponent(createdReservationCode)}` : "/admin/reserva-detalle");
 };

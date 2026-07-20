@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
-import { Bell, CalendarDays, CreditCard, Home, LogOut, Menu, User } from "lucide-react";
+import { CalendarDays, CreditCard, Home, LogOut, Menu, User } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ const items = [
   { href: "/app/perfil", label: "Perfil", icon: User },
   { href: "/app/reservas", label: "Reservas", icon: CalendarDays },
   { href: "/app/pagos", label: "Pagos", icon: CreditCard },
-  { href: "/app/notificaciones", label: "Notificaciones", icon: Bell },
+  // { href: "/app/notificaciones", label: "Notificaciones", icon: Bell },
 ];
 
 export const UserNav = () => {

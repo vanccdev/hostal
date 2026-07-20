@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { userContactsById, type UserContact } from "@/lib/auth/user-contact";
 import { formatDate, formatDateTime } from "@/lib/datetime";
+import { paymentMethodLabel } from "@/lib/payment-method";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -280,7 +281,7 @@ const ProofCard = ({ item }: { item: ProofCardItem }) => {
             icon={ReceiptText}
             label="Pago"
             value={transaccion ? formatMoney(transaccion.monto, currency) : "-"}
-            detail={transaccion?.metodo_pago ?? "Sin transacción"}
+            detail={paymentMethodLabel(transaccion?.metodo_pago)}
           />
           <InfoBlock
             icon={CalendarDays}

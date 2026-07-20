@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requirePasswordReady } from "@/lib/auth/require-role";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
+import { paymentMethodLabel } from "@/lib/payment-method";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseTableQuery, sortableColumnsByTable, type TableQueryInput } from "@/lib/table-server";
@@ -229,7 +230,7 @@ const PaymentCard = ({ item }: { item: PaymentCardItem }) => {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <InfoBlock icon={CreditCard} label="Método" value={transaccion.metodo_pago} detail={`Tipo ${transaccion.tipo}`} />
+            <InfoBlock icon={CreditCard} label="Método" value={paymentMethodLabel(transaccion.metodo_pago)} detail={`Tipo ${transaccion.tipo}`} />
             <InfoBlock icon={FileCheck} label="Verificación" value={paymentStateLabel(transaccion.estado_verificacion)} detail={transaccion.verificado_at ? formatDateTime(transaccion.verificado_at) : "Sin verificación"} />
             <InfoBlock icon={CalendarDays} label="Reserva" value={reserva ? `${formatDate(reserva.fecha_ingreso)} - ${formatDate(reserva.fecha_salida)}` : "-"} detail={reserva ? formatReservaEstado(reserva.estado) : "Sin reserva"} />
             <InfoBlock icon={ReceiptText} label="Referencia" value={transaccion.referencia_externa ?? comprobante?.numero_comprobante ?? "-"} detail={formatDateTime(transaccion.created_at)} />
@@ -241,7 +242,7 @@ const PaymentCard = ({ item }: { item: PaymentCardItem }) => {
               rows={[
                 ["Monto", formatMoney(transaccion.monto, currency)],
                 ["Estado", paymentStateLabel(transaccion.estado_verificacion)],
-                ["Método", transaccion.metodo_pago],
+                ["Método", paymentMethodLabel(transaccion.metodo_pago)],
                 ["Creado", formatDateTime(transaccion.created_at)],
               ]}
             />

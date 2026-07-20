@@ -20,7 +20,8 @@ export type DomainEvent =
   | "sistema.configuracion_actualizada"
   | "cliente.perfil_actualizado"
   | "cliente.cuenta_creada_por_personal"
-  | "cliente.password_restablecido";
+  | "cliente.password_restablecido"
+  | "usuario.personal_creado";
 
 const getWebhookUrl = (event: DomainEvent) => {
   if (event.startsWith("reserva.")) {
@@ -31,7 +32,7 @@ const getWebhookUrl = (event: DomainEvent) => {
     return serverEnv.webhookPagosUrl();
   }
 
-  if (event.startsWith("cliente.")) {
+  if (event.startsWith("cliente.") || event.startsWith("usuario.")) {
     return serverEnv.webhookAuthEventsUrl();
   }
 

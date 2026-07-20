@@ -88,6 +88,7 @@ const validateExistingAuthUser = async (
 };
 
 type CreateClientStaffData = {
+  guestId?: string;
   userId?: string;
   initialPassword?: string;
   values?: ClienteStaffInput;
@@ -203,14 +204,18 @@ export const createClientAccountByStaff = async (
     return { ok: false, message: rollbackError ? rollbackMessage(rollbackError) : dbErrorMessage(profileError), data: { values: parsed.data } };
   }
 
-  const { error: guestError } = await admin.from("huespedes").insert({
-    usuario_id: created.user.id,
-    tipo_documento: parsed.data.tipoDocumento,
-    numero_documento: parsed.data.numeroDocumento,
-    pais_origen: parsed.data.pais || null,
-  });
+  const { data: guest, error: guestError } = await admin
+    .from("huespedes")
+    .insert({
+      usuario_id: created.user.id,
+      tipo_documento: parsed.data.tipoDocumento,
+      numero_documento: parsed.data.numeroDocumento,
+      pais_origen: parsed.data.pais || null,
+    })
+    .select("id")
+    .single();
 
-  if (guestError) {
+  if (guestError || !guest) {
     const rollbackError = await cleanupClientCreation(admin, created.user.id);
 
     if (rollbackError) {
@@ -249,6 +254,7 @@ export const createClientAccountByStaff = async (
     ok: true,
     message: "Cuenta creada. Contraseña inicial: número de celular del cliente.",
     data: {
+      guestId: guest.id,
       userId: created.user.id,
       initialPassword: phone,
     },

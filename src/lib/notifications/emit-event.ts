@@ -20,6 +20,7 @@ const notificationByEvent: Partial<
   "cliente.perfil_actualizado": { tipo: "cliente", destinatario_rol: "todos" },
   "cliente.cuenta_creada_por_personal": { tipo: "cliente", destinatario_rol: "recepcionista" },
   "cliente.password_restablecido": { tipo: "seguridad", destinatario_rol: "admin" },
+  "usuario.personal_creado": { tipo: "seguridad", destinatario_rol: "admin" },
   "reserva.creada": { tipo: "reserva", destinatario_rol: "recepcionista" },
   "reserva.confirmada": { tipo: "reserva", destinatario_rol: "todos" },
   "reserva.cancelada": { tipo: "reserva", destinatario_rol: "todos" },
@@ -83,7 +84,7 @@ const entityFromEvent = (event: DomainEvent) => {
     return "transacciones";
   }
 
-  if (event.startsWith("cliente.")) {
+  if (event.startsWith("cliente.") || event.startsWith("usuario.")) {
     return "usuarios";
   }
 

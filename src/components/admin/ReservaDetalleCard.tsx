@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { verifyReservationProofFormAction } from "@/app/actions/comprobantes";
+import { AdminReservationPaymentActions } from "@/components/admin/AdminReservationPaymentActions";
 import { CancelReservationDialog } from "@/components/admin/CancelReservationDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
 import { displayDocumentNumber } from "@/lib/client-profile";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { formatNotificacionTipo } from "@/lib/notificacion-tipo";
+import { paymentMethodLabel } from "@/lib/payment-method";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import type { UserContact } from "@/lib/auth/user-contact";
 import type { StaySettings } from "@/lib/stay-settings";
@@ -131,6 +133,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
     .filter((transaccion) => transaccion.estado_verificacion === "aprobada" && transaccion.tipo === "pago")
     .reduce((total, transaccion) => total + Number(transaccion.monto), 0);
   const pendingPaymentProof = transacciones.find((transaccion) => transaccion.estado_verificacion === "por_verificar");
+  const canRegisterAdminPayment = reserva.estado === "pendiente_pago" && !pendingPaymentProof;
   const clienteNombre = contactoCliente?.nombre ?? usuarioCliente?.nombre ?? "Cliente sin nombre";
   const clienteContacto = [contactoCliente?.email, contactoCliente?.telefono].filter(Boolean).join(" · ") || "Sin contacto";
   const reservationRows: Array<[string, string | number | boolean | null | undefined]> = [
@@ -187,7 +190,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
     href: transaccion.comprobante_url,
     rows: [
       ["Tipo", transaccion.tipo],
-      ["Método", transaccion.metodo_pago],
+      ["Método", paymentMethodLabel(transaccion.metodo_pago)],
       ["Referencia", transaccion.referencia_externa],
       ["Verificado por", userName(usuariosById, transaccion.verificado_por)],
       ["Verificado", formatDateTime(transaccion.verificado_at)],
@@ -349,6 +352,18 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
                     <Button type="submit" variant="destructive" size="sm">Rechazar</Button>
                   </form>
                 </div>
+              </div>
+            ) : null}
+
+            {canRegisterAdminPayment ? (
+              <div className="flex flex-col gap-3 rounded-xl border border-[#d8d4c8] bg-[#f8f5ec] p-3 dark:border-[#314237] dark:bg-[#142019] lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Pago pendiente de registro</p>
+                  <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
+                    Sube un comprobante recibido o confirma directamente si el pago ya fue validado.
+                  </p>
+                </div>
+                <AdminReservationPaymentActions reservaId={reserva.id} codigoReserva={reserva.codigo_reserva} />
               </div>
             ) : null}
 

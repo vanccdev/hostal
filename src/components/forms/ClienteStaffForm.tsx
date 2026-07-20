@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus } from "lucide-react";
@@ -17,7 +18,7 @@ import { clienteStaffSchema, type ClienteStaffInput } from "@/schemas/clientes";
 
 export const ClienteStaffForm = () => {
   const [state, action, pending] = useActionState(createClientAccountByStaff, initialActionState);
-  const actionData = state.data as { initialPassword?: string; values?: ClienteStaffInput } | undefined;
+  const actionData = state.data as { guestId?: string; initialPassword?: string; values?: ClienteStaffInput } | undefined;
   const form = useForm<ClienteStaffInput>({
     resolver: zodResolver(clienteStaffSchema),
     defaultValues: {
@@ -42,8 +43,15 @@ export const ClienteStaffForm = () => {
       {state.ok ? (
         <Alert>
           <AlertTitle>{state.message}</AlertTitle>
-          <AlertDescription>
-            Contraseña inicial: <strong>{actionData?.initialPassword}</strong>
+          <AlertDescription className="space-y-3">
+            <p>
+              Contraseña inicial: <strong>{actionData?.initialPassword}</strong>
+            </p>
+            {actionData?.guestId ? (
+              <Button asChild>
+                <Link href={`/admin/reservas/nueva?huespedId=${actionData.guestId}`}>Crear reserva para este cliente</Link>
+              </Button>
+            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}

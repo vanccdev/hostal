@@ -8,10 +8,17 @@ import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Usuario } from "@/types/database";
 
-export default async function NuevaReservaAdminPage() {
+type NuevaReservaAdminPageProps = {
+  searchParams: Promise<{ huespedId?: string | string[] }>;
+};
+
+const firstParam = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+export default async function NuevaReservaAdminPage({ searchParams }: NuevaReservaAdminPageProps) {
   await connection();
 
   await requireAdminModule("reservas");
+  const initialHuespedId = firstParam((await searchParams).huespedId) ?? "";
   const supabase = createSupabaseAdminClient();
   const [{ data: habitaciones }, { data: tarifas }, { data: huespedes }, { data: reservas }, { data: bloqueos }, staySettings] = await Promise.all([
     supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
@@ -47,7 +54,7 @@ export default async function NuevaReservaAdminPage() {
   const huespedContacts = Object.fromEntries(
     (huespedes ?? []).map((huesped) => {
       const contact = contactsById.get(huesped.usuario_id);
-      return [huesped.id, { nombre: contact?.nombre ?? "Cliente sin nombre", email: contact?.email ?? null }];
+      return [huesped.id, { nombre: contact?.nombre ?? "Cliente sin nombre", email: contact?.email ?? null, telefono: contact?.telefono ?? null }];
     }),
   );
 
@@ -56,7 +63,9 @@ export default async function NuevaReservaAdminPage() {
       <AvailabilityRealtimeRefresh channelName="admin-new-reservation-availability-refresh" />
       <div>
         <h1 className="text-2xl font-semibold">Nueva reserva</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Selecciona un huésped existente para no duplicar cuentas.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Crea reservas de clientes que llegan por WhatsApp, recepción, walk-in u otro canal operativo.
+        </p>
       </div>
       <Card id="datos-de-reserva" className="scroll-mt-4">
         <CardHeader>
@@ -65,6 +74,7 @@ export default async function NuevaReservaAdminPage() {
         <CardContent>
           <ReservaForm
             mode="staff"
+            initialHuespedId={initialHuespedId}
             habitaciones={habitaciones ?? []}
             tarifas={tarifas ?? []}
             huespedes={huespedes ?? []}
@@ -73,7 +83,6 @@ export default async function NuevaReservaAdminPage() {
             reservas={reservas ?? []}
             bloqueos={bloqueos ?? []}
             staySettings={staySettings}
-            scrollTargetId="datos-de-reserva"
           />
         </CardContent>
       </Card>
