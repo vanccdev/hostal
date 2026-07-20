@@ -30,6 +30,8 @@ const notificationByEvent: Partial<
   "habitacion.guardada": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "habitacion.imagen_eliminada": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "habitacion.estado_actualizado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
+  "bloqueo_fechas.creado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
+  "bloqueo_fechas.eliminado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "huesped.actualizado": { tipo: "huesped", destinatario_rol: "recepcionista" },
   "tarifa.guardada": { tipo: "tarifa", destinatario_rol: "admin" },
   "sistema.configuracion_actualizada": { tipo: "sistema", destinatario_rol: "admin" },
@@ -87,6 +89,10 @@ const entityFromEvent = (event: DomainEvent) => {
 
   if (event.startsWith("habitacion.")) {
     return "habitaciones";
+  }
+
+  if (event.startsWith("bloqueo_fechas.")) {
+    return "bloqueos_fechas";
   }
 
   if (event.startsWith("huesped.")) {

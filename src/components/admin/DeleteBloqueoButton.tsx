@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { Unlock } from "lucide-react";
 import { toast } from "sonner";
-import { deleteHabitacionImageAction } from "@/app/actions/crud";
+import { deleteBloqueoFechasAction } from "@/app/actions/crud";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,29 +17,28 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type HabitacionImageDeleteButtonProps = {
-  imageId: string;
-  onDeleted?: (imageId: string) => void;
+type DeleteBloqueoButtonProps = {
+  bloqueoId: string;
+  isGlobal: boolean;
 };
 
-export const HabitacionImageDeleteButton = ({ imageId, onDeleted }: HabitacionImageDeleteButtonProps) => {
+export const DeleteBloqueoButton = ({ bloqueoId, isGlobal }: DeleteBloqueoButtonProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteHabitacionImageAction(imageId);
+      const result = await deleteBloqueoFechasAction(bloqueoId);
 
       if (!result.ok) {
-        toast.error("No se pudo eliminar la imagen", {
+        toast.error("No se pudo desbloquear", {
           description: result.message ?? "Intenta nuevamente.",
         });
         return;
       }
 
-      onDeleted?.(imageId);
-      toast.success("Imagen eliminada", {
+      toast.success("Fechas desbloqueadas", {
         description: result.message,
       });
       setOpen(false);
@@ -50,22 +49,18 @@ export const HabitacionImageDeleteButton = ({ imageId, onDeleted }: HabitacionIm
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          className="absolute right-2 top-2 h-8 w-8 rounded-full shadow-sm"
-          disabled={pending}
-          aria-label="Eliminar imagen de la habitación"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        <Button type="button" variant="outline" size="sm" disabled={pending}>
+          <Unlock className="h-4 w-4" aria-hidden="true" />
+          Desbloquear
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>¿Eliminar esta imagen?</DialogTitle>
+          <DialogTitle>
+            {isGlobal ? "¿Desbloquear este rango para todo el hostal?" : "¿Desbloquear este rango para la habitación?"}
+          </DialogTitle>
           <DialogDescription>
-            La foto se borrará del bucket de habitaciones y dejará de aparecer en la galería.
+            Esta acción eliminará el bloqueo y las fechas volverán a estar disponibles para nuevas reservas.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -75,8 +70,8 @@ export const HabitacionImageDeleteButton = ({ imageId, onDeleted }: HabitacionIm
             </Button>
           </DialogClose>
           <Button type="button" variant="destructive" disabled={pending} onClick={handleDelete}>
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Eliminar imagen
+            <Unlock className="h-4 w-4" aria-hidden="true" />
+            Confirmar desbloqueo
           </Button>
         </DialogFooter>
       </DialogContent>

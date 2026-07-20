@@ -6,8 +6,16 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canAccessAdminModule, isManagementRole } from "@/lib/permissions";
 import { APP_TIME_ZONE } from "@/lib/datetime";
 import { emitEvent } from "@/lib/notifications/emit-event";
-import { calculateTurnoverMinutes, staySettingKeys } from "@/lib/stay-settings";
-import { habitacionSchema, huespedSchema, staySettingsSchema, tarifaSchema } from "@/schemas/crud";
+import { calculateTurnoverMinutes, getStaySettings, scheduledStayInterval, staySettingKeys } from "@/lib/stay-settings";
+import {
+  bloqueoSchema,
+  estadoHabitacionSchema,
+  habitacionSchema,
+  huespedSchema,
+  staySettingsSchema,
+  tarifaSchema,
+} from "@/schemas/crud";
+import type { BloqueoInput, EstadoHabitacionInput } from "@/schemas/crud";
 import type { ActionState } from "@/app/actions/types";
 import {
   duplicatedGuestDocumentState,
@@ -15,6 +23,7 @@ import {
   isGuestDocumentUniqueError,
   validationErrors,
 } from "@/app/actions/helpers";
+import { intervalsOverlap } from "@/lib/room-availability";
 
 const ROOM_IMAGES_BUCKET = "habitaciones";
 const MAX_ROOM_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -65,6 +74,28 @@ const validateRoomImageFiles = (files: File[]) => {
 
   return null;
 };
+
+type BloqueoActionData = {
+  values?: BloqueoInput;
+};
+
+type EstadoHabitacionActionData = {
+  values?: EstadoHabitacionInput;
+};
+
+type ActiveReservationForBlock = {
+  habitacion_id: string;
+  fecha_ingreso: string;
+  fecha_salida: string;
+  checkin_programado_at: string | null;
+  checkout_programado_at: string | null;
+};
+
+const latestCheckoutSuggestion = (reservations: ActiveReservationForBlock[]) =>
+  reservations
+    .map((reservation) => reservation.fecha_salida)
+    .sort()
+    .at(-1);
 
 const uploadRoomImages = async (
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -246,6 +277,321 @@ export const deleteHabitacionImageAction = async (imageId: string): Promise<Acti
   });
 
   return { ok: true, message: "Imagen eliminada." };
+};
+
+export const createBloqueoFechasAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState<BloqueoActionData>> => {
+  const currentUser = await getCurrentUser();
+  const rawValues = {
+    scope: formValue(formData, "scope"),
+    habitacionIds: formData
+      .getAll("habitacionIds")
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0),
+    fechaInicio: formValue(formData, "fechaInicio"),
+    fechaFin: formValue(formData, "fechaFin"),
+    motivo: formValue(formData, "motivo"),
+  };
+
+  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "bloqueos")) {
+    return { ok: false, message: "No tienes permiso para gestionar bloqueos.", data: { values: rawValues as BloqueoInput } };
+  }
+
+  const parsed = bloqueoSchema.safeParse(rawValues);
+
+  if (!parsed.success) {
+    return { ok: false, errors: validationErrors(parsed.error), data: { values: rawValues as BloqueoInput } };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const selectedRoomIds = [...new Set(parsed.data.habitacionIds)];
+
+  if (parsed.data.scope !== "todas") {
+    const { data: habitaciones, error: habitacionesError } = await admin
+      .from("habitaciones")
+      .select("id,numero")
+      .in("id", selectedRoomIds);
+
+    if (habitacionesError) {
+      return { ok: false, message: habitacionesError.message, data: { values: parsed.data } };
+    }
+
+    if ((habitaciones ?? []).length !== selectedRoomIds.length) {
+      return { ok: false, message: "Una o más habitaciones seleccionadas no existen.", data: { values: parsed.data } };
+    }
+  }
+
+  const { data: reservedRooms, error: reservedRoomsError } = await admin
+    .from("reservas")
+    .select("habitacion_id")
+    .in("estado", ["pendiente_pago", "confirmada", "checkin"])
+    .lt("fecha_ingreso", parsed.data.fechaFin)
+    .gt("fecha_salida", parsed.data.fechaInicio);
+
+  if (reservedRoomsError) {
+    return { ok: false, message: reservedRoomsError.message, data: { values: parsed.data } };
+  }
+
+  const roomIdsToValidate =
+    parsed.data.scope === "todas"
+      ? [...new Set((reservedRooms ?? []).map((reservation) => reservation.habitacion_id))]
+      : selectedRoomIds;
+
+  if (roomIdsToValidate.length > 0) {
+    const staySettings = await getStaySettings(admin);
+    const blockInterval = scheduledStayInterval(parsed.data.fechaInicio, parsed.data.fechaFin, staySettings);
+    const [{ data: reservations, error: reservationsError }, { data: roomLabels, error: roomLabelsError }] = await Promise.all([
+      admin
+        .from("reservas")
+        .select("habitacion_id,fecha_ingreso,fecha_salida,checkin_programado_at,checkout_programado_at")
+        .in("habitacion_id", roomIdsToValidate)
+        .in("estado", ["pendiente_pago", "confirmada", "checkin"])
+        .lt("fecha_ingreso", parsed.data.fechaFin)
+        .gt("fecha_salida", parsed.data.fechaInicio),
+      admin.from("habitaciones").select("id,numero").in("id", roomIdsToValidate),
+    ]);
+
+    if (reservationsError) {
+      return { ok: false, message: reservationsError.message, data: { values: parsed.data } };
+    }
+
+    if (roomLabelsError) {
+      return { ok: false, message: roomLabelsError.message, data: { values: parsed.data } };
+    }
+
+    const roomNumberById = new Map((roomLabels ?? []).map((room) => [room.id, room.numero]));
+    const overlappingReservations = ((reservations ?? []) as ActiveReservationForBlock[]).filter((reservation) => {
+      const reservationInterval = {
+        checkinAt:
+          reservation.checkin_programado_at ??
+          scheduledStayInterval(reservation.fecha_ingreso, reservation.fecha_salida, staySettings).checkinAt,
+        checkoutAt:
+          reservation.checkout_programado_at ??
+          scheduledStayInterval(reservation.fecha_ingreso, reservation.fecha_salida, staySettings).checkoutAt,
+      };
+
+      return intervalsOverlap(
+        reservationInterval.checkinAt,
+        reservationInterval.checkoutAt,
+        blockInterval.checkinAt,
+        blockInterval.checkoutAt,
+      );
+    });
+
+    if (overlappingReservations.length > 0) {
+      const firstReservation = overlappingReservations[0];
+      const roomLabel =
+        parsed.data.scope === "todas"
+          ? "Hay habitaciones ocupadas"
+          : `La habitación ${roomNumberById.get(firstReservation.habitacion_id) ?? firstReservation.habitacion_id} está ocupada`;
+      const suggestedStart = latestCheckoutSuggestion(overlappingReservations);
+
+      return {
+        ok: false,
+        message: suggestedStart
+          ? `${roomLabel} dentro del rango seleccionado. Crea el bloqueo desde ${suggestedStart}, que es la fecha de salida más cercana disponible para ese cruce.`
+          : `${roomLabel} dentro del rango seleccionado. Ajusta la fecha de inicio después de la salida del huésped.`,
+        data: {
+          values: {
+            ...parsed.data,
+            fechaInicio: suggestedStart && suggestedStart < parsed.data.fechaFin ? suggestedStart : parsed.data.fechaInicio,
+          },
+        },
+      };
+    }
+  }
+
+  const baseRow = {
+    fecha_inicio: parsed.data.fechaInicio,
+    fecha_fin: parsed.data.fechaFin,
+    motivo: parsed.data.motivo,
+    creado_por: currentUser.authUserId,
+  };
+  const rows = selectedRoomIds.map((habitacionId) => ({
+    ...baseRow,
+    habitacion_id: habitacionId,
+  }));
+  const { error } =
+    parsed.data.scope === "todas"
+      ? await admin.from("bloqueos_fechas").insert(baseRow)
+      : await admin.from("bloqueos_fechas").insert(rows);
+
+  if (error) {
+    return { ok: false, message: error.message, data: { values: parsed.data } };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/app");
+  revalidatePath("/admin");
+  revalidatePath("/admin/bloqueos");
+  revalidatePath("/admin/reservas/nueva");
+
+  await emitEvent(admin, {
+    event: "bloqueo_fechas.creado",
+    title: parsed.data.scope === "todas" ? "Bloqueo general creado" : "Bloqueo de habitación creado",
+    message:
+      parsed.data.scope === "todas"
+        ? `Se bloqueó todo el hostal del ${parsed.data.fechaInicio} al ${parsed.data.fechaFin}.`
+        : `Se bloquearon ${rows.length} habitación(es) del ${parsed.data.fechaInicio} al ${parsed.data.fechaFin}.`,
+    actorId: currentUser.authUserId,
+    entity: "bloqueos_fechas",
+    payload: {
+      scope: parsed.data.scope,
+      habitacion_ids: selectedRoomIds,
+      fecha_inicio: parsed.data.fechaInicio,
+      fecha_fin: parsed.data.fechaFin,
+    },
+  });
+
+  return {
+    ok: true,
+    message:
+      parsed.data.scope === "todas"
+        ? "Bloqueo general creado."
+        : rows.length === 1
+          ? "Bloqueo creado para 1 habitación."
+          : `Bloqueos creados para ${rows.length} habitaciones.`,
+  };
+};
+
+export const deleteBloqueoFechasAction = async (bloqueoId: string): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "bloqueos")) {
+    return { ok: false, message: "No tienes permiso para desbloquear fechas." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: bloqueo, error: readError } = await admin
+    .from("bloqueos_fechas")
+    .select("id,habitacion_id,fecha_inicio,fecha_fin,motivo")
+    .eq("id", bloqueoId)
+    .maybeSingle();
+
+  if (readError || !bloqueo) {
+    return { ok: false, message: readError?.message ?? "El bloqueo ya no existe." };
+  }
+
+  const { error } = await admin.from("bloqueos_fechas").delete().eq("id", bloqueo.id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/app");
+  revalidatePath("/admin");
+  revalidatePath("/admin/bloqueos");
+  revalidatePath("/admin/reservas/nueva");
+
+  await emitEvent(admin, {
+    event: "bloqueo_fechas.eliminado",
+    title: bloqueo.habitacion_id ? "Bloqueo de habitación eliminado" : "Bloqueo general eliminado",
+    message: `Se desbloqueó el rango ${bloqueo.fecha_inicio} al ${bloqueo.fecha_fin}.`,
+    actorId: currentUser.authUserId,
+    entity: "bloqueos_fechas",
+    entityId: bloqueo.id,
+    payload: {
+      bloqueo_id: bloqueo.id,
+      habitacion_id: bloqueo.habitacion_id,
+      fecha_inicio: bloqueo.fecha_inicio,
+      fecha_fin: bloqueo.fecha_fin,
+    },
+  });
+
+  return { ok: true, message: "Fechas desbloqueadas." };
+};
+
+export const updateEstadoHabitacionAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState<EstadoHabitacionActionData>> => {
+  const currentUser = await getCurrentUser();
+  const rawValues = {
+    habitacionId: formValue(formData, "habitacionId"),
+    estado: formValue(formData, "estado"),
+    notas: formValue(formData, "notas"),
+  };
+
+  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "estado-habitaciones")) {
+    return { ok: false, message: "No tienes permiso para cambiar el estado de habitaciones.", data: { values: rawValues as EstadoHabitacionInput } };
+  }
+
+  const parsed = estadoHabitacionSchema.safeParse(rawValues);
+
+  if (!parsed.success) {
+    return { ok: false, errors: validationErrors(parsed.error), data: { values: rawValues as EstadoHabitacionInput } };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: habitacion, error: habitacionError } = await admin
+    .from("habitaciones")
+    .select("id,numero")
+    .eq("id", parsed.data.habitacionId)
+    .maybeSingle();
+
+  if (habitacionError || !habitacion) {
+    return { ok: false, message: habitacionError?.message ?? "La habitación no existe.", data: { values: parsed.data } };
+  }
+
+  const { data: currentStates, error: currentStateError } = await admin
+    .from("estado_habitaciones")
+    .select("id,estado")
+    .eq("habitacion_id", parsed.data.habitacionId)
+    .order("changed_at", { ascending: false })
+    .limit(1);
+
+  if (currentStateError) {
+    return { ok: false, message: currentStateError.message, data: { values: parsed.data } };
+  }
+
+  const previousState = currentStates?.[0]?.estado ?? null;
+  const payload = {
+    habitacion_id: parsed.data.habitacionId,
+    estado: parsed.data.estado,
+    cambiado_por: currentUser.authUserId,
+    notas: parsed.data.notas || null,
+    changed_at: new Date().toISOString(),
+  };
+  const existingStateId = currentStates?.[0]?.id;
+  const { error } = existingStateId
+    ? await admin.from("estado_habitaciones").update(payload).eq("id", existingStateId)
+    : await admin.from("estado_habitaciones").insert(payload);
+
+  if (error) {
+    return { ok: false, message: error.message, data: { values: parsed.data } };
+  }
+
+  const { error: logError } = await admin.from("log_estados_habitacion").insert({
+    habitacion_id: parsed.data.habitacionId,
+    estado_anterior: previousState,
+    estado_nuevo: parsed.data.estado,
+    cambiado_por: currentUser.authUserId,
+  });
+
+  if (logError) {
+    return { ok: false, message: logError.message, data: { values: parsed.data } };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/estado-habitaciones");
+
+  await emitEvent(admin, {
+    event: "habitacion.estado_actualizado",
+    title: "Estado de habitación actualizado",
+    message: `Habitación ${habitacion.numero} marcada como ${parsed.data.estado}.`,
+    actorId: currentUser.authUserId,
+    entity: "estado_habitaciones",
+    entityId: existingStateId,
+    payload: {
+      habitacion_id: parsed.data.habitacionId,
+      estado_anterior: previousState,
+      estado_nuevo: parsed.data.estado,
+    },
+  });
+
+  return { ok: true, message: "Estado actualizado." };
 };
 
 export const upsertHuespedAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {

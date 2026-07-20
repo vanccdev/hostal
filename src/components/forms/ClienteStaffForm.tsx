@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { createClientAccountByStaff } from "@/app/actions/clientes";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
@@ -17,17 +17,24 @@ import { clienteStaffSchema, type ClienteStaffInput } from "@/schemas/clientes";
 
 export const ClienteStaffForm = () => {
   const [state, action, pending] = useActionState(createClientAccountByStaff, initialActionState);
-  const createdData = state.data as { initialPassword?: string } | undefined;
+  const actionData = state.data as { initialPassword?: string; values?: ClienteStaffInput } | undefined;
   const form = useForm<ClienteStaffInput>({
     resolver: zodResolver(clienteStaffSchema),
     defaultValues: {
       nombreCompleto: "",
       email: "",
       telefono: "",
+      tipoDocumento: undefined,
       numeroDocumento: "",
       pais: "",
     },
   });
+
+  useEffect(() => {
+    if (!state.ok && actionData?.values) {
+      form.reset(actionData.values);
+    }
+  }, [actionData?.values, form, state.ok]);
 
   return (
     <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
@@ -36,7 +43,7 @@ export const ClienteStaffForm = () => {
         <Alert>
           <AlertTitle>{state.message}</AlertTitle>
           <AlertDescription>
-            Contraseña inicial: <strong>{createdData?.initialPassword}</strong>
+            Contraseña inicial: <strong>{actionData?.initialPassword}</strong>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -58,19 +65,29 @@ export const ClienteStaffForm = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
-          <Select name="tipoDocumento" defaultValue="__none">
-            <SelectTrigger id="tipoDocumento">
-              <SelectValue placeholder="Seleccionar" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none">Seleccionar</SelectItem>
-              <SelectItem value="CI">CI</SelectItem>
-              <SelectItem value="Pasaporte">Pasaporte</SelectItem>
-              <SelectItem value="DNI">DNI</SelectItem>
-              <SelectItem value="RUC">RUC</SelectItem>
-              <SelectItem value="Otro">Otro</SelectItem>
-            </SelectContent>
-          </Select>
+          <Controller
+            control={form.control}
+            name="tipoDocumento"
+            render={({ field }) => (
+              <Select
+                name={field.name}
+                onValueChange={(value) => field.onChange(value === "__none" ? undefined : value)}
+                value={field.value || "__none"}
+              >
+                <SelectTrigger id="tipoDocumento">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">Seleccionar</SelectItem>
+                  <SelectItem value="CI">CI</SelectItem>
+                  <SelectItem value="Pasaporte">Pasaporte</SelectItem>
+                  <SelectItem value="DNI">DNI</SelectItem>
+                  <SelectItem value="RUC">RUC</SelectItem>
+                  <SelectItem value="Otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           <FormMessage state={state} field="tipoDocumento" />
         </div>
         <div className="space-y-2">

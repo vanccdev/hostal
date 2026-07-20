@@ -196,5 +196,6 @@ Validar esquema real/local y completar datos base:
 - No perder la intencion de reserva publica al pasar por login/registro; usar `src/lib/reservation-intent.ts`.
 - Para selects de formularios, usar `src/components/ui/select.tsx` basado en shadcn/Radix; no usar `<select>` nativo.
 - Para fechas de formularios, usar `DatePickerField` con `Calendar` y `Popover`; no usar inputs nativos de fecha.
+- Para confirmaciones, advertencias o acciones destructivas en UI, usar `src/components/ui/dialog.tsx` de shadcn/Radix; no usar `window.alert`, `window.confirm` ni `window.prompt`.
 - Para tablas/listados, mantener paginacion y filtrado en Supabase con `range`/`count`; no cargar todas las filas para filtrar o paginar en Next.js.
 - Si se modifica frontend responsive, verificar en viewport movil real o medir layout; no asumir solo por clases Tailwind.

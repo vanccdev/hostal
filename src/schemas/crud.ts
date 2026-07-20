@@ -56,7 +56,36 @@ export const staySettingsSchema = z
     message: "El check-in debe ser posterior al check-out por al menos 1 minuto.",
   });
 
+export const bloqueoSchema = z
+  .object({
+    scope: z.enum(["una", "varias", "todas"], "Selecciona el alcance del bloqueo"),
+    habitacionIds: z.array(z.uuid("Habitación inválida")).default([]),
+    fechaInicio: z.iso.date("Fecha de inicio inválida"),
+    fechaFin: z.iso.date("Fecha final inválida"),
+    motivo: z.string().min(4, "Describe el motivo del bloqueo"),
+  })
+  .refine((value) => value.fechaFin > value.fechaInicio, {
+    path: ["fechaFin"],
+    message: "La fecha final debe ser posterior al inicio.",
+  })
+  .refine((value) => value.scope === "todas" || value.habitacionIds.length > 0, {
+    path: ["habitacionIds"],
+    message: "Selecciona al menos una habitación.",
+  })
+  .refine((value) => value.scope !== "una" || value.habitacionIds.length === 1, {
+    path: ["habitacionIds"],
+    message: "Selecciona solo una habitación para este alcance.",
+  });
+
+export const estadoHabitacionSchema = z.object({
+  habitacionId: z.uuid("Habitación inválida"),
+  estado: z.enum(["disponible", "ocupada", "limpieza", "mantenimiento", "bloqueada"], "Selecciona un estado"),
+  notas: z.string().max(400, "Usa 400 caracteres o menos").optional(),
+});
+
 export type HabitacionInput = z.infer<typeof habitacionSchema>;
 export type HuespedInput = z.infer<typeof huespedSchema>;
 export type TarifaInput = z.infer<typeof tarifaSchema>;
 export type StaySettingsInput = z.infer<typeof staySettingsSchema>;
+export type BloqueoInput = z.infer<typeof bloqueoSchema>;
+export type EstadoHabitacionInput = z.infer<typeof estadoHabitacionSchema>;

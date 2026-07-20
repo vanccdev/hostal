@@ -139,11 +139,16 @@ export const getRoomAvailabilityStatus = ({
     }
 
     const blocked = bloqueos.some((bloqueo) => {
+      const isGlobalBlock = bloqueo.habitacion_id === null;
       const blockRoomId = stringValue(bloqueo.habitacion_id);
       const fechaInicio = stringValue(bloqueo.fecha_inicio);
       const fechaFin = stringValue(bloqueo.fecha_fin);
 
-      return blockRoomId === roomId && Boolean(fechaInicio && fechaFin) && overlaps(fechaInicio, fechaFin, fechaIngreso, fechaSalida);
+      return (
+        (blockRoomId === roomId || isGlobalBlock) &&
+        Boolean(fechaInicio && fechaFin) &&
+        overlaps(fechaInicio, fechaFin, fechaIngreso, fechaSalida)
+      );
     });
 
     if (blocked) {
@@ -189,6 +194,24 @@ export const getRoomAvailabilityStatus = ({
       detail: countdown ? `Disponible desde ${formatTime(nextCheckinAt)} (${countdown})` : undefined,
       variant: "destructive",
       nextAvailableAt: nextCheckinAt,
+    };
+  }
+
+  const today = localISODate(now);
+  const blockedToday = bloqueos.some((bloqueo) => {
+    const isGlobalBlock = bloqueo.habitacion_id === null;
+    const blockRoomId = stringValue(bloqueo.habitacion_id);
+    const fechaInicio = stringValue(bloqueo.fecha_inicio);
+    const fechaFin = stringValue(bloqueo.fecha_fin);
+
+    return (blockRoomId === roomId || isGlobalBlock) && Boolean(fechaInicio && fechaFin) && fechaInicio <= today && fechaFin > today;
+  });
+
+  if (blockedToday) {
+    return {
+      available: false,
+      label: "Bloqueada",
+      variant: "destructive",
     };
   }
 

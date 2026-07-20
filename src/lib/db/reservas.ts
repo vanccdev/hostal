@@ -78,7 +78,7 @@ export const assertRoomIsAvailable = async (
   const { data: blocks, error: blocksError } = await supabase
     .from("bloqueos_fechas")
     .select("id")
-    .eq("habitacion_id", habitacionId)
+    .or(`habitacion_id.eq.${habitacionId},habitacion_id.is.null`)
     .lt("fecha_inicio", fechaSalida)
     .gt("fecha_fin", fechaIngreso)
     .limit(1);

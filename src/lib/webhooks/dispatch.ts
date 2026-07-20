@@ -13,6 +13,8 @@ export type DomainEvent =
   | "habitacion.guardada"
   | "habitacion.imagen_eliminada"
   | "habitacion.estado_actualizado"
+  | "bloqueo_fechas.creado"
+  | "bloqueo_fechas.eliminado"
   | "huesped.actualizado"
   | "tarifa.guardada"
   | "sistema.configuracion_actualizada"
