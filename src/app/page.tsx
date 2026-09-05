@@ -12,6 +12,33 @@ import { getPathByRole } from "@/lib/auth/redirect-by-role";
 import { isStaffRole } from "@/lib/permissions";
 import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { siteDescription, siteName, siteUrl } from "@/lib/site";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Hotel",
+  name: siteName,
+  description: siteDescription,
+  url: siteUrl.toString(),
+  image: new URL("/icono.jpg", siteUrl).toString(),
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Camargo",
+    addressRegion: "Chuquisaca",
+    addressCountry: "BO",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: -20.641224228393003,
+    longitude: -65.20948944626011,
+  },
+  makesOffer: {
+    "@type": "Offer",
+    url: siteUrl.toString(),
+    availability: "https://schema.org/InStock",
+    category: "Alojamiento",
+  },
+};
 
 export default async function Home() {
   await connection();
@@ -69,6 +96,10 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[#f6f1e6] text-[#18221b] dark:bg-[#101a14] dark:text-zinc-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <AvailabilityRealtimeRefresh channelName="public-availability-refresh" />
       <header className="sticky top-0 z-30 border-b border-[#d8d4c8] bg-white/95 backdrop-blur dark:border-[#314237] dark:bg-[#101a14]/95">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">

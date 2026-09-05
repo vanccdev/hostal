@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BedDouble, Eye, ImageIcon, Users } from "lucide-react";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -249,7 +249,7 @@ export const PublicBookingCatalog = ({
                 <Label htmlFor="publicFechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                   Ingreso
                 </Label>
-                <DatePickerField
+                <ResponsiveDatePickerField
                   id="publicFechaIngreso"
                   name="publicFechaIngreso"
                   value={fechaIngreso}
@@ -262,7 +262,7 @@ export const PublicBookingCatalog = ({
                 <Label htmlFor="publicFechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                   Salida
                 </Label>
-                <DatePickerField
+                <ResponsiveDatePickerField
                   id="publicFechaSalida"
                   name="publicFechaSalida"
                   value={fechaSalida}

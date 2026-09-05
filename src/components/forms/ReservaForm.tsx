@@ -7,7 +7,7 @@ import { BedDouble, CalendarCheck, CalendarPlus, CheckCircle2, ImageIcon, Mail, 
 import { createClientReservation, createStaffReservation } from "@/app/actions/reservas";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -562,7 +562,7 @@ export const ReservaForm = ({
             <Label htmlFor="fechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
               Ingreso
             </Label>
-            <DatePickerField
+            <ResponsiveDatePickerField
               id="fechaIngreso"
               name="fechaIngreso"
               value={fechaIngreso}
@@ -577,7 +577,7 @@ export const ReservaForm = ({
             <Label htmlFor="fechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
               Salida
             </Label>
-            <DatePickerField
+            <ResponsiveDatePickerField
               id="fechaSalida"
               name="fechaSalida"
               value={fechaSalida}

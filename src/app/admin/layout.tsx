@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { requireRole } from "@/lib/auth/require-role";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await requireRole(["admin", "recepcionista", "limpieza"]);

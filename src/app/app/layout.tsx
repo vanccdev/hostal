@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { CompleteClientProfileDialog } from "@/components/app/CompleteClientProfileDialog";
 import { UserNav } from "@/components/app/UserNav";
 import { requireRole } from "@/lib/auth/require-role";
 import { isClientProfileIncomplete } from "@/lib/client-profile";
 import { getGuestForUser } from "@/lib/db/current-guest";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await requireRole(["cliente"]);

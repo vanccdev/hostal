@@ -2,11 +2,63 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Toaster } from "@/components/ui/sonner";
+import { siteDescription, siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Hostal Plaza Camargo",
-  description: "Reservas y gestión del Hostal Plaza en Camargo",
+  metadataBase: siteUrl,
+  title: {
+    default: siteName,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
+  applicationName: siteName,
+  authors: [{ name: siteName }],
+  creator: siteName,
+  publisher: siteName,
+  keywords: [
+    "hostal en Camargo",
+    "hotel en Camargo",
+    "alojamiento en Camargo",
+    "habitaciones en Camargo",
+    "reservas de hotel en Chuquisaca",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_BO",
+    url: "/",
+    siteName,
+    title: siteName,
+    description: siteDescription,
+    images: [
+      {
+        url: "/icono.jpg",
+        width: 2048,
+        height: 2048,
+        alt: "Logo de Hostal Plaza Camargo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: siteName,
+    description: siteDescription,
+    images: ["/icono.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   icons: {
     icon: "/icono.jpg",
     shortcut: "/icono.jpg",

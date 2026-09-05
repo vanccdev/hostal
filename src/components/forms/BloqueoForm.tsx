@@ -8,7 +8,7 @@ import type { z } from "zod";
 import { createBloqueoFechasAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -172,7 +172,7 @@ export const BloqueoForm = ({ blockedRoomIds, habitaciones }: BloqueoFormProps) 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="fechaInicio">Inicio del bloqueo</Label>
-          <DatePickerField
+          <ResponsiveDatePickerField
             id="fechaInicio"
             name="fechaInicio"
             value={fechaInicio}
@@ -186,7 +186,7 @@ export const BloqueoForm = ({ blockedRoomIds, habitaciones }: BloqueoFormProps) 
         </div>
         <div className="space-y-2">
           <Label htmlFor="fechaFin">Fin / fecha de liberación</Label>
-          <DatePickerField
+          <ResponsiveDatePickerField
             id="fechaFin"
             name="fechaFin"
             value={fechaFin}

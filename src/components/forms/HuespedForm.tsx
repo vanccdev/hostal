@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { upsertHuespedAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export const HuespedForm = ({ huesped, onSuccess }: HuespedFormProps) => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
-          <DatePickerField
+          <ResponsiveDatePickerField
             id="fechaNacimiento"
             name="fechaNacimiento"
             defaultValue={form.getValues("fechaNacimiento")}

@@ -8,7 +8,7 @@ import type { z } from "zod";
 import { upsertTarifaAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,7 +108,7 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
               <Label htmlFor="vigenteDesde" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                 Desde
               </Label>
-              <DatePickerField
+              <ResponsiveDatePickerField
                 id="vigenteDesde"
                 name="vigenteDesde"
                 defaultValue={tarifa?.vigente_desde ?? localISODate()}
@@ -120,7 +120,7 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
               <Label htmlFor="vigenteHasta" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
                 Hasta
               </Label>
-              <DatePickerField
+              <ResponsiveDatePickerField
                 id="vigenteHasta"
                 name="vigenteHasta"
                 defaultValue={tarifa?.vigente_hasta ?? ""}

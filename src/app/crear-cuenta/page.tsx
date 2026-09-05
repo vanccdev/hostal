@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { AuthShowcase } from "@/components/auth/AuthShowcase";
 import { SignupForm } from "@/components/auth/SignupForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Crear cuenta",
+  description: "Crea tu cuenta para reservar una habitación en Hostal Plaza Camargo.",
+  robots: { index: false, follow: false },
+};
 
 const safeNextPath = (value: string | string[] | undefined) => {
   const nextPath = Array.isArray(value) ? value[0] : value;

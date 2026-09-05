@@ -7,7 +7,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { updateClientProfileAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +104,7 @@ export const ProfileEditForm = ({ email, nombre, telefono, guest }: ProfileEditF
         </div>
         <div className="space-y-2">
           <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
-          <DatePickerField
+          <ResponsiveDatePickerField
             id="fechaNacimiento"
             name="fechaNacimiento"
             value={fechaNacimiento}

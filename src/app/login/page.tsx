@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { AuthShowcase } from "@/components/auth/AuthShowcase";
 import { LoginForm } from "@/components/auth/LoginForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Iniciar sesión",
+  description: "Accede a tu cuenta de Hostal Plaza Camargo.",
+  robots: { index: false, follow: false },
+};
 
 const safeNextPath = (value: string | string[] | undefined) => {
   const nextPath = Array.isArray(value) ? value[0] : value;

@@ -6,7 +6,7 @@ import { Save } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { completeClientProfileAction } from "@/app/actions/auth";
 import { initialActionState } from "@/app/actions/types";
-import { DatePickerField } from "@/components/forms/DatePickerField";
+import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
 import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
@@ -140,7 +140,7 @@ export const CompleteClientProfileDialog = ({ guest, initialPhone, profileName }
             </div>
             <div className="space-y-2">
               <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
-              <DatePickerField
+              <ResponsiveDatePickerField
                 id="fechaNacimiento"
                 name="fechaNacimiento"
                 value={fechaNacimiento}
