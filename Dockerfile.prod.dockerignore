@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+coverage
+.git
+.github
+.env
+.env.*
+!.env.local.example
+backups
+*.log
+Dockerfile*
+README.md
+CLAUDE.md
+AGENTS.md

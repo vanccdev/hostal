@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   experimental: {
     serverActions: {
       bodySizeLimit: "30mb",
@@ -30,6 +31,16 @@ const nextConfig: NextConfig = {
         protocol: "http",
         hostname: "127.0.0.1",
         port: "8000",
+        pathname: "/storage/v1/object/public/comprobante/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.hostalplazacamargo.digital",
+        pathname: "/storage/v1/object/public/habitaciones/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.hostalplazacamargo.digital",
         pathname: "/storage/v1/object/public/comprobante/**",
       },
     ],
