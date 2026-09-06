@@ -90,18 +90,18 @@ export const cancelReservationAction = async (_state: ActionState, formData: For
     `Cancelada manualmente por ${currentUser.profile.nombre}.`,
     `Motivo: ${motivo}`,
     `Pagado aprobado: ${paidAmount.toFixed(2)}.`,
-    `Retención aplicada: ${settings.cancellationRetentionPercent}%.`,
+    `Retención aplicada: ${policy.retentionPercentApplied}%.`,
     `Monto final hostal: ${policy.retainedAmount.toFixed(2)}.`,
   ].join(" ");
 
-  const motivoAjuste = `Cancelación: monto final hostal ${policy.retainedAmount.toFixed(2)} con retención configurada de ${settings.cancellationRetentionPercent}%.`;
+  const motivoAjuste = `Cancelación: monto final hostal ${policy.retainedAmount.toFixed(2)} con retención aplicada de ${policy.retentionPercentApplied}%.`;
   const { error: cancellationError } = await supabase.rpc("cancel_reservation_with_accounting", {
     p_reserva_id: reserva.id,
     p_motivo: motivo,
     p_horas_anticipacion: policy.hoursBeforeStay,
     p_politica_aplicada: policy.policy,
     p_monto_pagado_aprobado: paidAmount,
-    p_retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+    p_retencion_porcentaje_aplicado: policy.retentionPercentApplied,
     p_monto_reembolso: policy.refundAmount,
     p_monto_retenido: policy.retainedAmount,
     p_gestionado_por: currentUser.authUserId,
@@ -122,7 +122,7 @@ export const cancelReservationAction = async (_state: ActionState, formData: For
       reserva_id: reserva.id,
       codigo_reserva: reserva.codigo_reserva,
       monto_pagado: paidAmount,
-      retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+      retencion_porcentaje_aplicado: policy.retentionPercentApplied,
       monto_retenido: policy.retainedAmount,
       politica: policy.policy,
     },
@@ -139,7 +139,7 @@ export const cancelReservationAction = async (_state: ActionState, formData: For
       reserva_id: reserva.id,
       codigo_reserva: reserva.codigo_reserva,
       monto_pagado: paidAmount,
-      retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+      retencion_porcentaje_aplicado: policy.retentionPercentApplied,
       monto_retenido: policy.retainedAmount,
       politica: policy.policy,
     },
@@ -235,17 +235,17 @@ export const cancelOwnReservationAction = async (_state: ActionState, formData: 
     `Cancelada por el huésped ${currentUser.profile.nombre}.`,
     `Motivo: ${motivo}`,
     `Pagado aprobado: ${paidAmount.toFixed(2)}.`,
-    `Retención aplicada: ${settings.cancellationRetentionPercent}%.`,
+    `Retención aplicada: ${policy.retentionPercentApplied}%.`,
     `Monto final hostal: ${policy.retainedAmount.toFixed(2)}.`,
   ].join(" ");
-  const motivoAjuste = `Cancelación solicitada por huésped: monto final hostal ${policy.retainedAmount.toFixed(2)} con retención configurada de ${settings.cancellationRetentionPercent}%.`;
+  const motivoAjuste = `Cancelación solicitada por huésped: monto final hostal ${policy.retainedAmount.toFixed(2)} con retención aplicada de ${policy.retentionPercentApplied}%.`;
   const { error: cancellationError } = await supabase.rpc("cancel_reservation_with_accounting", {
     p_reserva_id: reserva.id,
     p_motivo: motivo,
     p_horas_anticipacion: policy.hoursBeforeStay,
     p_politica_aplicada: policy.policy,
     p_monto_pagado_aprobado: paidAmount,
-    p_retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+    p_retencion_porcentaje_aplicado: policy.retentionPercentApplied,
     p_monto_reembolso: policy.refundAmount,
     p_monto_retenido: policy.retainedAmount,
     p_gestionado_por: currentUser.authUserId,
@@ -266,7 +266,7 @@ export const cancelOwnReservationAction = async (_state: ActionState, formData: 
       reserva_id: reserva.id,
       codigo_reserva: reserva.codigo_reserva,
       monto_pagado: paidAmount,
-      retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+      retencion_porcentaje_aplicado: policy.retentionPercentApplied,
       monto_retenido: policy.retainedAmount,
       politica: policy.policy,
     },
@@ -283,7 +283,7 @@ export const cancelOwnReservationAction = async (_state: ActionState, formData: 
       reserva_id: reserva.id,
       codigo_reserva: reserva.codigo_reserva,
       monto_pagado: paidAmount,
-      retencion_porcentaje_aplicado: settings.cancellationRetentionPercent,
+      retencion_porcentaje_aplicado: policy.retentionPercentApplied,
       monto_retenido: policy.retainedAmount,
       politica: policy.policy,
     },

@@ -7,6 +7,7 @@ import { formatDate, formatDateTime } from "@/lib/datetime";
 import { getGuestForUser } from "@/lib/db/current-guest";
 import { formatReservaEstado } from "@/lib/reserva-estado";
 import { getStaySettings } from "@/lib/stay-settings";
+import { getActiveQrPayment } from "@/lib/qr-payments";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function DetalleReservaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +20,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
   }
 
   const supabase = createSupabaseAdminClient();
-  const [{ data: reserva }, staySettings] = await Promise.all([
+  const [{ data: reserva }, staySettings, qrPayment] = await Promise.all([
     supabase
       .from("reservas")
       .select("id,codigo_reserva,huesped_id,habitacion_id,tarifa_id,fecha_ingreso,fecha_salida,num_noches,precio_total,estado,checkin_programado_at,checkout_programado_at,created_at")
@@ -27,6 +28,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
       .eq("huesped_id", guest.id)
       .maybeSingle(),
     getStaySettings(supabase),
+    getActiveQrPayment(supabase),
   ]);
 
   if (!reserva) {
@@ -69,6 +71,7 @@ export default async function DetalleReservaPage({ params }: { params: Promise<{
         proofUrl={activeProofUrl}
         userId={currentUser.authUserId}
         paymentVerificationStatus={transaccion?.estado_verificacion}
+        qrPayment={qrPayment}
       />
       <Card>
         <CardHeader>

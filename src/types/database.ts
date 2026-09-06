@@ -73,6 +73,18 @@ export type ImgHabitacion = {
   created_at: string;
 };
 
+export type QrPago = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  url: string;
+  storage_path: string;
+  activa: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Tarifa = {
   id: string;
   habitacion_tipo: HabitacionTipo;
@@ -269,6 +281,13 @@ export type Database = {
           Pick<ImgHabitacion, "habitacion_id" | "url"> &
           Partial<Pick<ImgHabitacion, "created_at">>,
         Partial<Pick<ImgHabitacion, "habitacion_id" | "url">>
+      >;
+      qr_pagos: DbTable<
+        QrPago,
+        WithGeneratedId<QrPago> &
+          Pick<QrPago, "nombre" | "url" | "storage_path" | "created_by"> &
+          Partial<Pick<QrPago, "descripcion" | "activa" | "created_at" | "updated_at">>,
+        Partial<Pick<QrPago, "nombre" | "descripcion" | "url" | "storage_path" | "activa" | "updated_at">>
       >;
       tarifas: DbTable<
         Tarifa,

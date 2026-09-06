@@ -13,6 +13,7 @@ export type AdminModule =
   | "transacciones"
   | "cancelaciones"
   | "comprobantes"
+  | "qr"
   | "bloqueos"
   | "estado-habitaciones"
   | "notificaciones"
@@ -32,6 +33,7 @@ const permissions: Record<UserRole, AdminModule[]> = {
     "transacciones",
     "cancelaciones",
     "comprobantes",
+    "qr",
     "bloqueos",
     "estado-habitaciones",
     "notificaciones",
@@ -49,6 +51,7 @@ const permissions: Record<UserRole, AdminModule[]> = {
     "transacciones",
     "cancelaciones",
     "comprobantes",
+    "qr",
     "bloqueos",
     "estado-habitaciones",
     "notificaciones",

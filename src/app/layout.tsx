@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { WhatsAppFloatingButton } from "@/components/public/WhatsAppFloatingButton";
 import { Toaster } from "@/components/ui/sonner";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ThemeToggle />
+          <WhatsAppFloatingButton />
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>

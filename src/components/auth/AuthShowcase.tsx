@@ -3,7 +3,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type AuthShowcaseProps = {
@@ -78,10 +84,13 @@ export const AuthShowcase = ({
             Hostal Plaza Camargo
           </p>
           <div className="max-w-2xl space-y-3">
-              <h1 className="auth-showcase-title text-4xl font-semibold leading-[1.05] sm:text-5xl">
-                Tu estadía empieza con una vista tranquila del hostal.
-              </h1>
-            <p className="text-base leading-7 text-[#f6f1e6]/88">{description}</p>
+            <h1 className="auth-showcase-title text-4xl font-semibold leading-[1.05] sm:text-5xl">
+              Bienvedios a hostal plaza y Disfruta de una vista tranquila desde
+              el primer momento.
+            </h1>
+            <p className="text-base leading-7 text-[#f6f1e6]/88">
+              {description}
+            </p>
           </div>
 
           <div className="mx-auto grid w-full items-center gap-6 lg:grid-cols-2 lg:gap-10 xl:gap-14">
@@ -96,7 +105,9 @@ export const AuthShowcase = ({
                   {eyebrow}
                 </p>
                 <CardTitle className="text-3xl text-white">{title}</CardTitle>
-                <CardDescription className="text-base leading-6 text-white/76">{description}</CardDescription>
+                <CardDescription className="text-base leading-6 text-white/76">
+                  {description}
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-6 pt-0">
                 {children}
@@ -114,7 +125,9 @@ export const AuthShowcase = ({
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#102317]/62 via-transparent to-transparent" />
-                <p className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">{photoStrip[0].label}</p>
+                <p className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">
+                  {photoStrip[0].label}
+                </p>
               </div>
 
               <div className="grid grid-rows-2 gap-3">
@@ -134,7 +147,9 @@ export const AuthShowcase = ({
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#102317]/62 via-transparent to-transparent" />
-                    <p className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">{photo.label}</p>
+                    <p className="absolute bottom-3 left-3 right-3 text-sm font-semibold text-white">
+                      {photo.label}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -144,9 +159,15 @@ export const AuthShowcase = ({
       </section>
 
       <div className="mx-auto grid w-full max-w-md grid-cols-3 gap-2 text-center text-xs font-semibold text-white/88">
-        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">Reservas</span>
-        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">Pagos</span>
-        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">Perfil</span>
+        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">
+          Reservas
+        </span>
+        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">
+          Pagos
+        </span>
+        <span className="rounded-full bg-white/12 px-3 py-2 backdrop-blur-md">
+          Perfil
+        </span>
       </div>
     </div>
   </main>

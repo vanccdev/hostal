@@ -76,7 +76,7 @@ export const ClientCancelReservationDialog = ({
                 <p className="font-semibold text-[#18221b] dark:text-zinc-100">Cálculo de cancelación</p>
                 <dl className="grid gap-2 sm:grid-cols-2">
                   <Metric label="Check-in" value={formatDateTime(policy.checkinAt.toISOString())} />
-                  <Metric label="Corte sin retención" value={formatDateTime(policy.cutoffAt.toISOString())} />
+                  <Metric label="Corte reembolso parcial" value={formatDateTime(policy.cutoffAt.toISOString())} />
                   <Metric label="Pagado aprobado" value={formatMoney(paidAmount, currency)} />
                   <Metric label="Monto final hostal" value={formatMoney(policy.retainedAmount, currency)} />
                   <Metric label="Monto no retenido" value={formatMoney(policy.refundAmount, currency)} />

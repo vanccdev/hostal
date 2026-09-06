@@ -6,7 +6,10 @@ type CancellationPolicyInput = {
   paidAmount: number;
   checkinAt: string | null;
   fallbackDate: string;
-  settings: Pick<StaySettings, "checkinTime" | "cancellationRefundHours" | "cancellationRetentionPercent">;
+  settings: Pick<
+    StaySettings,
+    "checkinTime" | "cancellationPartialRefundHours" | "cancellationNoRefundHours" | "cancellationPartialRefundPercent"
+  >;
   now?: Date;
 };
 
@@ -15,6 +18,7 @@ export type CancellationPolicyResult = {
   hoursBeforeStay: number;
   refundAmount: number;
   retainedAmount: number;
+  retentionPercentApplied: number;
   cutoffAt: Date;
   checkinAt: Date;
 };
@@ -42,8 +46,9 @@ export const calculateCancellationPolicy = ({
   const checkinTime = checkinAt
     ? timestampToMs(checkinAt)
     : timestampToMs(`${fallbackDate}T${settings.checkinTime}:00`);
-  const cutoffTime = checkinTime - settings.cancellationRefundHours * 3_600_000;
-  const hoursBeforeStay = Math.max(0, Math.floor((checkinTime - now.getTime()) / 3_600_000));
+  const cutoffTime = checkinTime - settings.cancellationPartialRefundHours * 3_600_000;
+  const hoursUntilCheckin = (checkinTime - now.getTime()) / 3_600_000;
+  const hoursBeforeStay = Math.max(0, Math.floor(hoursUntilCheckin));
 
   if (safePaidAmount <= 0) {
     return {
@@ -51,34 +56,37 @@ export const calculateCancellationPolicy = ({
       hoursBeforeStay,
       refundAmount: 0,
       retainedAmount: 0,
+      retentionPercentApplied: 0,
       cutoffAt: new Date(cutoffTime),
       checkinAt: new Date(checkinTime),
     };
   }
 
-  if (now.getTime() <= cutoffTime) {
+  if (hoursUntilCheckin > settings.cancellationPartialRefundHours) {
+    const refundAmount = money(safePaidAmount * (settings.cancellationPartialRefundPercent / 100));
+    const retainedAmount = money(safePaidAmount - refundAmount);
+
     return {
-      policy: "reembolso_total",
+      policy: "reembolso_parcial",
       hoursBeforeStay,
-      refundAmount: money(safePaidAmount),
-      retainedAmount: 0,
+      refundAmount,
+      retainedAmount,
+      retentionPercentApplied: 100 - settings.cancellationPartialRefundPercent,
       cutoffAt: new Date(cutoffTime),
       checkinAt: new Date(checkinTime),
     };
   }
-
-  const retainedAmount = money(safePaidAmount * (settings.cancellationRetentionPercent / 100));
-  const refundAmount = money(Math.max(0, safePaidAmount - retainedAmount));
 
   return {
-    policy: refundAmount > 0 ? "reembolso_parcial" : "sin_reembolso",
+    policy: "sin_reembolso",
     hoursBeforeStay,
-    refundAmount,
-    retainedAmount,
+    refundAmount: 0,
+    retainedAmount: money(safePaidAmount),
+    retentionPercentApplied: 100,
     cutoffAt: new Date(cutoffTime),
     checkinAt: new Date(checkinTime),
   };
 };
 
-export const cancellationPolicyText = (settings: Pick<StaySettings, "checkinTime" | "cancellationRefundHours" | "cancellationRetentionPercent">) =>
-  `Cancelación hasta ${settings.cancellationRefundHours} horas antes del check-in programado: reembolso total. Después de ese límite el sistema registra como monto final del hostal el ${settings.cancellationRetentionPercent}% del monto pagado.`;
+export const cancellationPolicyText = (settings: Pick<StaySettings, "checkinTime" | "cancellationPartialRefundHours" | "cancellationNoRefundHours" | "cancellationPartialRefundPercent">) =>
+  `Más de ${settings.cancellationPartialRefundHours} horas antes del check-in: reembolso del ${settings.cancellationPartialRefundPercent}% del importe pagado. Entre ${settings.cancellationPartialRefundHours} y ${settings.cancellationNoRefundHours} horas antes: sin reembolso. Menos de ${settings.cancellationNoRefundHours} horas antes o no presentación: sin reembolso.`;

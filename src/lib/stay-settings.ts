@@ -8,8 +8,9 @@ export const staySettingKeys = {
   turnoverMinutes: "reserva_turnover_minutos",
   timezone: "reserva_timezone",
   paymentProofTimeoutMinutes: "reserva_comprobante_espera_minutos",
-  cancellationRefundHours: "cancelacion_reembolso_horas",
-  cancellationRetentionPercent: "cancelacion_retencion_porcentaje",
+  cancellationPartialRefundHours: "cancelacion_reembolso_parcial_horas",
+  cancellationNoRefundHours: "cancelacion_sin_reembolso_horas",
+  cancellationPartialRefundPercent: "cancelacion_reembolso_parcial_porcentaje",
 } as const;
 
 export type StaySettings = {
@@ -18,8 +19,9 @@ export type StaySettings = {
   turnoverMinutes: number;
   timezone: string;
   paymentProofTimeoutMinutes: number;
-  cancellationRefundHours: number;
-  cancellationRetentionPercent: number;
+  cancellationPartialRefundHours: number;
+  cancellationNoRefundHours: number;
+  cancellationPartialRefundPercent: number;
 };
 
 export const defaultStaySettings: StaySettings = {
@@ -28,8 +30,9 @@ export const defaultStaySettings: StaySettings = {
   turnoverMinutes: 120,
   timezone: APP_TIME_ZONE,
   paymentProofTimeoutMinutes: 120,
-  cancellationRefundHours: 12,
-  cancellationRetentionPercent: 20,
+  cancellationPartialRefundHours: 48,
+  cancellationNoRefundHours: 24,
+  cancellationPartialRefundPercent: 20,
 };
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -98,13 +101,17 @@ export const getStaySettings = async (supabase: SupabaseClient<Database>): Promi
       values.get(staySettingKeys.paymentProofTimeoutMinutes),
       defaultStaySettings.paymentProofTimeoutMinutes,
     ),
-    cancellationRefundHours: validHours(
-      values.get(staySettingKeys.cancellationRefundHours),
-      defaultStaySettings.cancellationRefundHours,
+    cancellationPartialRefundHours: validHours(
+      values.get(staySettingKeys.cancellationPartialRefundHours),
+      defaultStaySettings.cancellationPartialRefundHours,
     ),
-    cancellationRetentionPercent: validPercent(
-      values.get(staySettingKeys.cancellationRetentionPercent),
-      defaultStaySettings.cancellationRetentionPercent,
+    cancellationNoRefundHours: validHours(
+      values.get(staySettingKeys.cancellationNoRefundHours),
+      defaultStaySettings.cancellationNoRefundHours,
+    ),
+    cancellationPartialRefundPercent: validPercent(
+      values.get(staySettingKeys.cancellationPartialRefundPercent),
+      defaultStaySettings.cancellationPartialRefundPercent,
     ),
   };
 };
@@ -117,12 +124,10 @@ export const scheduledStayInterval = (fechaIngreso: string, fechaSalida: string,
 });
 
 export const stayPolicyText = (settings: StaySettings) =>
-  `Check-in desde las ${settings.checkinTime}. Check-out hasta las ${settings.checkoutTime}.`;
+  `Check-in desde las ${settings.checkinTime} pm. Check-out hasta las ${settings.checkoutTime} pm.`;
 
 export const cancellationPolicyText = (settings: StaySettings) => {
-  if (settings.cancellationRefundHours <= 0) {
-    return `Cancelación antes del check-in programado: reembolso total. Después de iniciado el hospedaje se retiene el ${settings.cancellationRetentionPercent}% del monto pagado.`;
-  }
+  const retainedPercent = 100 - settings.cancellationPartialRefundPercent;
 
-  return `Cancelación hasta ${settings.cancellationRefundHours} horas antes del check-in programado: reembolso total. Después de ese límite el sistema registra como monto final del hostal el ${settings.cancellationRetentionPercent}% del monto pagado.`;
+  return `Más de ${settings.cancellationPartialRefundHours} horas antes del check-in: reembolso del ${settings.cancellationPartialRefundPercent}% del importe pagado. Entre ${settings.cancellationPartialRefundHours} y ${settings.cancellationNoRefundHours} horas antes: sin reembolso. Menos de ${settings.cancellationNoRefundHours} horas antes o no presentación: sin reembolso. En el primer caso, el hostal retiene el ${retainedPercent}% del importe pagado.`;
 };

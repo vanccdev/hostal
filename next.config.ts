@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/storage/v1/object/public/qr/**",
+      },
+      {
+        protocol: "http",
         hostname: "127.0.0.1",
         port: "8000",
         pathname: "/storage/v1/object/public/habitaciones/**",
@@ -34,6 +40,12 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/public/comprobante/**",
       },
       {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/storage/v1/object/public/qr/**",
+      },
+      {
         protocol: "https",
         hostname: "api.hostalplazacamargo.digital",
         pathname: "/storage/v1/object/public/habitaciones/**",
@@ -42,6 +54,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api.hostalplazacamargo.digital",
         pathname: "/storage/v1/object/public/comprobante/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.hostalplazacamargo.digital",
+        pathname: "/storage/v1/object/public/qr/**",
       },
     ],
   },

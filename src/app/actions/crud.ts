@@ -757,8 +757,9 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
     checkinTime: formValue(formData, "checkinTime"),
     checkoutTime: formValue(formData, "checkoutTime"),
     paymentProofTimeoutMinutes: formValue(formData, "paymentProofTimeoutMinutes"),
-    cancellationRefundHours: formValue(formData, "cancellationRefundHours"),
-    cancellationRetentionPercent: formValue(formData, "cancellationRetentionPercent"),
+    cancellationPartialRefundHours: formValue(formData, "cancellationPartialRefundHours"),
+    cancellationNoRefundHours: formValue(formData, "cancellationNoRefundHours"),
+    cancellationPartialRefundPercent: formValue(formData, "cancellationPartialRefundPercent"),
   });
 
   if (!parsed.success) {
@@ -793,14 +794,19 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
       descripcion: "Minutos de espera para recibir comprobante antes de cancelar automáticamente una reserva pendiente de pago. Usa 0 para desactivar.",
     },
     {
-      clave: staySettingKeys.cancellationRefundHours,
-      valor: String(parsed.data.cancellationRefundHours),
-      descripcion: "Horas antes del check-in programado hasta las que una cancelación de huésped aplica a reembolso total.",
+      clave: staySettingKeys.cancellationPartialRefundHours,
+      valor: String(parsed.data.cancellationPartialRefundHours),
+      descripcion: "Horas mínimas antes del check-in para aplicar el reembolso parcial.",
     },
     {
-      clave: staySettingKeys.cancellationRetentionPercent,
-      valor: String(parsed.data.cancellationRetentionPercent),
-      descripcion: "Porcentaje retenido del monto pagado cuando la cancelación ocurre después del corte de reembolso total.",
+      clave: staySettingKeys.cancellationNoRefundHours,
+      valor: String(parsed.data.cancellationNoRefundHours),
+      descripcion: "Horas antes del check-in por debajo de las cuales no se realiza reembolso.",
+    },
+    {
+      clave: staySettingKeys.cancellationPartialRefundPercent,
+      valor: String(parsed.data.cancellationPartialRefundPercent),
+      descripcion: "Porcentaje del importe pagado que se reembolsa con suficiente anticipación.",
     },
   ];
 
@@ -828,8 +834,9 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
       checkin_time: parsed.data.checkinTime,
       checkout_time: parsed.data.checkoutTime,
       payment_proof_timeout_minutes: parsed.data.paymentProofTimeoutMinutes,
-      cancellation_refund_hours: parsed.data.cancellationRefundHours,
-      cancellation_retention_percent: parsed.data.cancellationRetentionPercent,
+      cancellation_partial_refund_hours: parsed.data.cancellationPartialRefundHours,
+      cancellation_no_refund_hours: parsed.data.cancellationNoRefundHours,
+      cancellation_partial_refund_percent: parsed.data.cancellationPartialRefundPercent,
     },
   });
 

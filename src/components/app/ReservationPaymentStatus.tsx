@@ -3,7 +3,7 @@
 import { type DragEvent, type FormEvent, useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Clock, FileCheck2, FileText, FileUp, ImagePlus, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import { Clock, FileCheck2, FileText, FileUp, ImagePlus, QrCode, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 import { uploadReservationProofAction } from "@/app/actions/comprobantes";
 import { initialActionState } from "@/app/actions/types";
@@ -28,6 +28,7 @@ type ReservationPaymentStatusProps = {
   proofUrl?: string | null;
   userId: string;
   paymentVerificationStatus?: EstadoVerificacionPago | null;
+  qrPayment?: { nombre: string; descripcion: string | null; url: string } | null;
 };
 
 type ProofPreview = {
@@ -139,6 +140,7 @@ export const ReservationPaymentStatus = ({
   proofUrl,
   userId,
   paymentVerificationStatus = null,
+  qrPayment = null,
 }: ReservationPaymentStatusProps) => {
   const router = useRouter();
   const [state, action, pending] = useActionState(uploadReservationProofAction, initialActionState);
@@ -490,13 +492,35 @@ export const ReservationPaymentStatus = ({
       ) : null}
 
       {currentEstado === "pendiente_pago" && !currentHasProof ? (
-        <div className="space-y-4">
-          {currentPaymentStatus === "rechazada" ? (
+        <div className={qrPayment ? "grid gap-6 lg:grid-cols-2 lg:items-start" : "space-y-4"}>
+          {qrPayment ? (
+            <div className="rounded-2xl border border-[#c7a35a]/60 bg-[#fffaf0] p-4 dark:bg-[#242218] sm:p-5">
+              <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border bg-white p-3 shadow-sm">
+                <Image src={qrPayment.url} alt={`Código QR de pago: ${qrPayment.nombre}`} fill sizes="(min-width: 1024px) 420px, 90vw" className="object-contain p-3" unoptimized />
+              </div>
+              <div className="mt-4 flex items-start gap-3">
+                <QrCode className="mt-0.5 h-5 w-5 shrink-0 text-[#a9822f]" aria-hidden="true" />
+                <div className="min-w-0 space-y-2">
+                  <p className="font-semibold text-[#18221b] dark:text-zinc-100">Paga con QR</p>
+                  <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Escanea el código desde la aplicación de tu banco y completa el pago.</p>
+                  <p className="text-sm font-semibold text-[#6d5728] dark:text-[#e8d59a]">{qrPayment.nombre}</p>
+                  {qrPayment.descripcion ? <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">{qrPayment.descripcion}</p> : null}
+                  <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Después, sube el comprobante generado en la columna de al lado.</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">Subir comprobante de pago</h3>
+              <p className="mt-1 text-sm text-[#66736a] dark:text-[#b7c0b4]">Adjunta el comprobante que te generó la aplicación de tu banco.</p>
+            </div>
+            {currentPaymentStatus === "rechazada" ? (
             <div className="flex items-start gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
               <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
               <p>{lastMessage || paymentStatusMessage.rechazada}</p>
             </div>
-          ) : null}
+            ) : null}
           {timeoutMinutes > 0 ? (
             <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
               <Clock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -510,9 +534,9 @@ export const ReservationPaymentStatus = ({
             <div className="rounded-xl bg-[#f6f1e6] p-4 text-sm text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
               La cancelación automática por comprobante está desactivada.
             </div>
-          )}
+            )}
 
-          <form action={action} className="space-y-3" onSubmit={handleProofSubmit}>
+            <form action={action} className="space-y-3" onSubmit={handleProofSubmit}>
             <input type="hidden" name="reservaId" value={reservaId} />
             <div className="space-y-2">
               <Label htmlFor="comprobante">Comprobante PDF o imagen</Label>
@@ -600,7 +624,8 @@ export const ReservationPaymentStatus = ({
               <FileUp className="h-4 w-4" aria-hidden="true" />
               {pending ? "Subiendo..." : expired ? "Tiempo agotado" : "Subir comprobante"}
             </Button>
-          </form>
+            </form>
+          </div>
         </div>
       ) : null}
     </div>
