@@ -76,19 +76,24 @@ docker exec "$DB_CONTAINER" rm -f "/tmp/$RESTORE_LIST"
 if [ -n "$SOURCE_API_URL" ] && [ -n "$TARGET_API_URL" ] && [ "$SOURCE_API_URL" != "$TARGET_API_URL" ]; then
   docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d postgres \
     --set=source_api="$SOURCE_API_URL" --set=target_api="$TARGET_API_URL" <<'SQL'
+SELECT set_config('hostal_backup.source_api', :'source_api', false);
+SELECT set_config('hostal_backup.target_api', :'target_api', false);
 DO $$
+DECLARE
+  source_api text := current_setting('hostal_backup.source_api');
+  target_api text := current_setting('hostal_backup.target_api');
 BEGIN
   IF to_regclass('public.img_habitaciones') IS NOT NULL THEN
-    EXECUTE format('UPDATE public.img_habitaciones SET url = replace(url, %L, %L)', :'source_api', :'target_api');
+    EXECUTE format('UPDATE public.img_habitaciones SET url = replace(url, %L, %L)', source_api, target_api);
   END IF;
   IF to_regclass('public.transacciones') IS NOT NULL THEN
-    EXECUTE format('UPDATE public.transacciones SET comprobante_url = replace(comprobante_url, %L, %L) WHERE comprobante_url IS NOT NULL', :'source_api', :'target_api');
+    EXECUTE format('UPDATE public.transacciones SET comprobante_url = replace(comprobante_url, %L, %L) WHERE comprobante_url IS NOT NULL', source_api, target_api);
   END IF;
   IF to_regclass('public.comprobantes') IS NOT NULL THEN
-    EXECUTE format('UPDATE public.comprobantes SET pdf_url = replace(pdf_url, %L, %L) WHERE pdf_url IS NOT NULL', :'source_api', :'target_api');
+    EXECUTE format('UPDATE public.comprobantes SET pdf_url = replace(pdf_url, %L, %L) WHERE pdf_url IS NOT NULL', source_api, target_api);
   END IF;
   IF to_regclass('public.qr_pagos') IS NOT NULL THEN
-    EXECUTE format('UPDATE public.qr_pagos SET url = replace(url, %L, %L)', :'source_api', :'target_api');
+    EXECUTE format('UPDATE public.qr_pagos SET url = replace(url, %L, %L)', source_api, target_api);
   END IF;
 END $$;
 SQL

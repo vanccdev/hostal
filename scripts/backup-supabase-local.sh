@@ -16,10 +16,19 @@ prod_value() {
   fi
 }
 
-SOURCE_API_URL="${SOURCE_SUPABASE_API_URL:-${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:8000}}"
-PRODUCTION_API_URL="${PRODUCTION_SUPABASE_API_URL:-${URL_SUPABASE_API:-$(prod_value URL_SUPABASE_API)}}"
-PRODUCTION_STUDIO_URL="${PRODUCTION_SUPABASE_STUDIO_URL:-${URL_SUPABASE_STUDIO:-$(prod_value URL_SUPABASE_STUDIO)}}"
-PRODUCTION_NEXTJS_URL="${PRODUCTION_NEXTJS_URL:-${URL_SUPABASE_NEXTJS:-$(prod_value URL_SUPABASE_NEXTJS)}}"
+normalize_url() {
+  local value="${1:-}"
+  value="${value%/}"
+  if [ -n "$value" ] && [[ "$value" != http://* && "$value" != https://* ]]; then
+    value="https://$value"
+  fi
+  printf '%s' "$value"
+}
+
+SOURCE_API_URL="$(normalize_url "${SOURCE_SUPABASE_API_URL:-${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:8000}}")"
+PRODUCTION_API_URL="$(normalize_url "${PRODUCTION_SUPABASE_API_URL:-${URL_SUPABASE_API:-$(prod_value URL_SUPABASE_API)}}")"
+PRODUCTION_STUDIO_URL="$(normalize_url "${PRODUCTION_SUPABASE_STUDIO_URL:-${URL_SUPABASE_STUDIO:-$(prod_value URL_SUPABASE_STUDIO)}}")"
+PRODUCTION_NEXTJS_URL="$(normalize_url "${PRODUCTION_NEXTJS_URL:-${URL_SUPABASE_NEXTJS:-$(prod_value URL_SUPABASE_NEXTJS)}}")"
 
 storage_dir_from_container() {
   docker inspect "$STORAGE_CONTAINER" \

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { ArrowRight, ExternalLink, LogIn, MapPin } from "lucide-react";
+import { ArrowRight, CarFront, Clock3, ConciergeBell, ExternalLink, LogIn, MapPin, PawPrint, Phone, UserRound } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HostalLocationMap } from "@/components/public/HostalLocationMap";
 import { HostalPhotoShowcase } from "@/components/public/HostalPhotoShowcase";
@@ -93,6 +93,13 @@ export default async function Home() {
       : currentUser?.profile && isStaffRole(currentUser.profile.rol)
         ? "/admin/reservas/nueva"
         : "/login?next=/app";
+  const formatHotelTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "p. m." : "a. m.";
+    const displayHours = hours % 12 || 12;
+
+    return `${displayHours}:${String(minutes).padStart(2, "0")} ${period}`;
+  };
 
   return (
     <main className="min-h-screen bg-[#f6f1e6] text-[#18221b] dark:bg-[#101a14] dark:text-zinc-100">
@@ -181,6 +188,36 @@ export default async function Home() {
         continueHref={continueHref}
         staySettings={staySettings}
       />
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <div className="mb-6 space-y-3">
+          <BadgeLike>Información del hotel</BadgeLike>
+          <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">Todo lo que necesitas saber</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <HotelInfoCard icon={Clock3} title="Horarios">
+            <p>Check-in desde las <strong>{formatHotelTime(staySettings.checkinTime)}</strong>.</p>
+            <p>Check-out hasta las <strong>{formatHotelTime(staySettings.checkoutTime)}</strong>.</p>
+          </HotelInfoCard>
+          <HotelInfoCard icon={UserRound} title="Recepción y registro">
+            <p>Recepción disponible para atenderte durante tu estadía.</p>
+            <p>Edad mínima para el registro de llegada: <strong>+18</strong>.</p>
+          </HotelInfoCard>
+          <HotelInfoCard icon={CarFront} title="Estacionamiento">
+            <p>Estacionamiento gratis en el hotel.</p>
+            <p>Estacionamiento largo.</p>
+            <p>Personal para estacionar gratis.</p>
+          </HotelInfoCard>
+          <HotelInfoCard icon={PawPrint} title="Política de mascotas">
+            <p>Se aceptan mascotas.</p>
+            <p>Peso máximo: <strong>20 kilogramos</strong>.</p>
+            <p>Número máximo por habitación: <strong>1</strong>.</p>
+          </HotelInfoCard>
+          <div className="flex items-start gap-3 rounded-2xl border border-[#d8d4c8] bg-[#f4ecd8] p-5 text-sm text-[#6d5728] dark:border-[#314237] dark:bg-[#2b2618] dark:text-[#e8d59a] md:col-span-2 lg:col-span-2">
+            <ConciergeBell className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+            <p>Si necesitas ayuda durante tu llegada, nuestro equipo de recepción estará listo para ayudarte.</p>
+          </div>
+        </div>
+      </section>
       <section
         id="ubicacion"
         className="mx-auto grid max-w-7xl scroll-mt-20 gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.9fr_1.4fr] lg:px-8 lg:py-14"
@@ -204,9 +241,21 @@ export default async function Home() {
             <p className="text-[#66736a] dark:text-[#b7c0b4]">
               Camargo, Chuquisaca
             </p>
-            <p className="font-mono text-xs text-[#66736a] dark:text-[#b7c0b4]">
-              -20.641224228393003, -65.20948944626011
-            </p>
+            <div className="mt-4 border-t border-[#d8d4c8] pt-4 dark:border-[#314237]">
+              <div className="space-y-3">
+                <p className="flex items-center gap-2 text-[#66736a] dark:text-[#b7c0b4]">
+                  <MapPin className="h-4 w-4 shrink-0 text-[#c7a35a]" aria-hidden="true" />
+                  <span>CALLE GRAU 13</span>
+                </p>
+                <a
+                  href="tel:+59175453686"
+                  className="flex items-center gap-2 text-[#66736a] transition-colors hover:text-[#18221b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:text-[#b7c0b4] dark:hover:text-zinc-100"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-[#c7a35a]" aria-hidden="true" />
+                  <span>+591 75453686</span>
+                </a>
+              </div>
+            </div>
             <Button
               asChild
               variant="outline"
@@ -233,4 +282,22 @@ const BadgeLike = ({ children }: { children: React.ReactNode }) => (
   <p className="inline-flex rounded-full bg-[#f4ecd8] px-3 py-1 text-sm font-semibold text-[#6d5728] dark:bg-[#2b2618] dark:text-[#e8d59a]">
     {children}
   </p>
+);
+
+const HotelInfoCard = ({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div className="flex items-start gap-3 rounded-2xl border border-[#d8d4c8] bg-white p-5 text-sm text-[#66736a] shadow-[0_8px_28px_rgba(0,0,0,0.06)] dark:border-[#314237] dark:bg-[#18251d] dark:text-[#b7c0b4]">
+    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#c7a35a]" aria-hidden="true" />
+    <div className="space-y-2">
+      <h3 className="font-semibold text-[#18221b] dark:text-zinc-100">{title}</h3>
+      <div className="space-y-1">{children}</div>
+    </div>
+  </div>
 );

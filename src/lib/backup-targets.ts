@@ -14,10 +14,16 @@ const readEnvFileValue = (key: string) => {
   }
 };
 
+export const normalizeBackupUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed.replace(/\/$/, "") : `https://${trimmed.replace(/\/$/, "")}`;
+};
+
 export const getProductionBackupDefaults = () => ({
-  apiUrl: serverEnv.productionSupabaseApiUrl() ?? readEnvFileValue("URL_SUPABASE_API") ?? "",
-  studioUrl: serverEnv.productionSupabaseStudioUrl() ?? readEnvFileValue("URL_SUPABASE_STUDIO") ?? "",
-  nextjsUrl: serverEnv.productionNextjsUrl() ?? readEnvFileValue("URL_SUPABASE_NEXTJS") ?? "",
+  apiUrl: normalizeBackupUrl(serverEnv.productionSupabaseApiUrl() ?? readEnvFileValue("URL_SUPABASE_API") ?? ""),
+  studioUrl: normalizeBackupUrl(serverEnv.productionSupabaseStudioUrl() ?? readEnvFileValue("URL_SUPABASE_STUDIO") ?? ""),
+  nextjsUrl: normalizeBackupUrl(serverEnv.productionNextjsUrl() ?? readEnvFileValue("URL_SUPABASE_NEXTJS") ?? ""),
 });
 
-export const getLocalBackupDefaults = () => ({ apiUrl: publicEnv.supabaseUrl() });
+export const getLocalBackupDefaults = () => ({ apiUrl: normalizeBackupUrl(publicEnv.supabaseUrl()) });
