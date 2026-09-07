@@ -2,31 +2,30 @@ import {
   AlertTriangle,
   Archive,
   CheckCircle2,
-  DatabaseBackup,
   FileArchive,
   HardDriveDownload,
-  ImageDown,
   KeyRound,
   Server,
   Terminal,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
+import { getLocalBackupDefaults, getProductionBackupDefaults } from "@/lib/backup-targets";
+import { BackupTargetSelector } from "@/components/admin/BackupTargetSelector";
 
 const migrationSteps = [
   {
     title: "Crear backup completo donde corre Supabase",
     description:
       "Ejecuta el script en la PC o VPS donde estan los contenedores Docker de Supabase, no necesariamente donde abres el navegador.",
-    command: "cd /ruta/del/proyecto/hostal\ndocker ps\nscripts/backup-supabase-local.sh",
+    command: "cd /ruta/del/proyecto/hostal\ndocker ps\nBACKUP_TARGET=both scripts/backup-supabase-local.sh",
   },
   {
     title: "Empaquetar el backup para copiarlo",
-    description: "Reemplaza la carpeta por la que genero el script, por ejemplo backups/20260717T142233Z.",
-    command: "tar -czf hostal-backup.tar.gz backups/YYYYMMDDTHHMMSSZ",
+    description: "El script crea una carpeta local y/o production dentro de backups.",
+    command: "tar -czf hostal-backup.tar.gz backups/local/YYYYMMDDTHHMMSSZ backups/production/YYYYMMDDTHHMMSSZ",
   },
   {
     title: "Copiar proyecto, backup y secretos",
@@ -90,6 +89,8 @@ const executionPlaces = [
 
 export default async function BackupsPage() {
   await requireAdminModule("backups");
+  const productionDefaults = getProductionBackupDefaults();
+  const localDefaults = getLocalBackupDefaults();
 
   return (
     <section className="space-y-6 pb-8">
@@ -102,10 +103,9 @@ export default async function BackupsPage() {
 
       <Alert>
         <AlertTriangle className="mb-2 h-4 w-4 text-[#9b6b12]" aria-hidden="true" />
-        <AlertTitle>Hay dos tipos de backup</AlertTitle>
-        <AlertDescription>
-          Los botones web sirven para una descarga operativa de tablas publicas e imagenes. Para clonar Supabase completo
-          con Auth, policies, metadata, buckets y archivos, usa los scripts de terminal.
+          <AlertTitle>Elige el destino del backup</AlertTitle>
+          <AlertDescription>
+          Puedes generar una versión local, de producción o ambas. En producción se reemplazan las URLs del API local por el dominio indicado antes de descargar.
         </AlertDescription>
       </Alert>
 
@@ -122,12 +122,7 @@ export default async function BackupsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button asChild>
-              <a href="/admin/backups/database" download>
-                <DatabaseBackup className="h-4 w-4" aria-hidden="true" />
-                Descargar JSON
-              </a>
-            </Button>
+            <BackupTargetSelector kind="database" productionDefaults={productionDefaults} localApiUrl={localDefaults.apiUrl} />
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
               Util para revisar o guardar datos de la app. No lo uses como unico respaldo para migrar de servidor.
             </p>
@@ -145,12 +140,7 @@ export default async function BackupsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button asChild variant="outline">
-              <a href="/admin/backups/imagenes" download>
-                <ImageDown className="h-4 w-4" aria-hidden="true" />
-                Descargar TAR
-              </a>
-            </Button>
+            <BackupTargetSelector kind="imagenes" productionDefaults={productionDefaults} localApiUrl={localDefaults.apiUrl} />
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
               Util para copiar solo las fotos del bucket habitaciones. El backup completo incluye todo Storage.
             </p>
@@ -168,12 +158,7 @@ export default async function BackupsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button asChild variant="outline">
-              <a href="/admin/backups/comprobantes" download>
-                <FileArchive className="h-4 w-4" aria-hidden="true" />
-                Descargar TAR
-              </a>
-            </Button>
+            <BackupTargetSelector kind="comprobantes" productionDefaults={productionDefaults} localApiUrl={localDefaults.apiUrl} />
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
               Util para guardar comprobantes sin descargar todo Supabase. El backup completo tambien incluye este bucket.
             </p>

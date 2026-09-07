@@ -62,9 +62,21 @@ export const backupFilename = (prefix: string, extension: string) => {
 
 export const contentDisposition = (filename: string) => `attachment; filename="${filename}"`;
 
-export const createDatabaseBackup = async (actorId: string) => {
+type BackupTargetOptions = { target?: "local" | "production"; apiUrl?: string; studioUrl?: string; nextjsUrl?: string };
+
+const rewriteStoredUrls = (row: unknown, sourceApiUrl: string, targetApiUrl: string) => {
+  if (!row || typeof row !== "object" || sourceApiUrl === targetApiUrl) return row;
+  const copy = { ...(row as Record<string, unknown>) };
+  for (const key of ["url", "pdf_url", "comprobante_url"]) {
+    if (typeof copy[key] === "string") copy[key] = copy[key].replaceAll(sourceApiUrl, targetApiUrl);
+  }
+  return copy;
+};
+
+export const createDatabaseBackup = async (actorId: string, options: BackupTargetOptions = {}) => {
   const supabaseUrl = publicEnv.supabaseUrl();
   const serviceRoleKey = serverEnv.supabaseServiceRoleKey();
+  const targetApiUrl = options.apiUrl?.trim() || supabaseUrl;
   const tables: Record<string, unknown[]> = {};
 
   for (const table of databaseTables) {
@@ -80,13 +92,16 @@ export const createDatabaseBackup = async (actorId: string) => {
       throw new Error(`No se pudo exportar ${table}: ${await response.text()}`);
     }
 
-    tables[table] = (await response.json()) as unknown[];
+    const rows = (await response.json()) as unknown[];
+    tables[table] = rows.map((row) => rewriteStoredUrls(row, supabaseUrl, targetApiUrl));
   }
 
   return {
     generated_at: new Date().toISOString(),
     generated_by: actorId,
     scope: "public",
+    target: options.target ?? "local",
+    domains: { apiUrl: targetApiUrl, studioUrl: options.studioUrl ?? null, nextjsUrl: options.nextjsUrl ?? null },
     tables,
   };
 };

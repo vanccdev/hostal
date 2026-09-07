@@ -40,6 +40,16 @@ if [ ! -f "$BACKUP_DIR/storage.tar" ]; then
   exit 1
 fi
 
+read_manifest_value() {
+  local key="$1"
+  if [ -f "$BACKUP_DIR/manifest.txt" ]; then
+    sed -n "s/^${key}=//p" "$BACKUP_DIR/manifest.txt" | head -n 1
+  fi
+}
+
+SOURCE_API_URL="${SOURCE_SUPABASE_API_URL:-$(read_manifest_value source_api_url)}"
+TARGET_API_URL="${TARGET_SUPABASE_API_URL:-$(read_manifest_value target_api_url)}"
+
 docker cp "$BACKUP_DIR/$DB_DUMP" "$DB_CONTAINER:/tmp/$DB_DUMP"
 
 docker exec "$DB_CONTAINER" pg_restore -l "/tmp/$DB_DUMP" \
@@ -63,6 +73,27 @@ docker exec "$DB_CONTAINER" pg_restore \
 docker exec "$DB_CONTAINER" rm -f "/tmp/$DB_DUMP"
 docker exec "$DB_CONTAINER" rm -f "/tmp/$RESTORE_LIST"
 
+if [ -n "$SOURCE_API_URL" ] && [ -n "$TARGET_API_URL" ] && [ "$SOURCE_API_URL" != "$TARGET_API_URL" ]; then
+  docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d postgres \
+    --set=source_api="$SOURCE_API_URL" --set=target_api="$TARGET_API_URL" <<'SQL'
+DO $$
+BEGIN
+  IF to_regclass('public.img_habitaciones') IS NOT NULL THEN
+    EXECUTE format('UPDATE public.img_habitaciones SET url = replace(url, %L, %L)', :'source_api', :'target_api');
+  END IF;
+  IF to_regclass('public.transacciones') IS NOT NULL THEN
+    EXECUTE format('UPDATE public.transacciones SET comprobante_url = replace(comprobante_url, %L, %L) WHERE comprobante_url IS NOT NULL', :'source_api', :'target_api');
+  END IF;
+  IF to_regclass('public.comprobantes') IS NOT NULL THEN
+    EXECUTE format('UPDATE public.comprobantes SET pdf_url = replace(pdf_url, %L, %L) WHERE pdf_url IS NOT NULL', :'source_api', :'target_api');
+  END IF;
+  IF to_regclass('public.qr_pagos') IS NOT NULL THEN
+    EXECUTE format('UPDATE public.qr_pagos SET url = replace(url, %L, %L)', :'source_api', :'target_api');
+  END IF;
+END $$;
+SQL
+fi
+
 docker cp "$BACKUP_DIR/storage.tar" "$STORAGE_CONTAINER:/tmp/storage.tar"
 docker exec "$STORAGE_CONTAINER" sh -lc '
   find /var/lib/storage -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
@@ -79,7 +110,7 @@ const storageRoot = "/var/lib/storage";
 let updated = 0;
 
 const mimeForObject = (filePath) => {
-  const objectFilename = path.basename(path.dirname(filePath)).toLowerCase();
+  const objectFilename = path.basename(filePath).toLowerCase();
 
   if (objectFilename.endsWith(".jpg") || objectFilename.endsWith(".jpeg")) {
     return "image/jpeg";
