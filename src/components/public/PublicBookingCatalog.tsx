@@ -266,7 +266,7 @@ export const PublicBookingCatalog = ({
 
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-2xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones</h2>
+          <h2 className="text-2xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones en Camargo, Bolivia</h2>
           <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
             Revisa fotos, tarifas y disponibilidad antes de iniciar sesión.
           </p>

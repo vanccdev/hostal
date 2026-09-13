@@ -93,7 +93,7 @@ export const HostalPhotoShowcase = () => (
         </p>
         <div className="space-y-2">
           <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">
-            Espacios para descansar, compartir y descubrir Camargo.
+            Conoce Hostal Plaza y sus espacios en Camargo.
           </h2>
           <p className="max-w-2xl text-base leading-7 text-[#66736a] dark:text-[#b7c0b4]">
             Más que una habitación: ambientes interiores con carácter, desayuno, patio y lugares cercanos para visitar durante tu estadía.

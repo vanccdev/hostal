@@ -18,6 +18,15 @@ export const metadata: Metadata = {
   creator: siteName,
   publisher: siteName,
   keywords: [
+    "hospedaje en Bolivia",
+    "hospedaje Bolivia",
+    "alojamiento en Bolivia",
+    "alojamiento turístico en Bolivia",
+    "hotel en Bolivia",
+    "hostal en Bolivia",
+    "hostales en Bolivia",
+    "habitaciones en Bolivia",
+    "reservar alojamiento en Bolivia",
     "hostal en Camargo",
     "hotel en Camargo",
     "alojamiento en Camargo",
@@ -36,7 +45,7 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/icono.jpg",
+        url: "/favicons.ico",
         width: 2048,
         height: 2048,
         alt: "Logo de Hostal Plaza Camargo",
@@ -47,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: siteName,
     description: siteDescription,
-    images: ["/icono.jpg"],
+    images: ["/favicons.ico"],
   },
   robots: {
     index: true,

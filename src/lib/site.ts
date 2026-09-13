@@ -5,4 +5,4 @@ export const siteUrl = new URL(
 export const siteName = "Hostal Plaza Camargo";
 
 export const siteDescription =
-  "Reserva tu habitación en Hostal Plaza, en el centro de Camargo, Chuquisaca. Consulta fotos, tarifas y disponibilidad en línea.";
+  "Hospedaje y alojamiento en Bolivia con habitaciones cómodas, estacionamiento y atención en el centro de Camargo, Chuquisaca. Consulta tarifas y reserva.";

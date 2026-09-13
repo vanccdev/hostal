@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
+import type { Metadata } from "next";
 import { ArrowRight, CarFront, Clock3, ConciergeBell, ExternalLink, LogIn, MapPin, PawPrint, Phone, UserRound } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HostalLocationMap } from "@/components/public/HostalLocationMap";
@@ -14,13 +15,52 @@ import { getStaySettings } from "@/lib/stay-settings";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 
+export const metadata: Metadata = {
+  title: "Hospedaje en Bolivia | Hostal Plaza Camargo",
+  description:
+    "Encuentra hospedaje, hotel y alojamiento en Bolivia en Hostal Plaza, ubicado en el centro de Camargo, Chuquisaca. Consulta habitaciones, tarifas y reserva en línea.",
+  keywords: [
+    "hospedaje en Bolivia",
+    "hospedaje Bolivia",
+    "alojamiento en Bolivia",
+    "hotel en Bolivia",
+    "habitaciones en Bolivia",
+    "reservar hospedaje en Bolivia",
+    "reservar alojamiento en Bolivia",
+    "hostal en Bolivia",
+    "hostales en Bolivia",
+    "hostal en Camargo Bolivia",
+    "hospedaje en Camargo",
+    "alojamiento en Camargo",
+    "hotel en Camargo",
+    "habitaciones en Camargo",
+    "alojamiento en Chuquisaca",
+    "reservar habitación en Camargo",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Hospedaje en Bolivia | Hostal Plaza Camargo",
+    description:
+      "Hostal Plaza ofrece hospedaje, habitaciones y reservas en Camargo, Chuquisaca. Planifica tu estadía en Bolivia y consulta disponibilidad en línea.",
+    url: "/",
+    images: [
+      {
+        url: "/favicons.ico",
+        width: 256,
+        height: 256,
+        alt: "Hostal Plaza Camargo",
+      },
+    ],
+  },
+};
+
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "Hotel",
   name: siteName,
   description: siteDescription,
   url: siteUrl.toString(),
-  image: new URL("/icono.jpg", siteUrl).toString(),
+  image: new URL("/favicons.ico", siteUrl).toString(),
   address: {
     "@type": "PostalAddress",
     addressLocality: "Camargo",
@@ -141,7 +181,7 @@ export default async function Home() {
           <BadgeLike>Reservas online</BadgeLike>
           <div className="space-y-4">
             <h1 className="max-w-3xl text-4xl font-semibold tracking-normal sm:text-5xl">
-              Encuentra tu habitación y reserva cuando estés listo.
+              Hospedaje en Bolivia: habitaciones y reservas en Camargo
             </h1>
             <p className="max-w-2xl text-base leading-7 text-[#66736a] dark:text-[#b7c0b4]">
               Explora fotos, tarifas y disponibilidad sin iniciar sesión. Te
@@ -191,7 +231,7 @@ export default async function Home() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div className="mb-6 space-y-3">
           <BadgeLike>Información del hotel</BadgeLike>
-          <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">Todo lo que necesitas saber</h2>
+          <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">Servicios y comodidades del hostal</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <HotelInfoCard icon={Clock3} title="Horarios">
@@ -226,7 +266,7 @@ export default async function Home() {
           <BadgeLike>Ubicación</BadgeLike>
           <div className="space-y-3">
             <h2 className="text-3xl font-semibold tracking-normal text-[#18221b] dark:text-zinc-100">
-              Estamos en Plaza, Camargo.
+              Hostal en el centro de Camargo, Chuquisaca
             </h2>
             <p className="max-w-xl text-base leading-7 text-[#66736a] dark:text-[#b7c0b4]">
               Encuéntranos cerca del centro de Camargo para llegar fácil antes
