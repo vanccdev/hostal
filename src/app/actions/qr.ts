@@ -41,7 +41,8 @@ const qrDateSuffix = (date = new Date()) => {
     second: "2-digit",
     hour12: false,
   }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "00";
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
 
   return `${value("year")}-${value("month")}-${value("day")}-${value("hour")}-${value("minute")}-${value("second")}-${String(date.getMilliseconds()).padStart(3, "0")}`;
 };
@@ -52,11 +53,17 @@ const revalidateQrPaths = () => {
   revalidatePath("/app/reservas");
 };
 
-export const uploadQrPaymentAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
+export const uploadQrPaymentAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para gestionar los QR de pago." };
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar los QR de pago.",
+    };
   }
 
   const file = formData.get("imagen");
@@ -68,15 +75,24 @@ export const uploadQrPaymentAction = async (_state: ActionState, formData: FormD
   }
 
   if (!allowedQrMimeTypes.has(file.type)) {
-    return { ok: false, errors: { imagen: ["Solo se permiten imágenes JPG, PNG, WEBP o GIF."] } };
+    return {
+      ok: false,
+      errors: { imagen: ["Solo se permiten imágenes JPG, PNG, WEBP."] },
+    };
   }
 
   if (file.size > maxQrImageSize) {
-    return { ok: false, errors: { imagen: ["La imagen QR no puede superar 5 MB."] } };
+    return {
+      ok: false,
+      errors: { imagen: ["La imagen QR no puede superar 5 MB."] },
+    };
   }
 
   if (nombre.length < 2 || nombre.length > 100) {
-    return { ok: false, errors: { nombre: ["El nombre debe tener entre 2 y 100 caracteres."] } };
+    return {
+      ok: false,
+      errors: { nombre: ["El nombre debe tener entre 2 y 100 caracteres."] },
+    };
   }
 
   const admin = createSupabaseAdminClient();
@@ -91,17 +107,21 @@ export const uploadQrPaymentAction = async (_state: ActionState, formData: FormD
 
   const extension = allowedQrMimeTypes.get(file.type) ?? "png";
   const storagePath = `pagos/${slugifyQrName(nombre)}-${qrDateSuffix()}.${extension}`;
-  const { error: uploadError } = await admin.storage.from(QR_PAYMENT_BUCKET).upload(storagePath, file, {
-    cacheControl: "3600",
-    contentType: file.type,
-    upsert: false,
-  });
+  const { error: uploadError } = await admin.storage
+    .from(QR_PAYMENT_BUCKET)
+    .upload(storagePath, file, {
+      cacheControl: "3600",
+      contentType: file.type,
+      upsert: false,
+    });
 
   if (uploadError) {
     return { ok: false, message: uploadError.message };
   }
 
-  const { data: publicUrlData } = admin.storage.from(QR_PAYMENT_BUCKET).getPublicUrl(storagePath);
+  const { data: publicUrlData } = admin.storage
+    .from(QR_PAYMENT_BUCKET)
+    .getPublicUrl(storagePath);
   const { error: insertError } = await admin.from("qr_pagos").insert({
     nombre,
     descripcion: descripcion || null,
@@ -126,24 +146,41 @@ export const uploadQrPaymentAction = async (_state: ActionState, formData: FormD
     payload: { nombre, activa: count === 0 },
   });
 
-  return { ok: true, message: count === 0 ? "QR agregado y activado." : "QR agregado. Actívalo cuando quieras usarlo." };
+  return {
+    ok: true,
+    message:
+      count === 0
+        ? "QR agregado y activado."
+        : "QR agregado. Actívalo cuando quieras usarlo.",
+  };
 };
 
-export const activateQrPaymentAction = async (qrId: string): Promise<ActionState> => {
+export const activateQrPaymentAction = async (
+  qrId: string,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para gestionar los QR de pago." };
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar los QR de pago.",
+    };
   }
 
   const admin = createSupabaseAdminClient();
-  const { error: deactivateError } = await admin.from("qr_pagos").update({ activa: false }).eq("activa", true);
+  const { error: deactivateError } = await admin
+    .from("qr_pagos")
+    .update({ activa: false })
+    .eq("activa", true);
 
   if (deactivateError) {
     return { ok: false, message: deactivateError.message };
   }
 
-  const { error } = await admin.from("qr_pagos").update({ activa: true }).eq("id", qrId);
+  const { error } = await admin
+    .from("qr_pagos")
+    .update({ activa: true })
+    .eq("id", qrId);
 
   if (error) {
     return { ok: false, message: error.message };
@@ -153,27 +190,41 @@ export const activateQrPaymentAction = async (qrId: string): Promise<ActionState
   return { ok: true, message: "QR activo actualizado." };
 };
 
-export const deleteQrPaymentAction = async (qrId: string): Promise<ActionState> => {
+export const deleteQrPaymentAction = async (
+  qrId: string,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para gestionar los QR de pago." };
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar los QR de pago.",
+    };
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: qr, error: qrError } = await admin.from("qr_pagos").select("id,storage_path,nombre").eq("id", qrId).maybeSingle();
+  const { data: qr, error: qrError } = await admin
+    .from("qr_pagos")
+    .select("id,storage_path,nombre")
+    .eq("id", qrId)
+    .maybeSingle();
 
   if (qrError || !qr) {
     return { ok: false, message: qrError?.message ?? "El QR ya no existe." };
   }
 
-  const { error: storageError } = await admin.storage.from(QR_PAYMENT_BUCKET).remove([qr.storage_path]);
+  const { error: storageError } = await admin.storage
+    .from(QR_PAYMENT_BUCKET)
+    .remove([qr.storage_path]);
 
   if (storageError) {
     return { ok: false, message: storageError.message };
   }
 
-  const { error: deleteError } = await admin.from("qr_pagos").delete().eq("id", qr.id);
+  const { error: deleteError } = await admin
+    .from("qr_pagos")
+    .delete()
+    .eq("id", qr.id);
 
   if (deleteError) {
     return { ok: false, message: deleteError.message };

@@ -6,7 +6,12 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canAccessAdminModule, isManagementRole } from "@/lib/permissions";
 import { APP_TIME_ZONE } from "@/lib/datetime";
 import { emitEvent } from "@/lib/notifications/emit-event";
-import { calculateTurnoverMinutes, getStaySettings, scheduledStayInterval, staySettingKeys } from "@/lib/stay-settings";
+import {
+  calculateTurnoverMinutes,
+  getStaySettings,
+  scheduledStayInterval,
+  staySettingKeys,
+} from "@/lib/stay-settings";
 import {
   bloqueoSchema,
   estadoHabitacionSchema,
@@ -27,7 +32,12 @@ import { intervalsOverlap } from "@/lib/room-availability";
 
 const ROOM_IMAGES_BUCKET = "habitaciones";
 const MAX_ROOM_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_ROOM_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_ROOM_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 const extensionByMimeType: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -64,7 +74,7 @@ const roomImageObjectPathFromPublicUrl = (url: string) => {
 const validateRoomImageFiles = (files: File[]) => {
   for (const file of files) {
     if (!ALLOWED_ROOM_IMAGE_TYPES.has(file.type)) {
-      return "Solo se permiten imágenes JPG, PNG, WEBP o GIF.";
+      return "Solo se permiten imágenes JPG, PNG, WEBP.";
     }
 
     if (file.size > MAX_ROOM_IMAGE_BYTES) {
@@ -110,11 +120,13 @@ const uploadRoomImages = async (
     const fallbackName = `imagen-${index + 1}.${extensionByMimeType[file.type] ?? "jpg"}`;
     const objectPath = `${habitacionId}/${Date.now()}-${index + 1}-${safeName || fallbackName}`;
 
-    const { error: uploadError } = await admin.storage.from(ROOM_IMAGES_BUCKET).upload(objectPath, file, {
-      cacheControl: "3600",
-      contentType: file.type,
-      upsert: false,
-    });
+    const { error: uploadError } = await admin.storage
+      .from(ROOM_IMAGES_BUCKET)
+      .upload(objectPath, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: false,
+      });
 
     if (uploadError) {
       if (uploadedPaths.length > 0) {
@@ -125,7 +137,9 @@ const uploadRoomImages = async (
     }
 
     uploadedPaths.push(objectPath);
-    const { data } = admin.storage.from(ROOM_IMAGES_BUCKET).getPublicUrl(objectPath);
+    const { data } = admin.storage
+      .from(ROOM_IMAGES_BUCKET)
+      .getPublicUrl(objectPath);
     rows.push({ habitacion_id: habitacionId, url: data.publicUrl });
   }
 
@@ -139,7 +153,10 @@ export const upsertHabitacionAction = async (
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para gestionar habitaciones." };
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar habitaciones.",
+    };
   }
 
   const parsed = habitacionSchema.safeParse({
@@ -172,7 +189,10 @@ export const upsertHabitacionAction = async (
     .maybeSingle();
 
   if (selectedTarifaError || !selectedTarifa) {
-    return { ok: false, message: selectedTarifaError?.message ?? "Selecciona una tarifa válida." };
+    return {
+      ok: false,
+      message: selectedTarifaError?.message ?? "Selecciona una tarifa válida.",
+    };
   }
 
   if (selectedTarifa.activa === false) {
@@ -190,25 +210,41 @@ export const upsertHabitacionAction = async (
   };
 
   const query = parsed.data.id
-    ? admin.from("habitaciones").update(payload).eq("id", parsed.data.id).select("id").single()
+    ? admin
+        .from("habitaciones")
+        .update(payload)
+        .eq("id", parsed.data.id)
+        .select("id")
+        .single()
     : admin.from("habitaciones").insert(payload).select("id").single();
   const { data: habitacion, error } = await query;
 
   if (error || !habitacion) {
-    return { ok: false, message: error?.message ?? "No se pudo guardar la habitación." };
+    return {
+      ok: false,
+      message: error?.message ?? "No se pudo guardar la habitación.",
+    };
   }
 
   if (imageFiles.length > 0) {
-    const uploadedImages = await uploadRoomImages(admin, habitacion.id, imageFiles);
+    const uploadedImages = await uploadRoomImages(
+      admin,
+      habitacion.id,
+      imageFiles,
+    );
 
     if (uploadedImages.error) {
       return { ok: false, message: uploadedImages.error };
     }
 
-    const { error: imagesError } = await admin.from("img_habitaciones").insert(uploadedImages.rows);
+    const { error: imagesError } = await admin
+      .from("img_habitaciones")
+      .insert(uploadedImages.rows);
 
     if (imagesError) {
-      await admin.storage.from(ROOM_IMAGES_BUCKET).remove(uploadedImages.uploadedPaths);
+      await admin.storage
+        .from(ROOM_IMAGES_BUCKET)
+        .remove(uploadedImages.uploadedPaths);
       return { ok: false, message: imagesError.message };
     }
   }
@@ -220,20 +256,32 @@ export const upsertHabitacionAction = async (
     actorId: currentUser.authUserId,
     entity: "habitaciones",
     entityId: habitacion.id,
-    payload: { habitacion_id: habitacion.id, numero: parsed.data.numero, imagenes_subidas: imageFiles.length },
+    payload: {
+      habitacion_id: habitacion.id,
+      numero: parsed.data.numero,
+      imagenes_subidas: imageFiles.length,
+    },
   });
 
   return {
     ok: true,
-    message: imageFiles.length > 0 ? "Habitación guardada con imágenes." : "Habitación guardada.",
+    message:
+      imageFiles.length > 0
+        ? "Habitación guardada con imágenes."
+        : "Habitación guardada.",
   };
 };
 
-export const deleteHabitacionImageAction = async (imageId: string): Promise<ActionState> => {
+export const deleteHabitacionImageAction = async (
+  imageId: string,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para eliminar imágenes de habitaciones." };
+    return {
+      ok: false,
+      message: "No tienes permiso para eliminar imágenes de habitaciones.",
+    };
   }
 
   const admin = createSupabaseAdminClient();
@@ -244,20 +292,28 @@ export const deleteHabitacionImageAction = async (imageId: string): Promise<Acti
     .maybeSingle();
 
   if (imageError || !image) {
-    return { ok: false, message: imageError?.message ?? "La imagen ya no existe." };
+    return {
+      ok: false,
+      message: imageError?.message ?? "La imagen ya no existe.",
+    };
   }
 
   const objectPath = roomImageObjectPathFromPublicUrl(image.url);
 
   if (objectPath) {
-    const { error: storageError } = await admin.storage.from(ROOM_IMAGES_BUCKET).remove([objectPath]);
+    const { error: storageError } = await admin.storage
+      .from(ROOM_IMAGES_BUCKET)
+      .remove([objectPath]);
 
     if (storageError) {
       return { ok: false, message: storageError.message };
     }
   }
 
-  const { error: deleteError } = await admin.from("img_habitaciones").delete().eq("id", image.id);
+  const { error: deleteError } = await admin
+    .from("img_habitaciones")
+    .delete()
+    .eq("id", image.id);
 
   if (deleteError) {
     return { ok: false, message: deleteError.message };
@@ -288,20 +344,34 @@ export const createBloqueoFechasAction = async (
     scope: formValue(formData, "scope"),
     habitacionIds: formData
       .getAll("habitacionIds")
-      .filter((value): value is string => typeof value === "string" && value.trim().length > 0),
+      .filter(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0,
+      ),
     fechaInicio: formValue(formData, "fechaInicio"),
     fechaFin: formValue(formData, "fechaFin"),
     motivo: formValue(formData, "motivo"),
   };
 
-  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "bloqueos")) {
-    return { ok: false, message: "No tienes permiso para gestionar bloqueos.", data: { values: rawValues as BloqueoInput } };
+  if (
+    !currentUser?.profile ||
+    !canAccessAdminModule(currentUser.profile.rol, "bloqueos")
+  ) {
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar bloqueos.",
+      data: { values: rawValues as BloqueoInput },
+    };
   }
 
   const parsed = bloqueoSchema.safeParse(rawValues);
 
   if (!parsed.success) {
-    return { ok: false, errors: validationErrors(parsed.error), data: { values: rawValues as BloqueoInput } };
+    return {
+      ok: false,
+      errors: validationErrors(parsed.error),
+      data: { values: rawValues as BloqueoInput },
+    };
   }
 
   const admin = createSupabaseAdminClient();
@@ -314,11 +384,19 @@ export const createBloqueoFechasAction = async (
       .in("id", selectedRoomIds);
 
     if (habitacionesError) {
-      return { ok: false, message: habitacionesError.message, data: { values: parsed.data } };
+      return {
+        ok: false,
+        message: habitacionesError.message,
+        data: { values: parsed.data },
+      };
     }
 
     if ((habitaciones ?? []).length !== selectedRoomIds.length) {
-      return { ok: false, message: "Una o más habitaciones seleccionadas no existen.", data: { values: parsed.data } };
+      return {
+        ok: false,
+        message: "Una o más habitaciones seleccionadas no existen.",
+        data: { values: parsed.data },
+      };
     }
   }
 
@@ -330,45 +408,87 @@ export const createBloqueoFechasAction = async (
     .gt("fecha_salida", parsed.data.fechaInicio);
 
   if (reservedRoomsError) {
-    return { ok: false, message: reservedRoomsError.message, data: { values: parsed.data } };
+    return {
+      ok: false,
+      message: reservedRoomsError.message,
+      data: { values: parsed.data },
+    };
   }
 
   const roomIdsToValidate =
     parsed.data.scope === "todas"
-      ? [...new Set((reservedRooms ?? []).map((reservation) => reservation.habitacion_id))]
+      ? [
+          ...new Set(
+            (reservedRooms ?? []).map(
+              (reservation) => reservation.habitacion_id,
+            ),
+          ),
+        ]
       : selectedRoomIds;
 
   if (roomIdsToValidate.length > 0) {
     const staySettings = await getStaySettings(admin);
-    const blockInterval = scheduledStayInterval(parsed.data.fechaInicio, parsed.data.fechaFin, staySettings);
-    const [{ data: reservations, error: reservationsError }, { data: roomLabels, error: roomLabelsError }] = await Promise.all([
+    const blockInterval = scheduledStayInterval(
+      parsed.data.fechaInicio,
+      parsed.data.fechaFin,
+      staySettings,
+    );
+    const [
+      { data: reservations, error: reservationsError },
+      { data: roomLabels, error: roomLabelsError },
+    ] = await Promise.all([
       admin
         .from("reservas")
-        .select("habitacion_id,fecha_ingreso,fecha_salida,checkin_programado_at,checkout_programado_at")
+        .select(
+          "habitacion_id,fecha_ingreso,fecha_salida,checkin_programado_at,checkout_programado_at",
+        )
         .in("habitacion_id", roomIdsToValidate)
         .in("estado", ["pendiente_pago", "confirmada", "checkin"])
         .lt("fecha_ingreso", parsed.data.fechaFin)
         .gt("fecha_salida", parsed.data.fechaInicio),
-      admin.from("habitaciones").select("id,numero").in("id", roomIdsToValidate),
+      admin
+        .from("habitaciones")
+        .select("id,numero")
+        .in("id", roomIdsToValidate),
     ]);
 
     if (reservationsError) {
-      return { ok: false, message: reservationsError.message, data: { values: parsed.data } };
+      return {
+        ok: false,
+        message: reservationsError.message,
+        data: { values: parsed.data },
+      };
     }
 
     if (roomLabelsError) {
-      return { ok: false, message: roomLabelsError.message, data: { values: parsed.data } };
+      return {
+        ok: false,
+        message: roomLabelsError.message,
+        data: { values: parsed.data },
+      };
     }
 
-    const roomNumberById = new Map((roomLabels ?? []).map((room) => [room.id, room.numero]));
-    const overlappingReservations = ((reservations ?? []) as ActiveReservationForBlock[]).filter((reservation) => {
+    const roomNumberById = new Map(
+      (roomLabels ?? []).map((room) => [room.id, room.numero]),
+    );
+    const overlappingReservations = (
+      (reservations ?? []) as ActiveReservationForBlock[]
+    ).filter((reservation) => {
       const reservationInterval = {
         checkinAt:
           reservation.checkin_programado_at ??
-          scheduledStayInterval(reservation.fecha_ingreso, reservation.fecha_salida, staySettings).checkinAt,
+          scheduledStayInterval(
+            reservation.fecha_ingreso,
+            reservation.fecha_salida,
+            staySettings,
+          ).checkinAt,
         checkoutAt:
           reservation.checkout_programado_at ??
-          scheduledStayInterval(reservation.fecha_ingreso, reservation.fecha_salida, staySettings).checkoutAt,
+          scheduledStayInterval(
+            reservation.fecha_ingreso,
+            reservation.fecha_salida,
+            staySettings,
+          ).checkoutAt,
       };
 
       return intervalsOverlap(
@@ -395,7 +515,10 @@ export const createBloqueoFechasAction = async (
         data: {
           values: {
             ...parsed.data,
-            fechaInicio: suggestedStart && suggestedStart < parsed.data.fechaFin ? suggestedStart : parsed.data.fechaInicio,
+            fechaInicio:
+              suggestedStart && suggestedStart < parsed.data.fechaFin
+                ? suggestedStart
+                : parsed.data.fechaInicio,
           },
         },
       };
@@ -429,7 +552,10 @@ export const createBloqueoFechasAction = async (
 
   await emitEvent(admin, {
     event: "bloqueo_fechas.creado",
-    title: parsed.data.scope === "todas" ? "Bloqueo general creado" : "Bloqueo de habitación creado",
+    title:
+      parsed.data.scope === "todas"
+        ? "Bloqueo general creado"
+        : "Bloqueo de habitación creado",
     message:
       parsed.data.scope === "todas"
         ? `Se bloqueó todo el hostal del ${parsed.data.fechaInicio} al ${parsed.data.fechaFin}.`
@@ -455,10 +581,15 @@ export const createBloqueoFechasAction = async (
   };
 };
 
-export const deleteBloqueoFechasAction = async (bloqueoId: string): Promise<ActionState> => {
+export const deleteBloqueoFechasAction = async (
+  bloqueoId: string,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
-  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "bloqueos")) {
+  if (
+    !currentUser?.profile ||
+    !canAccessAdminModule(currentUser.profile.rol, "bloqueos")
+  ) {
     return { ok: false, message: "No tienes permiso para desbloquear fechas." };
   }
 
@@ -470,10 +601,16 @@ export const deleteBloqueoFechasAction = async (bloqueoId: string): Promise<Acti
     .maybeSingle();
 
   if (readError || !bloqueo) {
-    return { ok: false, message: readError?.message ?? "El bloqueo ya no existe." };
+    return {
+      ok: false,
+      message: readError?.message ?? "El bloqueo ya no existe.",
+    };
   }
 
-  const { error } = await admin.from("bloqueos_fechas").delete().eq("id", bloqueo.id);
+  const { error } = await admin
+    .from("bloqueos_fechas")
+    .delete()
+    .eq("id", bloqueo.id);
 
   if (error) {
     return { ok: false, message: error.message };
@@ -487,7 +624,9 @@ export const deleteBloqueoFechasAction = async (bloqueoId: string): Promise<Acti
 
   await emitEvent(admin, {
     event: "bloqueo_fechas.eliminado",
-    title: bloqueo.habitacion_id ? "Bloqueo de habitación eliminado" : "Bloqueo general eliminado",
+    title: bloqueo.habitacion_id
+      ? "Bloqueo de habitación eliminado"
+      : "Bloqueo general eliminado",
     message: `Se desbloqueó el rango ${bloqueo.fecha_inicio} al ${bloqueo.fecha_fin}.`,
     actorId: currentUser.authUserId,
     entity: "bloqueos_fechas",
@@ -514,14 +653,25 @@ export const updateEstadoHabitacionAction = async (
     notas: formValue(formData, "notas"),
   };
 
-  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "estado-habitaciones")) {
-    return { ok: false, message: "No tienes permiso para cambiar el estado de habitaciones.", data: { values: rawValues as EstadoHabitacionInput } };
+  if (
+    !currentUser?.profile ||
+    !canAccessAdminModule(currentUser.profile.rol, "estado-habitaciones")
+  ) {
+    return {
+      ok: false,
+      message: "No tienes permiso para cambiar el estado de habitaciones.",
+      data: { values: rawValues as EstadoHabitacionInput },
+    };
   }
 
   const parsed = estadoHabitacionSchema.safeParse(rawValues);
 
   if (!parsed.success) {
-    return { ok: false, errors: validationErrors(parsed.error), data: { values: rawValues as EstadoHabitacionInput } };
+    return {
+      ok: false,
+      errors: validationErrors(parsed.error),
+      data: { values: rawValues as EstadoHabitacionInput },
+    };
   }
 
   const admin = createSupabaseAdminClient();
@@ -532,7 +682,11 @@ export const updateEstadoHabitacionAction = async (
     .maybeSingle();
 
   if (habitacionError || !habitacion) {
-    return { ok: false, message: habitacionError?.message ?? "La habitación no existe.", data: { values: parsed.data } };
+    return {
+      ok: false,
+      message: habitacionError?.message ?? "La habitación no existe.",
+      data: { values: parsed.data },
+    };
   }
 
   const { data: currentStates, error: currentStateError } = await admin
@@ -543,7 +697,11 @@ export const updateEstadoHabitacionAction = async (
     .limit(1);
 
   if (currentStateError) {
-    return { ok: false, message: currentStateError.message, data: { values: parsed.data } };
+    return {
+      ok: false,
+      message: currentStateError.message,
+      data: { values: parsed.data },
+    };
   }
 
   const previousState = currentStates?.[0]?.estado ?? null;
@@ -556,22 +714,31 @@ export const updateEstadoHabitacionAction = async (
   };
   const existingStateId = currentStates?.[0]?.id;
   const { error } = existingStateId
-    ? await admin.from("estado_habitaciones").update(payload).eq("id", existingStateId)
+    ? await admin
+        .from("estado_habitaciones")
+        .update(payload)
+        .eq("id", existingStateId)
     : await admin.from("estado_habitaciones").insert(payload);
 
   if (error) {
     return { ok: false, message: error.message, data: { values: parsed.data } };
   }
 
-  const { error: logError } = await admin.from("log_estados_habitacion").insert({
-    habitacion_id: parsed.data.habitacionId,
-    estado_anterior: previousState,
-    estado_nuevo: parsed.data.estado,
-    cambiado_por: currentUser.authUserId,
-  });
+  const { error: logError } = await admin
+    .from("log_estados_habitacion")
+    .insert({
+      habitacion_id: parsed.data.habitacionId,
+      estado_anterior: previousState,
+      estado_nuevo: parsed.data.estado,
+      cambiado_por: currentUser.authUserId,
+    });
 
   if (logError) {
-    return { ok: false, message: logError.message, data: { values: parsed.data } };
+    return {
+      ok: false,
+      message: logError.message,
+      data: { values: parsed.data },
+    };
   }
 
   revalidatePath("/admin");
@@ -594,11 +761,17 @@ export const updateEstadoHabitacionAction = async (
   return { ok: true, message: "Estado actualizado." };
 };
 
-export const upsertHuespedAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
+export const upsertHuespedAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
   if (!currentUser?.profile || !isManagementRole(currentUser.profile.rol)) {
-    return { ok: false, message: "No tienes permiso para gestionar huéspedes." };
+    return {
+      ok: false,
+      message: "No tienes permiso para gestionar huéspedes.",
+    };
   }
 
   const parsed = huespedSchema.safeParse({
@@ -637,7 +810,10 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
     pais_origen: parsed.data.pais || null,
   };
 
-  const { error } = await admin.from("huespedes").update(payload).eq("id", parsed.data.id);
+  const { error } = await admin
+    .from("huespedes")
+    .update(payload)
+    .eq("id", parsed.data.id);
 
   if (error) {
     if (isGuestDocumentUniqueError(error)) {
@@ -660,10 +836,16 @@ export const upsertHuespedAction = async (_state: ActionState, formData: FormDat
   return { ok: true, message: "Huésped guardado." };
 };
 
-export const upsertTarifaAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
+export const upsertTarifaAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
-  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "tarifas")) {
+  if (
+    !currentUser?.profile ||
+    !canAccessAdminModule(currentUser.profile.rol, "tarifas")
+  ) {
     return { ok: false, message: "Solo admin puede gestionar tarifas." };
   }
 
@@ -698,7 +880,8 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
       duplicateQuery = duplicateQuery.neq("id", parsed.data.id);
     }
 
-    const { data: duplicateTarifa, error: duplicateTarifaError } = await duplicateQuery.maybeSingle();
+    const { data: duplicateTarifa, error: duplicateTarifaError } =
+      await duplicateQuery.maybeSingle();
 
     if (duplicateTarifaError) {
       return { ok: false, message: duplicateTarifaError.message };
@@ -725,12 +908,20 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
   };
 
   const query = parsed.data.id
-    ? admin.from("tarifas").update(payload).eq("id", parsed.data.id).select("id").single()
+    ? admin
+        .from("tarifas")
+        .update(payload)
+        .eq("id", parsed.data.id)
+        .select("id")
+        .single()
     : admin.from("tarifas").insert(payload).select("id").single();
   const { data: tarifa, error } = await query;
 
   if (error || !tarifa) {
-    return { ok: false, message: error?.message ?? "No se pudo guardar la tarifa." };
+    return {
+      ok: false,
+      message: error?.message ?? "No se pudo guardar la tarifa.",
+    };
   }
 
   await emitEvent(admin, {
@@ -740,26 +931,48 @@ export const upsertTarifaAction = async (_state: ActionState, formData: FormData
     actorId: currentUser.authUserId,
     entity: "tarifas",
     entityId: tarifa.id,
-    payload: { tarifa_id: tarifa.id, habitacion_tipo: parsed.data.habitacionTipo, temporada: parsed.data.temporada },
+    payload: {
+      tarifa_id: tarifa.id,
+      habitacion_tipo: parsed.data.habitacionTipo,
+      temporada: parsed.data.temporada,
+    },
   });
 
   return { ok: true, message: "Tarifa guardada." };
 };
 
-export const updateStaySettingsAction = async (_state: ActionState, formData: FormData): Promise<ActionState> => {
+export const updateStaySettingsAction = async (
+  _state: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
   const currentUser = await getCurrentUser();
 
-  if (!currentUser?.profile || !canAccessAdminModule(currentUser.profile.rol, "configuracion")) {
-    return { ok: false, message: "Solo admin puede gestionar la configuración." };
+  if (
+    !currentUser?.profile ||
+    !canAccessAdminModule(currentUser.profile.rol, "configuracion")
+  ) {
+    return {
+      ok: false,
+      message: "Solo admin puede gestionar la configuración.",
+    };
   }
 
   const parsed = staySettingsSchema.safeParse({
     checkinTime: formValue(formData, "checkinTime"),
     checkoutTime: formValue(formData, "checkoutTime"),
-    paymentProofTimeoutMinutes: formValue(formData, "paymentProofTimeoutMinutes"),
-    cancellationPartialRefundHours: formValue(formData, "cancellationPartialRefundHours"),
+    paymentProofTimeoutMinutes: formValue(
+      formData,
+      "paymentProofTimeoutMinutes",
+    ),
+    cancellationPartialRefundHours: formValue(
+      formData,
+      "cancellationPartialRefundHours",
+    ),
     cancellationNoRefundHours: formValue(formData, "cancellationNoRefundHours"),
-    cancellationPartialRefundPercent: formValue(formData, "cancellationPartialRefundPercent"),
+    cancellationPartialRefundPercent: formValue(
+      formData,
+      "cancellationPartialRefundPercent",
+    ),
   });
 
   if (!parsed.success) {
@@ -771,17 +984,25 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
     {
       clave: staySettingKeys.checkinTime,
       valor: parsed.data.checkinTime,
-      descripcion: "Hora estándar desde la que el huésped puede ocupar la habitación.",
+      descripcion:
+        "Hora estándar desde la que el huésped puede ocupar la habitación.",
     },
     {
       clave: staySettingKeys.checkoutTime,
       valor: parsed.data.checkoutTime,
-      descripcion: "Hora límite en la que el huésped debe desocupar la habitación.",
+      descripcion:
+        "Hora límite en la que el huésped debe desocupar la habitación.",
     },
     {
       clave: staySettingKeys.turnoverMinutes,
-      valor: String(calculateTurnoverMinutes(parsed.data.checkoutTime, parsed.data.checkinTime)),
-      descripcion: "Minutos calculados automáticamente entre check-out y nuevo check-in para limpieza/preparación.",
+      valor: String(
+        calculateTurnoverMinutes(
+          parsed.data.checkoutTime,
+          parsed.data.checkinTime,
+        ),
+      ),
+      descripcion:
+        "Minutos calculados automáticamente entre check-out y nuevo check-in para limpieza/preparación.",
     },
     {
       clave: staySettingKeys.timezone,
@@ -791,22 +1012,26 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
     {
       clave: staySettingKeys.paymentProofTimeoutMinutes,
       valor: String(parsed.data.paymentProofTimeoutMinutes),
-      descripcion: "Minutos de espera para recibir comprobante antes de cancelar automáticamente una reserva pendiente de pago. Usa 0 para desactivar.",
+      descripcion:
+        "Minutos de espera para recibir comprobante antes de cancelar automáticamente una reserva pendiente de pago. Usa 0 para desactivar.",
     },
     {
       clave: staySettingKeys.cancellationPartialRefundHours,
       valor: String(parsed.data.cancellationPartialRefundHours),
-      descripcion: "Horas mínimas antes del check-in para aplicar el reembolso parcial.",
+      descripcion:
+        "Horas mínimas antes del check-in para aplicar el reembolso parcial.",
     },
     {
       clave: staySettingKeys.cancellationNoRefundHours,
       valor: String(parsed.data.cancellationNoRefundHours),
-      descripcion: "Horas antes del check-in por debajo de las cuales no se realiza reembolso.",
+      descripcion:
+        "Horas antes del check-in por debajo de las cuales no se realiza reembolso.",
     },
     {
       clave: staySettingKeys.cancellationPartialRefundPercent,
       valor: String(parsed.data.cancellationPartialRefundPercent),
-      descripcion: "Porcentaje del importe pagado que se reembolsa con suficiente anticipación.",
+      descripcion:
+        "Porcentaje del importe pagado que se reembolsa con suficiente anticipación.",
     },
   ];
 
@@ -827,16 +1052,19 @@ export const updateStaySettingsAction = async (_state: ActionState, formData: Fo
   await emitEvent(admin, {
     event: "sistema.configuracion_actualizada",
     title: "Configuración actualizada",
-    message: "Se actualizó la configuración operativa de estadía y comprobantes.",
+    message:
+      "Se actualizó la configuración operativa de estadía y comprobantes.",
     actorId: currentUser.authUserId,
     entity: "configuracion_hostal",
     payload: {
       checkin_time: parsed.data.checkinTime,
       checkout_time: parsed.data.checkoutTime,
       payment_proof_timeout_minutes: parsed.data.paymentProofTimeoutMinutes,
-      cancellation_partial_refund_hours: parsed.data.cancellationPartialRefundHours,
+      cancellation_partial_refund_hours:
+        parsed.data.cancellationPartialRefundHours,
       cancellation_no_refund_hours: parsed.data.cancellationNoRefundHours,
-      cancellation_partial_refund_percent: parsed.data.cancellationPartialRefundPercent,
+      cancellation_partial_refund_percent:
+        parsed.data.cancellationPartialRefundPercent,
     },
   });
 

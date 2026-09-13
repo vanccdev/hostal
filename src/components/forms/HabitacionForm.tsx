@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent, type FormEvent, useActionState, useEffect, useRef, useState } from "react";
+import { type FormEvent, startTransition, useActionState, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BedDouble, ImagePlus, ImageUp, Tag, X } from "lucide-react";
+import { BedDouble, ImageUp, Tag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { upsertHabitacionAction } from "@/app/actions/crud";
@@ -12,6 +12,7 @@ import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { HabitacionImageDeleteButton } from "@/components/forms/HabitacionImageDeleteButton";
+import { ImageUpload } from "@/components/forms/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,22 +29,15 @@ type HabitacionFormProps = {
   onSuccess?: () => void;
 };
 
-type ImagePreview = {
-  id: string;
-  file: File;
-  name: string;
-  url: string;
-};
-
 export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuccess }: HabitacionFormProps) => {
   const [state, action, pending] = useActionState(upsertHabitacionAction, initialActionState);
   const initialTipo = (habitacion?.tipo as z.input<typeof habitacionSchema>["tipo"]) ?? "individual";
   const [selectedTipo, setSelectedTipo] = useState<z.input<typeof habitacionSchema>["tipo"]>(initialTipo);
   const [selectedTarifaId, setSelectedTarifaId] = useState(habitacion?.tarifa_id ?? "");
   const [activa, setActiva] = useState(habitacion?.activa ?? true);
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageUploadResetKey, setImageUploadResetKey] = useState(0);
   const [deletedExistingImageIds, setDeletedExistingImageIds] = useState<string[]>([]);
-  const imagePreviewsRef = useRef<ImagePreview[]>([]);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
     defaultValues: {
@@ -58,105 +52,36 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
     },
   });
   const hasTarifas = tarifas.length > 0;
-  const imageCount = imagePreviews.length;
   const visibleExistingImages = existingImages.filter((image) => !deletedExistingImageIds.includes(image.id));
   const existingImageCount = visibleExistingImages.length;
-
-  useEffect(() => {
-    return () => {
-      for (const preview of imagePreviewsRef.current) {
-        URL.revokeObjectURL(preview.url);
-      }
-    };
-  }, []);
-
-  const setPreviewState = (nextPreviews: ImagePreview[]) => {
-    imagePreviewsRef.current = nextPreviews;
-    setImagePreviews(nextPreviews);
-  };
-
-  const replaceImageSelection = (files: File[]) => {
-    for (const preview of imagePreviewsRef.current) {
-      URL.revokeObjectURL(preview.url);
-    }
-
-    const selectedFiles = files.filter((file) => file.size > 0);
-    const nextPreviews = selectedFiles.map((file, index) => ({
-      id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
-      file,
-      name: file.name,
-      url: URL.createObjectURL(file),
-    }));
-
-    setPreviewState(nextPreviews);
-  };
-
-  const removeImagePreview = (id: string) => {
-    const removedPreview = imagePreviewsRef.current.find((preview) => preview.id === id);
-    const nextPreviews = imagePreviewsRef.current.filter((preview) => preview.id !== id);
-
-    if (removedPreview) {
-      URL.revokeObjectURL(removedPreview.url);
-    }
-
-    setPreviewState(nextPreviews);
-  };
-
-  const clearImageInput = () => {
-    for (const preview of imagePreviewsRef.current) {
-      URL.revokeObjectURL(preview.url);
-    }
-
-    setPreviewState([]);
-  };
 
   const handleExistingImageDeleted = (imageId: string) => {
     setDeletedExistingImageIds((currentIds) => [...currentIds, imageId]);
   };
 
   const handleSuccess = () => {
-    clearImageInput();
+    setImageFiles([]);
+    setImageUploadResetKey((key) => key + 1);
     onSuccess?.();
-  };
-
-  const handleImageDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const files = Array.from(event.dataTransfer.files);
-
-    if (files.length === 0) {
-      return;
-    }
-
-    replaceImageSelection(files);
-  };
-
-  const openImagePicker = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/jpeg,image/png,image/webp,image/gif";
-    input.multiple = true;
-    input.addEventListener("change", () => {
-      replaceImageSelection(Array.from(input.files ?? []));
-    });
-    input.click();
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
 
     const isValid = await form.trigger();
     if (!isValid) {
       return;
     }
 
-    const formData = new FormData(event.currentTarget);
-    for (const preview of imagePreviewsRef.current) {
-      formData.append("imagenes", preview.file);
+    const formData = new FormData(formElement);
+    for (const file of imageFiles) {
+      formData.append("imagenes", file);
     }
 
-    action(formData);
+    startTransition(() => {
+      action(formData);
+    });
   };
 
   return (
@@ -269,10 +194,6 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
         </div>
         <div
           className="flex w-full min-w-0 flex-none flex-col gap-2 overflow-hidden md:flex-1 md:basis-0"
-          onDragOver={(event) => {
-            event.preventDefault();
-          }}
-          onDrop={handleImageDrop}
         >
           <Label>Imágenes</Label>
           {existingImageCount > 0 ? (
@@ -312,59 +233,10 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
               Esta habitación no tiene imágenes cargadas.
             </div>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            className="flex w-full max-w-full cursor-pointer flex-col items-center justify-center gap-3 whitespace-normal break-words rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-8 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
-            onClick={openImagePicker}
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c7a35a] text-[#102317]">
-              <ImagePlus className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <span className="space-y-1">
-              <span className="block text-sm font-semibold text-[#18221b] dark:text-zinc-100">
-                Arrastra imágenes aquí o haz clic para seleccionar
-              </span>
-              <span className="block text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-                {imageCount > 0 ? `${imageCount} imagen${imageCount === 1 ? "" : "es"} seleccionada${imageCount === 1 ? "" : "s"}` : "Puedes subir varias imágenes a la vez."}
-              </span>
-            </span>
-          </Button>
-          {imagePreviews.length > 0 ? (
-            <div className="flex w-full min-w-0 max-w-full flex-wrap gap-3">
-              {imagePreviews.map((preview, index) => (
-                <div
-                  key={`${preview.name}-${preview.url}`}
-                  className="relative w-full min-w-0 max-w-full flex-1 basis-full overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d] sm:basis-[calc(50%-0.75rem)]"
-                >
-                  <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
-                    <Image
-                      src={preview.url}
-                      alt={`Vista previa ${index + 1}: ${preview.name}`}
-                      fill
-                      sizes="100vw"
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                  <p className="truncate px-3 py-2 text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-                    {preview.name}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 h-8 w-8 rounded-full bg-black/60 text-white hover:bg-black/75 hover:text-white"
-                    onClick={() => removeImagePreview(preview.id)}
-                    aria-label={`Quitar ${preview.name}`}
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
+          <ImageUpload
+            resetKey={imageUploadResetKey}
+            onFilesChange={(files) => setImageFiles(files.map(({ file }) => file))}
+          />
         </div>
       </div>
       <Button type="submit" disabled={pending || !hasTarifas}>

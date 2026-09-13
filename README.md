@@ -598,7 +598,7 @@ La migracion `202607200001` normaliza metodos de pago historicos a `qr` y cambia
 8. Staff crea habitacion con imagenes:
    - Login como `admin` o `recepcionista`.
    - Ir a `/admin/habitaciones`.
-   - Crear habitacion, seleccionar una tarifa existente y seleccionar una o varias imagenes JPG, PNG, WEBP o GIF.
+   - Crear habitacion, seleccionar una tarifa existente y seleccionar una o varias imagenes JPG, PNG, WEBP.
    - Cada imagen debe pesar 5 MB o menos.
    - Debe asociar la tarifa seleccionada actualizando `public.habitaciones.tarifa_id`.
    - Debe subir archivos a Storage bucket `habitaciones`, guardar URLs en `public.img_habitaciones` y mostrar miniatura/conteo en el listado.
@@ -612,10 +612,11 @@ La migracion `202607200001` normaliza metodos de pago historicos a `qr` y cambia
    - En habitaciones, el dialog de edicion debe mostrar las imagenes actuales, permitir agregar nuevas imagenes sin borrar las existentes y eliminar fotos individuales.
 
 10. Tablas con paginacion server-side:
-   - Ir a listados como `/admin/usuarios`, `/admin/habitaciones`, `/admin/huespedes`, `/admin/tarifas`, `/admin/reservas`, `/admin/auditoria` o modulos genericos.
-   - Cambiar filas por pagina y navegar paginas; debe actualizar query params y consultar Supabase con `range`.
-   - Buscar en todas las columnas o una columna especifica; debe resetear a pagina 1 y consultar Supabase con filtros.
-   - Ordenar desde encabezados; debe actualizar `sort`/`dir` y consultar Supabase.
+
+- Ir a listados como `/admin/usuarios`, `/admin/habitaciones`, `/admin/huespedes`, `/admin/tarifas`, `/admin/reservas`, `/admin/auditoria` o modulos genericos.
+- Cambiar filas por pagina y navegar paginas; debe actualizar query params y consultar Supabase con `range`.
+- Buscar en todas las columnas o una columna especifica; debe resetear a pagina 1 y consultar Supabase con filtros.
+- Ordenar desde encabezados; debe actualizar `sort`/`dir` y consultar Supabase.
 
 ## Seguridad
 
