@@ -25,7 +25,6 @@ export const tarifaSchema = z.object({
   habitacionTipo: z.enum(["individual", "matrimonial", "individual doble", "triple", "familiar"]),
   temporada: z.enum(["alta", "baja", "normal"]),
   precioNoche: z.coerce.number().nonnegative("Precio inválido"),
-  peso: z.coerce.number().int().min(0, "Peso inválido").max(3, "Peso inválido").default(0),
   vigenteDesde: z.iso.date("Fecha inválida"),
   vigenteHasta: z.iso.date("Fecha inválida").optional().or(z.literal("")),
   activa: z.coerce.boolean().default(true),

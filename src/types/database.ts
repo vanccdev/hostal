@@ -89,7 +89,6 @@ export type Tarifa = {
   habitacion_tipo: HabitacionTipo;
   temporada: TemporadaTarifa;
   precio_noche: number;
-  peso: number;
   moneda: string | null;
   vigente_desde: string;
   vigente_hasta: string | null;

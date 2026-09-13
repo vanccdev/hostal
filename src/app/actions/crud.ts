@@ -730,7 +730,6 @@ export const upsertTarifaAction = async (
     habitacionTipo: formValue(formData, "habitacionTipo"),
     temporada: formValue(formData, "temporada"),
     precioNoche: formValue(formData, "precioNoche"),
-    peso: formValue(formData, "peso"),
     vigenteDesde: formValue(formData, "vigenteDesde"),
     vigenteHasta: formValue(formData, "vigenteHasta"),
     activa: formData.get("activa") === "true",
@@ -742,41 +741,10 @@ export const upsertTarifaAction = async (
 
   const admin = createSupabaseAdminClient();
 
-  if (parsed.data.activa) {
-    let duplicateQuery = admin
-      .from("tarifas")
-      .select("id")
-      .eq("habitacion_tipo", parsed.data.habitacionTipo)
-      .eq("temporada", parsed.data.temporada)
-      .eq("peso", parsed.data.peso)
-      .eq("activa", true)
-      .limit(1);
-
-    if (parsed.data.id) {
-      duplicateQuery = duplicateQuery.neq("id", parsed.data.id);
-    }
-
-    const { data: duplicateTarifa, error: duplicateTarifaError } =
-      await duplicateQuery.maybeSingle();
-
-    if (duplicateTarifaError) {
-      return { ok: false, message: duplicateTarifaError.message };
-    }
-
-    if (duplicateTarifa) {
-      return {
-        ok: false,
-        message:
-          "Ya existe una tarifa activa con el mismo tipo de habitación, temporada y peso. Cambia el peso para definir cuál debe ganar.",
-      };
-    }
-  }
-
   const payload = {
     habitacion_tipo: parsed.data.habitacionTipo,
     temporada: parsed.data.temporada,
     precio_noche: parsed.data.precioNoche,
-    peso: parsed.data.peso,
     vigente_desde: parsed.data.vigenteDesde,
     vigente_hasta: parsed.data.vigenteHasta || null,
     activa: parsed.data.activa,

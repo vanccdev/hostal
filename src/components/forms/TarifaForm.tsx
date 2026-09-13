@@ -36,7 +36,6 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
       habitacionTipo: (tarifa?.habitacion_tipo as z.input<typeof tarifaSchema>["habitacionTipo"]) ?? "individual",
       temporada: (tarifa?.temporada as z.input<typeof tarifaSchema>["temporada"]) ?? "normal",
       precioNoche: tarifa?.precio_noche ?? 0,
-      peso: tarifa?.peso ?? 0,
       vigenteDesde: tarifa?.vigente_desde ?? localISODate(),
       vigenteHasta: tarifa?.vigente_hasta ?? "",
       activa: tarifa?.activa ?? true,
@@ -87,23 +86,6 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
           <Input id="precioNoche" type="number" min="0" step="0.01" {...form.register("precioNoche")} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="peso">Peso</Label>
-          <Select name="peso" defaultValue={`${tarifa?.peso ?? 0}`}>
-            <SelectTrigger id="peso">
-              <SelectValue placeholder="Seleccionar peso" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">0 - Ninguna</SelectItem>
-              <SelectItem value="1">1 - Baja</SelectItem>
-              <SelectItem value="2">2 - Media</SelectItem>
-              <SelectItem value="3">3 - Por defecto</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-            Si varias tarifas están vigentes el mismo día, gana el peso más alto.
-          </p>
-        </div>
-        <div className="space-y-2">
           <Label>Vigencia</Label>
           <ResponsiveDateRangePickerField
             startId="vigenteDesde"
@@ -119,7 +101,7 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
             placeholder="Seleccionar vigencia"
             required
           />
-          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">La fecha final es opcional para una tarifa sin vencimiento.</p>
+          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">Estas fechas quedan como información de la tarifa; la habitación conserva su tarifa asociada hasta un cambio manual.</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

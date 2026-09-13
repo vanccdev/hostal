@@ -35,7 +35,7 @@ export default async function ClientDashboardPage() {
     supabase.from("habitaciones").select("id,numero,tipo,tarifa_id,piso,capacidad_max,descripcion,activa,created_at").order("numero"),
     supabase
       .from("tarifas")
-      .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+      .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
       .eq("activa", true)
       .order("habitacion_tipo"),
     supabase

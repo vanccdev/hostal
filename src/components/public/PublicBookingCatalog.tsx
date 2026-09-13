@@ -14,7 +14,7 @@ import { APP_TIME_ZONE, localISODate } from "@/lib/datetime";
 import { pendingReservationStorageKey } from "@/lib/reservation-intent";
 import { getRoomAvailabilityStatus, intervalsOverlap } from "@/lib/room-availability";
 import { cancellationPolicyText, defaultStaySettings, scheduledStayInterval, stayPolicyText, type StaySettings } from "@/lib/stay-settings";
-import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
+import { selectTarifaAsignadaParaHabitacion } from "@/lib/tarifas";
 import { cn } from "@/lib/utils";
 import type { Habitacion, HabitacionTipo, ImgHabitacion, Reserva, Tarifa } from "@/types/database";
 
@@ -132,10 +132,9 @@ export const PublicBookingCatalog = ({
   const groupedRooms = useMemo(() => roomGroups.flatMap((group) => group.habitaciones), [roomGroups]);
   const tarifaByRoom = useMemo(() => {
     const byRoom = new Map<string, Tarifa>();
-    const today = localISODate();
 
     for (const habitacion of habitaciones) {
-      const tarifa = selectTarifaActualParaHabitacion(habitacion, tarifas, today);
+      const tarifa = selectTarifaAsignadaParaHabitacion(habitacion, tarifas);
 
       if (tarifa) {
         byRoom.set(habitacion.id, tarifa);

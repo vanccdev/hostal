@@ -177,7 +177,6 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
     ["Temporada", tarifa?.temporada],
     ["Precio noche", formatMoney(tarifa?.precio_noche, currency)],
     ["Moneda", tarifa?.moneda],
-    ["Peso", tarifa?.peso],
     ["Vigente desde", formatDate(tarifa?.vigente_desde)],
     ["Vigente hasta", formatDate(tarifa?.vigente_hasta)],
     ["Activa", tarifa?.activa === false ? "No" : "Sí"],

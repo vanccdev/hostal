@@ -97,13 +97,10 @@ Implementado:
   - El CRUD de tarifas se administra en `/admin/tarifas`.
   - Al crear/editar habitacion se selecciona una tarifa existente para asociarla.
   - Si no hay tarifas disponibles, el formulario de habitacion muestra acceso a `/admin/tarifas`.
-  - Al crear/editar tarifa desde `/admin/tarifas`, se define tipo, temporada, vigencia, precio, peso y estado; la asociacion se hace desde habitaciones.
-  - `public.tarifas.peso` permite valores `0`, `1`, `2`, `3` para resolver prioridades cuando hay tarifas solapadas.
-  - Si varias tarifas activas del mismo tipo estan vigentes para la fecha actual, gana la de mayor peso; si empata, gana la vigencia mas reciente y luego la creada mas recientemente.
-  - Supabase impide duplicar tarifas activas con el mismo `habitacion_tipo + temporada + peso` mediante un indice unico parcial.
-  - Next valida esa misma regla en `upsertTarifaAction` para mostrar un mensaje claro antes de guardar.
-  - Al reservar no se elige tarifa manualmente; la tarifa actual se deriva por fecha local actual (`America/La_Paz`), tipo de habitacion, vigencia y peso.
-  - El servidor valida que el `tarifa_id` recibido sea la tarifa vigente/prioritaria antes de insertar la reserva.
+  - Al crear/editar tarifa desde `/admin/tarifas`, se define tipo, temporada, vigencia, precio y estado; la asociacion se hace desde habitaciones.
+  - La tarifa permanente de cada habitación es `public.habitaciones.tarifa_id`; permanece asociada hasta que se cambie manualmente desde la habitación.
+  - Al reservar no se elige tarifa manualmente: se utiliza la tarifa asociada a la habitación.
+  - El servidor valida que el `tarifa_id` recibido sea exactamente el asociado a la habitación antes de insertar la reserva.
   - Habitaciones inactivas no se pueden seleccionar en los flujos de reserva.
 - Zona horaria y formato de fechas:
   - Supabase local esta configurado en `America/La_Paz`.
@@ -293,7 +290,7 @@ Notas de esquema:
 - Ultimo punto sano de backup/restore completo verificado: `backups/20260717T154907Z`.
 - Se aplico historicamente `public.tarifas.habitacion_id` mediante `supabase/migrations/202607040002_add_tarifa_habitacion_id.sql`, pero luego fue reemplazado.
 - La relacion vigente es `public.habitaciones.tarifa_id`; `public.tarifas.habitacion_id` fue eliminado por `supabase/migrations/202607090003_drop_tarifas_habitacion_id.sql`.
-- `public.tarifas.peso` fue agregado por `supabase/migrations/202607120001_add_tarifas_peso.sql`; tiene constraint `0..3`, indices de prioridad/vigencia y un indice unico parcial para evitar repetir `habitacion_tipo + temporada + peso` en tarifas activas.
+- La columna histórica `public.tarifas.peso` se elimina con `supabase/migrations/202609130002_drop_tarifas_peso.sql`; la tarifa vigente de una habitación se determina únicamente por `public.habitaciones.tarifa_id`.
 - `supabase/migrations/202607140001_add_stay_schedule_settings.sql` agrega `checkin_programado_at` y `checkout_programado_at` a `public.reservas` y claves de horario en `configuracion_hostal`.
 - `supabase/migrations/202607140002_drop_reservas_real_check_times.sql` elimina `checkin_at` y `checkout_at` si todavia existen.
 - `supabase/migrations/202607140003_add_payment_proof_timeout_setting.sql` agrega la clave `reserva_comprobante_espera_minutos`.
@@ -427,9 +424,8 @@ Verificaciones recientes:
 - `scripts/restore-supabase-local.sh` actualizado para filtrar ACL/GRANTs de particiones diarias `realtime.messages_YYYY_MM_DD`; el filtro fue verificado contra un dump local.
 - Tablas/listados actualizados para usar paginacion server-side con Supabase y UI de busqueda/orden/columnas/filas por pagina.
 - Supabase local verificado: `public.tarifas` ya no tiene `habitacion_id`; `public.habitaciones` tiene `tarifa_id`.
-- Supabase local verificado: `public.tarifas` tiene `peso smallint NOT NULL DEFAULT 0`, constraint `tarifas_peso_check` e indice unico parcial `tarifas_tipo_temporada_peso_activa_uidx`.
 - Supabase local verificado: `current_setting('TimeZone') = America/La_Paz`.
-- `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id`, tras configurar timezone y tras agregar/validar `tarifas.peso`.
+- `supabase-rest` fue reiniciado tras eliminar `tarifas.habitacion_id` y configurar timezone; la columna histórica `tarifas.peso` se elimina con la migración final correspondiente.
 - Supabase local verificado con Docker: existen tabla `public.img_habitaciones`, bucket `habitaciones` y politicas RLS para `storage.objects`.
 - Supabase local verificado con Docker: despues del restore sano existen 21 objetos en Storage `habitaciones` y 21 filas en `public.img_habitaciones`; las habitaciones tienen entre 2 y 3 fotos.
 - Supabase local verificado con Docker: bucket `comprobante` publico con limite 10 MB y MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
@@ -492,6 +488,7 @@ Archivos:
 - `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql`
 - `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql`
 - `supabase/migrations/202607200001_normalize_metodo_pago_values.sql`
+- `supabase/migrations/202609130002_drop_tarifas_peso.sql`
 
 La primera migracion agrega:
 
@@ -512,7 +509,7 @@ La sexta configura la zona horaria local de Postgres/Supabase en `America/La_Paz
 
 La septima elimina `public.tarifas.habitacion_id` y recarga el schema cache de PostgREST.
 
-La octava agrega `public.tarifas.peso`, constraints de prioridad e indice unico parcial para no repetir `habitacion_tipo + temporada + peso` en tarifas activas.
+La octava agregó históricamente `public.tarifas.peso`; la migración `202609130002_drop_tarifas_peso.sql` elimina esa lógica y deja como fuente única la tarifa asociada en `public.habitaciones.tarifa_id`.
 
 La novena agrega horarios programados de estadia y claves operativas de check-in/check-out.
 

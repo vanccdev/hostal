@@ -79,7 +79,7 @@ export default async function ReservasClientePage({ searchParams }: { searchPara
       tarifaIds.length > 0
         ? supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .in("id", tarifaIds)
         : Promise.resolve({ data: [] as Tarifa[] }),
       habitacionIds.length > 0

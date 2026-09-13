@@ -152,8 +152,7 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
               <SelectContent>
                 {tarifas.map((availableTarifa) => (
                   <SelectItem key={availableTarifa.id} value={availableTarifa.id}>
-                    {availableTarifa.habitacion_tipo} / {availableTarifa.temporada} - {availableTarifa.precio_noche} · peso{" "}
-                    {availableTarifa.peso}
+                    {availableTarifa.habitacion_tipo} / {availableTarifa.temporada} - {availableTarifa.precio_noche}
                   </SelectItem>
                 ))}
               </SelectContent>

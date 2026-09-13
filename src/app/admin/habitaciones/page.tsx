@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { allColumnsValue, ilikePattern, orIlike, parseTableQuery, searchableColumnsByTable, sortableColumnsByTable, tableStateFromQuery, type TableQueryInput } from "@/lib/table-server";
-import { selectTarifaActualParaHabitacion } from "@/lib/tarifas";
+import { selectTarifaAsignadaParaHabitacion } from "@/lib/tarifas";
 import type { Habitacion, ImgHabitacion, Tarifa } from "@/types/database";
 
 type HabitacionConImagenes = Habitacion & {
@@ -52,12 +52,12 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
             .order("created_at"),
           supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
-            .order("peso", { ascending: false }),
+            .order("habitacion_tipo"),
           supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
             .order("habitacion_tipo"),
         ])
@@ -66,7 +66,7 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
           Promise.resolve({ data: [] }),
           supabase
             .from("tarifas")
-            .select("id,habitacion_tipo,temporada,precio_noche,peso,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
+            .select("id,habitacion_tipo,temporada,precio_noche,moneda,vigente_desde,vigente_hasta,activa,created_by,created_at")
             .eq("activa", true)
             .order("habitacion_tipo"),
         ]);
@@ -80,7 +80,7 @@ export default async function HabitacionesPage({ searchParams }: { searchParams:
   }
 
   for (const habitacion of data ?? []) {
-    const tarifa = selectTarifaActualParaHabitacion(habitacion, tarifas ?? []);
+    const tarifa = selectTarifaAsignadaParaHabitacion(habitacion, tarifas ?? []);
 
     if (tarifa) {
       tariffsByRoom.set(habitacion.id, {
