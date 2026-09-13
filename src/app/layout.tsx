@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PublicAnalyticsTracker } from "@/components/analytics/PublicAnalyticsTracker";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -88,7 +89,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ThemeToggle />
           <WhatsAppFloatingButton />
-          <PublicAnalyticsTracker />
+          <Suspense fallback={null}>
+            <PublicAnalyticsTracker />
+          </Suspense>
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>

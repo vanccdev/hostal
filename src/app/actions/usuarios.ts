@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { formValue, validationErrors } from "@/app/actions/helpers";
 import type { ActionState } from "@/app/actions/types";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
@@ -159,4 +160,86 @@ export const createStaffUserAction = async (
     message: "Usuario del sistema creado. Debe iniciar sesión con la contraseña temporal y cambiarla.",
     data: { userId: created.user.id },
   };
+};
+
+export const deleteUserAccountAction = async (userId: string): Promise<ActionState> => {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser?.profile || currentUser.profile.rol !== "admin") {
+    return { ok: false, message: "Solo un administrador puede eliminar usuarios." };
+  }
+
+  const parsedUserId = z.uuid().safeParse(userId);
+  if (!parsedUserId.success) return { ok: false, message: "Usuario inválido." };
+  if (parsedUserId.data === currentUser.authUserId) {
+    return { ok: false, message: "No puedes eliminar tu propia cuenta." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  const [{ data: profile, error: profileError }, { data: guest, error: guestError }] = await Promise.all([
+    admin.from("usuarios").select("id,nombre,rol").eq("id", parsedUserId.data).maybeSingle(),
+    admin.from("huespedes").select("*").eq("usuario_id", parsedUserId.data).maybeSingle(),
+  ]);
+
+  if (profileError || guestError) return { ok: false, message: "No se pudo consultar el usuario." };
+  if (!profile) return { ok: false, message: "El usuario no existe." };
+
+  const [{ count: reservationCount }, { count: tariffCount }, { count: qrCount }, { count: registeredReservationCount }, { count: verifiedPaymentCount }, { count: uploadedProofCount }, { count: auditCount }] = await Promise.all([
+    guest
+      ? admin.from("reservas").select("id", { count: "exact", head: true }).eq("huesped_id", guest.id)
+      : Promise.resolve({ count: 0 }),
+    admin.from("tarifas").select("id", { count: "exact", head: true }).eq("created_by", parsedUserId.data),
+    admin.from("qr_pagos").select("id", { count: "exact", head: true }).eq("created_by", parsedUserId.data),
+    admin.from("reservas").select("id", { count: "exact", head: true }).eq("registrado_por", parsedUserId.data),
+    admin.from("transacciones").select("id", { count: "exact", head: true }).eq("verificado_por", parsedUserId.data),
+    admin.from("comprobantes").select("id", { count: "exact", head: true }).eq("uploaded_by", parsedUserId.data),
+    admin.from("audit_log").select("id", { count: "exact", head: true }).eq("usuario_id", parsedUserId.data),
+  ]);
+
+  if ((reservationCount ?? 0) > 0 || (registeredReservationCount ?? 0) > 0) {
+    return { ok: false, message: "No se puede eliminar: el usuario tiene reservas asociadas. Desactiva la cuenta en su lugar." };
+  }
+
+  if ((tariffCount ?? 0) > 0 || (qrCount ?? 0) > 0 || (verifiedPaymentCount ?? 0) > 0 || (uploadedProofCount ?? 0) > 0 || (auditCount ?? 0) > 0) {
+    return { ok: false, message: "No se puede eliminar: el usuario tiene registros administrativos asociados. Desactiva la cuenta en su lugar." };
+  }
+
+  const { error: notificationsError } = await admin
+    .from("notificaciones")
+    .delete()
+    .or(`usuario_id.eq.${parsedUserId.data},actor_id.eq.${parsedUserId.data}`);
+  if (notificationsError) return { ok: false, message: "No se pudieron eliminar las notificaciones del usuario." };
+
+  await writeAuditLog(admin, {
+    actor_id: currentUser.authUserId,
+    accion: "usuario.eliminado",
+    entidad: "usuarios",
+    entidad_id: parsedUserId.data,
+    metadata: { nombre: profile.nombre, rol: profile.rol, tenia_huesped: Boolean(guest) },
+  });
+
+  if (guest) {
+    const { error } = await admin.from("huespedes").delete().eq("id", guest.id);
+    if (error) return { ok: false, message: `No se pudo eliminar la ficha de huésped: ${error.message}` };
+  }
+
+  const { error: profileDeleteError } = await admin.from("usuarios").delete().eq("id", parsedUserId.data);
+  if (profileDeleteError) return { ok: false, message: `No se pudo eliminar el perfil interno: ${profileDeleteError.message}` };
+
+  const { error: authDeleteError } = await admin.auth.admin.deleteUser(parsedUserId.data);
+  if (authDeleteError) return { ok: false, message: `El perfil fue eliminado, pero no se pudo eliminar Auth: ${authDeleteError.message}` };
+
+  await emitEvent(admin, {
+    event: "usuario.eliminado",
+    title: "Usuario eliminado",
+    message: `Se eliminó el usuario ${profile.nombre}.`,
+    actorId: currentUser.authUserId,
+    entity: "usuarios",
+    entityId: parsedUserId.data,
+    payload: { rol: profile.rol },
+  });
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/notificaciones");
+  return { ok: true, message: "Usuario, ficha de huésped y cuenta Auth eliminados." };
 };

@@ -3,6 +3,7 @@ import { KeyRound } from "lucide-react";
 import { DataTable } from "@/components/crud/DataTable";
 import { columnsForTable } from "@/components/crud/table-columns";
 import { UsuarioStaffForm } from "@/components/forms/UsuarioStaffForm";
+import { DeleteUserButton } from "@/components/admin/DeleteUserButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
@@ -76,16 +77,19 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
                 key: "acciones",
                 header: "Acciones",
                 render: (row) =>
-                  row.rol === "cliente" ? (
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/admin/usuarios/${row.id}/reset-password`}>
-                        <KeyRound className="h-4 w-4" aria-hidden="true" />
-                        Reset
-                      </Link>
-                    </Button>
-                  ) : (
-                    "-"
-                  ),
+                  <div className="flex flex-wrap items-center gap-2">
+                    {row.rol === "cliente" ? (
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/usuarios/${row.id}/reset-password`}>
+                          <KeyRound className="h-4 w-4" aria-hidden="true" />
+                          Reset
+                        </Link>
+                      </Button>
+                    ) : null}
+                    {currentUser.profile!.rol === "admin" ? (
+                      <DeleteUserButton userId={row.id} userName={row.nombre} disabled={row.id === currentUser.authUserId} />
+                    ) : null}
+                  </div>,
               },
             ]}
           />

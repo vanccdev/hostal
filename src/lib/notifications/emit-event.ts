@@ -21,6 +21,7 @@ const notificationByEvent: Partial<
   "cliente.cuenta_creada_por_personal": { tipo: "cliente", destinatario_rol: "recepcionista" },
   "cliente.password_restablecido": { tipo: "seguridad", destinatario_rol: "admin" },
   "usuario.personal_creado": { tipo: "seguridad", destinatario_rol: "admin" },
+  "usuario.eliminado": { tipo: "seguridad", destinatario_rol: "admin" },
   "reserva.creada": { tipo: "reserva", destinatario_rol: "recepcionista" },
   "reserva.confirmada": { tipo: "reserva", destinatario_rol: "todos" },
   "reserva.cancelada": { tipo: "reserva", destinatario_rol: "todos" },

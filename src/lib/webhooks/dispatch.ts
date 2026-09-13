@@ -21,7 +21,8 @@ export type DomainEvent =
   | "cliente.perfil_actualizado"
   | "cliente.cuenta_creada_por_personal"
   | "cliente.password_restablecido"
-  | "usuario.personal_creado";
+  | "usuario.personal_creado"
+  | "usuario.eliminado";
 
 const getWebhookUrl = (event: DomainEvent) => {
   if (event.startsWith("reserva.")) {
