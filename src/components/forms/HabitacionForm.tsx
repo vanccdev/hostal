@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type DragEvent, useActionState, useEffect, useRef, useState } from "react";
+import { type DragEvent, type FormEvent, useActionState, useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BedDouble, ImagePlus, ImageUp, Tag, X } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -43,7 +43,6 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
   const [activa, setActiva] = useState(habitacion?.activa ?? true);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const [deletedExistingImageIds, setDeletedExistingImageIds] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const imagePreviewsRef = useRef<ImagePreview[]>([]);
   const form = useForm<z.input<typeof habitacionSchema>>({
     resolver: zodResolver(habitacionSchema),
@@ -76,20 +75,6 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
     setImagePreviews(nextPreviews);
   };
 
-  const syncFileInput = (files: File[]) => {
-    if (!fileInputRef.current) {
-      return;
-    }
-
-    const dataTransfer = new DataTransfer();
-
-    for (const file of files) {
-      dataTransfer.items.add(file);
-    }
-
-    fileInputRef.current.files = dataTransfer.files;
-  };
-
   const replaceImageSelection = (files: File[]) => {
     for (const preview of imagePreviewsRef.current) {
       URL.revokeObjectURL(preview.url);
@@ -103,7 +88,6 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
       url: URL.createObjectURL(file),
     }));
 
-    syncFileInput(selectedFiles);
     setPreviewState(nextPreviews);
   };
 
@@ -115,17 +99,12 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
       URL.revokeObjectURL(removedPreview.url);
     }
 
-    syncFileInput(nextPreviews.map((preview) => preview.file));
     setPreviewState(nextPreviews);
   };
 
   const clearImageInput = () => {
     for (const preview of imagePreviewsRef.current) {
       URL.revokeObjectURL(preview.url);
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
     }
 
     setPreviewState([]);
@@ -153,8 +132,35 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
     replaceImageSelection(files);
   };
 
+  const openImagePicker = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp,image/gif";
+    input.multiple = true;
+    input.addEventListener("change", () => {
+      replaceImageSelection(Array.from(input.files ?? []));
+    });
+    input.click();
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const isValid = await form.trigger();
+    if (!isValid) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    for (const preview of imagePreviewsRef.current) {
+      formData.append("imagenes", preview.file);
+    }
+
+    action(formData);
+  };
+
   return (
-    <form action={action} className="space-y-4" onSubmit={() => form.trigger()}>
+    <form action={action} className="space-y-4" onSubmit={handleSubmit}>
       <ActionToast
         state={state}
         successTitle={habitacion ? "Habitación actualizada" : "Habitación creada"}
@@ -162,13 +168,14 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
         onSuccess={handleSuccess}
       />
       {habitacion ? <input type="hidden" value={habitacion.id} {...form.register("id")} /> : null}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
+      <div className="flex w-full min-w-0 flex-col items-stretch gap-6 md:flex-row">
+        <div className="flex w-full min-w-0 flex-none flex-wrap gap-4 md:flex-1 md:basis-0">
+        <div className="min-w-0 flex-1 basis-full space-y-2 sm:basis-[calc(50%-0.5rem)]">
           <Label htmlFor="numero">Número</Label>
           <Input id="numero" {...form.register("numero")} />
           <FormMessage state={state} field="numero" />
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 flex-1 basis-full space-y-2 sm:basis-[calc(50%-0.5rem)]">
           <Label htmlFor="tipo">Tipo</Label>
           <Select
             name="tipo"
@@ -191,19 +198,19 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 flex-1 basis-full space-y-2 sm:basis-[calc(50%-0.5rem)]">
           <Label htmlFor="piso">Piso</Label>
           <Input id="piso" type="number" min="1" {...form.register("piso")} />
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 flex-1 basis-full space-y-2 sm:basis-[calc(50%-0.5rem)]">
           <Label htmlFor="capacidadMax">Capacidad máxima</Label>
           <Input id="capacidadMax" type="number" min="1" {...form.register("capacidadMax")} />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="min-w-0 basis-full space-y-2">
           <Label htmlFor="descripcion">Descripción</Label>
           <Textarea id="descripcion" {...form.register("descripcion")} />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="min-w-0 basis-full space-y-2">
           <Label htmlFor="tarifaId">Tarifa asociada</Label>
           {hasTarifas ? (
             <Select
@@ -241,34 +248,53 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
           )}
           <FormMessage state={state} field="tarifaId" />
         </div>
+        <div className="flex basis-full items-center justify-between gap-4 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
+          <input type="hidden" name="activa" value={activa ? "true" : "false"} />
+          <div className="space-y-1">
+            <Label htmlFor="activa">Estado de la habitación</Label>
+            <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
+              {activa ? "Activa para reservas." : "Inactiva para nuevas reservas."}
+            </p>
+          </div>
+          <Switch
+            id="activa"
+            checked={activa}
+            onCheckedChange={(checked) => {
+              setActiva(checked);
+              form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
+            }}
+            aria-label="Cambiar estado activo de la habitación"
+          />
+        </div>
+        </div>
         <div
-          className="space-y-2 sm:col-span-2"
+          className="flex w-full min-w-0 flex-none flex-col gap-2 overflow-hidden md:flex-1 md:basis-0"
           onDragOver={(event) => {
             event.preventDefault();
           }}
           onDrop={handleImageDrop}
         >
-          <Label htmlFor="imagenes">Imágenes</Label>
+          <Label>Imágenes</Label>
           {existingImageCount > 0 ? (
-            <div className="space-y-3 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
+            <div className="w-full min-w-0 max-w-full space-y-3 overflow-hidden rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Imágenes actuales</p>
                 <span className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
                   {existingImageCount} foto{existingImageCount === 1 ? "" : "s"}
                 </span>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="flex w-full min-w-0 max-w-full flex-wrap gap-3">
                 {visibleExistingImages.map((image, index) => (
                   <div
                     key={image.id}
-                    className="relative overflow-hidden rounded-xl border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23]"
+                    className="relative w-full min-w-0 max-w-full flex-1 basis-full overflow-hidden rounded-xl border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23] sm:basis-[calc(50%-0.75rem)]"
                   >
                     <div className="relative aspect-[4/3]">
                       <Image
                         src={image.url}
                         alt={`Imagen actual ${index + 1} de habitación ${habitacion?.numero ?? ""}`}
                         fill
-                        sizes="(min-width: 1024px) 180px, (min-width: 640px) 50vw, 100vw"
+                        sizes="100vw"
                         className="object-cover"
                         unoptimized
                       />
@@ -286,9 +312,11 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
               Esta habitación no tiene imágenes cargadas.
             </div>
           ) : null}
-          <label
-            htmlFor="imagenes"
-            className="flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-6 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex w-full max-w-full cursor-pointer flex-col items-center justify-center gap-3 whitespace-normal break-words rounded-2xl border border-dashed border-[#d8d4c8] bg-[#f6f1e6] px-4 py-8 text-center transition-colors hover:border-[#c7a35a] hover:bg-[#f4ecd8] dark:border-[#314237] dark:bg-[#1d2c23] dark:hover:border-[#e8d59a] dark:hover:bg-[#223229]"
+            onClick={openImagePicker}
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c7a35a] text-[#102317]">
               <ImagePlus className="h-5 w-5" aria-hidden="true" />
@@ -301,30 +329,20 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
                 {imageCount > 0 ? `${imageCount} imagen${imageCount === 1 ? "" : "es"} seleccionada${imageCount === 1 ? "" : "s"}` : "Puedes subir varias imágenes a la vez."}
               </span>
             </span>
-          </label>
-          <Input
-            ref={fileInputRef}
-            id="imagenes"
-            name="imagenes"
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            className="sr-only"
-            onChange={(event) => replaceImageSelection(Array.from(event.currentTarget.files ?? []))}
-          />
+          </Button>
           {imagePreviews.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex w-full min-w-0 max-w-full flex-wrap gap-3">
               {imagePreviews.map((preview, index) => (
                 <div
                   key={`${preview.name}-${preview.url}`}
-                  className="relative overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d]"
+                  className="relative w-full min-w-0 max-w-full flex-1 basis-full overflow-hidden rounded-xl border border-[#d8d4c8] bg-white dark:border-[#314237] dark:bg-[#18251d] sm:basis-[calc(50%-0.75rem)]"
                 >
                   <div className="relative aspect-[4/3] bg-[#f6f1e6] dark:bg-[#1d2c23]">
                     <Image
                       src={preview.url}
                       alt={`Vista previa ${index + 1}: ${preview.name}`}
                       fill
-                      sizes="(min-width: 1024px) 180px, (min-width: 640px) 50vw, 100vw"
+                      sizes="100vw"
                       className="object-cover"
                       unoptimized
                     />
@@ -347,26 +365,6 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
             </div>
           ) : null}
           <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">JPG, PNG, WEBP o GIF. Máximo 5 MB por imagen.</p>
-        </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-[#d8d4c8] bg-white p-3 dark:border-[#314237] dark:bg-[#18251d]">
-          <input type="hidden" name="activa" value={activa ? "true" : "false"} />
-          <div className="space-y-1">
-            <Label htmlFor="activa">Estado de la habitación</Label>
-            <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-              {activa ? "Activa para reservas." : "Inactiva para nuevas reservas."}
-            </p>
-          </div>
-          <Switch
-            id="activa"
-            checked={activa}
-            onCheckedChange={(checked) => {
-              setActiva(checked);
-              form.setValue("activa", checked, { shouldDirty: true, shouldValidate: true });
-            }}
-            aria-label="Cambiar estado activo de la habitación"
-          />
         </div>
       </div>
       <Button type="submit" disabled={pending || !hasTarifas}>
