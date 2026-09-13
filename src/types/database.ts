@@ -97,6 +97,24 @@ export type Tarifa = {
   created_at: string;
 };
 
+export type AnalyticsVisit = {
+  id: string;
+  session_id: string;
+  path: string;
+  referrer: string | null;
+  source: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  country_code: string | null;
+  device_type: string;
+  browser: string;
+  started_at: string;
+  last_seen_at: string;
+  duration_seconds: number;
+  is_bounce: boolean;
+};
+
 export type Reserva = {
   id: string;
   codigo_reserva: string;
@@ -274,6 +292,13 @@ export type Database = {
         WithGeneratedId<Tarifa> &
           Pick<Tarifa, "habitacion_tipo" | "temporada" | "precio_noche" | "vigente_desde" | "created_by"> &
           Partial<Omit<Tarifa, "id" | "habitacion_tipo" | "temporada" | "precio_noche" | "vigente_desde" | "created_by">>
+      >;
+      analytics_visits: DbTable<
+        AnalyticsVisit,
+        WithGeneratedId<AnalyticsVisit> &
+          Pick<AnalyticsVisit, "session_id" | "path"> &
+          Partial<Omit<AnalyticsVisit, "id" | "session_id" | "path">>,
+        Partial<AnalyticsVisit>
       >;
       reservas: DbTable<
         Reserva,

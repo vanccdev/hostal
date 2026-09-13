@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminModule } from "@/lib/auth/require-admin-module";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { APP_LOCALE, APP_TIME_ZONE, localISODate } from "@/lib/datetime";
-import { BedDouble, CalendarCheck, CircleDollarSign, Users } from "lucide-react";
+import { BedDouble, CalendarCheck, CircleDollarSign, Eye, MousePointerClick, Timer, Users } from "lucide-react";
 import type { ReservaCanal, ReservaEstado } from "@/types/database";
 
 const tables = ["habitaciones", "huespedes", "reservas", "usuarios"] as const;
@@ -224,14 +224,14 @@ const MountainChart = ({ points }: { points: MonthlyPoint[] }) => {
   );
 };
 
-const BarChart = ({ items }: { items: Segment[] }) => {
+const BarChart = ({ items, subtitle, title }: { items: Segment[]; subtitle: string; title: string }) => {
   const maxValue = Math.max(...items.map((item) => item.value), 1);
 
   return (
     <Card className="rounded-lg">
       <CardHeader>
-        <CardTitle>Barras por canal</CardTitle>
-        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Origen de reservas registradas.</p>
+        <CardTitle>{title}</CardTitle>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{subtitle}</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {items.map((item) => {
@@ -254,14 +254,14 @@ const BarChart = ({ items }: { items: Segment[] }) => {
   );
 };
 
-const PieChart = ({ segments }: { segments: Segment[] }) => {
+const PieChart = ({ segments, subtitle, title }: { segments: Segment[]; subtitle: string; title: string }) => {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0);
 
   return (
     <Card className="rounded-lg">
       <CardHeader>
-        <CardTitle>Torta por estado</CardTitle>
-        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Distribución histórica de reservas.</p>
+        <CardTitle>{title}</CardTitle>
+        <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{subtitle}</p>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center gap-5 sm:flex-row lg:flex-col xl:flex-row">
@@ -297,7 +297,7 @@ export default async function AdminPage() {
   const supabase = createSupabaseAdminClient();
   const today = localISODate();
   const sixMonthsAgo = toLocalDateKey(addDays(new Date(), -185));
-  const [counts, estadoCounts, canalCounts, recentReservations, occupiedReservations] = await Promise.all([
+  const [counts, estadoCounts, canalCounts, recentReservations, occupiedReservations, analyticsResult] = await Promise.all([
     Promise.all(
       tables.map(async (table): Promise<CountItem> => {
         const { count } = await supabase.from(table).select("*", { count: "exact", head: true });
@@ -330,7 +330,14 @@ export default async function AdminPage() {
       .lte("fecha_ingreso", today)
       .gt("fecha_salida", today)
       .in("estado", activeReservationStates),
+    supabase
+      .from("analytics_visits")
+      .select("session_id,path,source,country_code,device_type,duration_seconds,is_bounce,started_at")
+      .order("started_at", { ascending: false })
+      .range(0, 99_999),
   ]);
+
+  const analyticsVisits = analyticsResult.data ?? [];
 
   const countByTable = new Map(counts.map((item) => [item.table, item.count]));
   const totalHabitaciones = countByTable.get("habitaciones") ?? 0;
@@ -367,6 +374,36 @@ export default async function AdminPage() {
 
   const totalRevenue = monthlyPoints.reduce((sum, point) => sum + point.revenue, 0);
   const confirmedCount = estadoCounts.find((item) => item.estado === "confirmada")?.count ?? 0;
+  const uniqueVisitors = new Set(analyticsVisits.map((visit) => visit.session_id)).size;
+  const averageDuration = analyticsVisits.length > 0
+    ? Math.round(analyticsVisits.reduce((sum, visit) => sum + (visit.duration_seconds ?? 0), 0) / analyticsVisits.length)
+    : 0;
+  const bounceRate = analyticsVisits.length > 0
+    ? Math.round((analyticsVisits.filter((visit) => visit.is_bounce).length / analyticsVisits.length) * 100)
+    : 0;
+  const groupedAnalytics = (key: "source" | "country_code" | "device_type") => {
+    const countsByKey = new Map<string, number>();
+    for (const visit of analyticsVisits) {
+      const value = visit[key] || (key === "country_code" ? "No identificado" : "Desconocido");
+      countsByKey.set(value, (countsByKey.get(value) ?? 0) + 1);
+    }
+    return [...countsByKey.entries()]
+      .sort(([, left], [, right]) => right - left)
+      .slice(0, 6)
+      .map(([label, value], index) => ({
+        color: ["#2f6f4e", "#c7a35a", "#4f88c6", "#c6534f", "#8064a2", "#6b7280"][index],
+        key: label,
+        label: label === "directo" ? "Directo" : label,
+        value,
+      }));
+  };
+  const analyticsSourceSegments = groupedAnalytics("source");
+  const analyticsCountrySegments = groupedAnalytics("country_code");
+  const analyticsDeviceSegments = groupedAnalytics("device_type");
+  const formatDuration = (seconds: number) => {
+    if (seconds < 60) return `${seconds} s`;
+    return `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+  };
 
   const metricCards = [
     {
@@ -406,11 +443,33 @@ export default async function AdminPage() {
           <MetricCard key={item.title} {...item} />
         ))}
       </div>
+      <section className="space-y-4" aria-labelledby="alcance-title">
+        <div>
+          <h2 id="alcance-title" className="text-xl font-semibold">Alcance del sitio</h2>
+          <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Acumulado desde la creación de la tabla de analítica hasta hoy.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard count={numberFormatter.format(analyticsVisits.length)} detail="Páginas públicas abiertas" icon={Eye} title="Visitas" />
+          <MetricCard count={numberFormatter.format(uniqueVisitors)} detail="Sesiones de navegación" icon={Users} title="Visitantes únicos" />
+          <MetricCard count={formatDuration(averageDuration)} detail="Promedio por página visitada" icon={Timer} title="Tiempo promedio" />
+          <MetricCard count={`${bounceRate}%`} detail="Visitas de menos de 10 segundos" icon={MousePointerClick} title="Rebote" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <BarChart items={analyticsSourceSegments} title="Medios de llegada" subtitle="Fuente o dominio que llevó al visitante." />
+          <BarChart items={analyticsCountrySegments} title="Países" subtitle="País detectado por el proxy del servidor." />
+          <BarChart items={analyticsDeviceSegments} title="Dispositivos" subtitle="Tipo de dispositivo registrado." />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PieChart segments={analyticsSourceSegments} title="Distribución por medio" subtitle="Porcentaje de visitas según su procedencia." />
+          <PieChart segments={analyticsCountrySegments} title="Distribución por país" subtitle="Porcentaje de visitas según país identificado." />
+        </div>
+        <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">El país depende de que el proxy del servidor envíe el código de país. Si no existe ese encabezado, se muestra como “No identificado”.</p>
+      </section>
       <div className="space-y-4">
         <MountainChart points={monthlyPoints} />
         <div className="grid gap-4 lg:grid-cols-2">
-          <BarChart items={channelSegments} />
-          <PieChart segments={statusSegments} />
+          <BarChart items={channelSegments} title="Reservas por canal" subtitle="Origen de reservas registradas." />
+          <PieChart segments={statusSegments} title="Reservas por estado" subtitle="Distribución histórica de reservas." />
         </div>
       </div>
     </section>

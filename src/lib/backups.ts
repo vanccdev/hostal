@@ -18,6 +18,7 @@ const databaseTables = [
   "configuracion_hostal",
   "audit_log",
   "notificaciones",
+  "analytics_visits",
 ] as const;
 
 type BackupAccess =
