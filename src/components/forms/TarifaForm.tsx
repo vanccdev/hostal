@@ -8,7 +8,7 @@ import type { z } from "zod";
 import { upsertTarifaAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
+import { ResponsiveDateRangePickerField } from "@/components/forms/ResponsiveDateRangePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ type TarifaFormProps = {
 export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
   const [state, action, pending] = useActionState(upsertTarifaAction, initialActionState);
   const [activa, setActiva] = useState(tarifa?.activa ?? true);
+  const [vigenteDesde, setVigenteDesde] = useState(tarifa?.vigente_desde ?? localISODate());
+  const [vigenteHasta, setVigenteHasta] = useState(tarifa?.vigente_hasta ?? "");
   const form = useForm<z.input<typeof tarifaSchema>>({
     resolver: zodResolver(tarifaSchema),
     defaultValues: {
@@ -103,31 +105,21 @@ export const TarifaForm = ({ tarifa, onSuccess }: TarifaFormProps) => {
         </div>
         <div className="space-y-2">
           <Label>Vigencia</Label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="vigenteDesde" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-                Desde
-              </Label>
-              <ResponsiveDatePickerField
-                id="vigenteDesde"
-                name="vigenteDesde"
-                defaultValue={tarifa?.vigente_desde ?? localISODate()}
-                placeholder="Inicio"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="vigenteHasta" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-                Hasta
-              </Label>
-              <ResponsiveDatePickerField
-                id="vigenteHasta"
-                name="vigenteHasta"
-                defaultValue={tarifa?.vigente_hasta ?? ""}
-                placeholder="Sin final"
-              />
-            </div>
-          </div>
+          <ResponsiveDateRangePickerField
+            startId="vigenteDesde"
+            endId="vigenteHasta"
+            startName="vigenteDesde"
+            endName="vigenteHasta"
+            startValue={vigenteDesde}
+            endValue={vigenteHasta}
+            onChange={({ from, to }) => {
+              setVigenteDesde(from);
+              setVigenteHasta(to);
+            }}
+            placeholder="Seleccionar vigencia"
+            required
+          />
+          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">La fecha final es opcional para una tarifa sin vencimiento.</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

@@ -8,7 +8,7 @@ import type { z } from "zod";
 import { createBloqueoFechasAction } from "@/app/actions/crud";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
+import { ResponsiveDateRangePickerField } from "@/components/forms/ResponsiveDateRangePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -169,38 +169,25 @@ export const BloqueoForm = ({ blockedRoomIds, habitaciones }: BloqueoFormProps) 
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="fechaInicio">Inicio del bloqueo</Label>
-          <ResponsiveDatePickerField
-            id="fechaInicio"
-            name="fechaInicio"
-            value={fechaInicio}
-            onChange={(value) => {
-              form.setValue("fechaInicio", value, { shouldDirty: true, shouldValidate: true });
-            }}
-            disablePast
-            required
-          />
-          <FormMessage state={state} field="fechaInicio" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="fechaFin">Fin / fecha de liberación</Label>
-          <ResponsiveDatePickerField
-            id="fechaFin"
-            name="fechaFin"
-            value={fechaFin}
-            onChange={(value) => {
-              form.setValue("fechaFin", value, { shouldDirty: true, shouldValidate: true });
-            }}
-            disablePast
-            required
-          />
-          <FormMessage state={state} field="fechaFin" />
-          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-            La habitación vuelve a estar disponible en esta fecha.
-          </p>
-        </div>
+      <div className="space-y-2">
+        <Label>Periodo del bloqueo</Label>
+        <ResponsiveDateRangePickerField
+          startId="fechaInicio"
+          endId="fechaFin"
+          startName="fechaInicio"
+          endName="fechaFin"
+          startValue={fechaInicio}
+          endValue={fechaFin}
+          onChange={({ from, to }) => {
+            form.setValue("fechaInicio", from, { shouldDirty: true, shouldValidate: true });
+            form.setValue("fechaFin", to, { shouldDirty: true, shouldValidate: true });
+          }}
+          disablePast
+          required
+        />
+        <FormMessage state={state} field="fechaInicio" />
+        <FormMessage state={state} field="fechaFin" />
+        <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">La habitación vuelve a estar disponible en la fecha final.</p>
       </div>
 
       <div className="space-y-2">

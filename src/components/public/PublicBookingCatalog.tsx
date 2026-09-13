@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BedDouble, Eye, ImageIcon, Users } from "lucide-react";
-import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
+import { ResponsiveDateRangePickerField } from "@/components/forms/ResponsiveDateRangePickerField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
@@ -244,34 +244,20 @@ export const PublicBookingCatalog = ({
             <Label>Fechas</Label>
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
             <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{cancellationPolicyText(staySettings)}</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="publicFechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-                  Ingreso
-                </Label>
-                <ResponsiveDatePickerField
-                  id="publicFechaIngreso"
-                  name="publicFechaIngreso"
-                  value={fechaIngreso}
-                  onChange={setFechaIngreso}
-                  placeholder="Seleccionar ingreso"
-                  disablePast
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="publicFechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-                  Salida
-                </Label>
-                <ResponsiveDatePickerField
-                  id="publicFechaSalida"
-                  name="publicFechaSalida"
-                  value={fechaSalida}
-                  onChange={setFechaSalida}
-                  placeholder="Seleccionar salida"
-                  disablePast
-                />
-              </div>
-            </div>
+            <ResponsiveDateRangePickerField
+              startId="publicFechaIngreso"
+              endId="publicFechaSalida"
+              startName="publicFechaIngreso"
+              endName="publicFechaSalida"
+              startValue={fechaIngreso}
+              endValue={fechaSalida}
+              onChange={({ from, to }) => {
+                setFechaIngreso(from);
+                setFechaSalida(to);
+              }}
+              placeholder="Seleccionar fechas de estadía"
+              disablePast
+            />
           </div>
           <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
             Selecciona una habitación para iniciar sesión o crear tu cuenta y continuar la reserva.

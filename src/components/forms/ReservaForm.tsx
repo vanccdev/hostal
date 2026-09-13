@@ -7,7 +7,7 @@ import { BedDouble, CalendarCheck, CalendarPlus, CheckCircle2, ImageIcon, Mail, 
 import { createClientReservation, createStaffReservation } from "@/app/actions/reservas";
 import { initialActionState } from "@/app/actions/types";
 import { ActionToast } from "@/components/forms/ActionToast";
-import { ResponsiveDatePickerField } from "@/components/forms/ResponsiveDatePickerField";
+import { ResponsiveDateRangePickerField } from "@/components/forms/ResponsiveDateRangePickerField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -557,37 +557,24 @@ export const ReservaForm = ({
         <Label>Fechas</Label>
         <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{stayPolicyText(staySettings)}</p>
         <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">{cancellationPolicyText(staySettings)}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="fechaIngreso" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-              Ingreso
-            </Label>
-            <ResponsiveDatePickerField
-              id="fechaIngreso"
-              name="fechaIngreso"
-              value={fechaIngreso}
-              onChange={setFechaIngreso}
-              placeholder="Seleccionar ingreso"
-              disablePast
-              required
-            />
-            <FormMessage state={state} field="fechaIngreso" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fechaSalida" className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
-              Salida
-            </Label>
-            <ResponsiveDatePickerField
-              id="fechaSalida"
-              name="fechaSalida"
-              value={fechaSalida}
-              onChange={setFechaSalida}
-              placeholder="Seleccionar salida"
-              disablePast
-              required
-            />
-            <FormMessage state={state} field="fechaSalida" />
-          </div>
+        <ResponsiveDateRangePickerField
+          startId="fechaIngreso"
+          endId="fechaSalida"
+          startName="fechaIngreso"
+          endName="fechaSalida"
+          startValue={fechaIngreso}
+          endValue={fechaSalida}
+          onChange={({ from, to }) => {
+            setFechaIngreso(from);
+            setFechaSalida(to);
+          }}
+          placeholder="Seleccionar fechas de estadía"
+          disablePast
+          required
+        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <FormMessage state={state} field="fechaIngreso" />
+          <FormMessage state={state} field="fechaSalida" />
         </div>
       </div>
 
