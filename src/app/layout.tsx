@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/favicons.ico",
+        url: "/icono.jpg",
         width: 2048,
         height: 2048,
         alt: "Logo de Hostal Plaza Camargo",
@@ -55,10 +55,10 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: siteName,
     description: siteDescription,
-    images: ["/favicons.ico"],
+    images: ["/icono.jpg"],
   },
   robots: {
     index: true,

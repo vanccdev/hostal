@@ -45,12 +45,19 @@ export const metadata: Metadata = {
     url: "/",
     images: [
       {
-        url: "/favicons.ico",
-        width: 256,
-        height: 256,
+        url: "/icono.jpg",
+        width: 2048,
+        height: 2048,
         alt: "Hostal Plaza Camargo",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hospedaje en Bolivia | Hostal Plaza Camargo",
+    description:
+      "Hostal Plaza ofrece hospedaje, habitaciones y reservas en Camargo, Chuquisaca. Planifica tu estadía en Bolivia y consulta disponibilidad en línea.",
+    images: ["/icono.jpg"],
   },
 };
 
@@ -60,7 +67,7 @@ const structuredData = {
   name: siteName,
   description: siteDescription,
   url: siteUrl.toString(),
-  image: new URL("/favicons.ico", siteUrl).toString(),
+  image: new URL("/icono.jpg", siteUrl).toString(),
   address: {
     "@type": "PostalAddress",
     addressLocality: "Camargo",
