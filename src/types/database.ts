@@ -12,7 +12,6 @@ export type TipoDocumento = "CI" | "Pasaporte" | "DNI" | "RUC" | "Otro";
 export type TemporadaTarifa = "alta" | "baja" | "normal";
 export type ReservaCanal = "whatsapp" | "recepcion" | "walkin" | "web";
 export type ReservaEstado = "pendiente_pago" | "confirmada" | "checkin" | "checkout" | "cancelada" | "no_show";
-export type EstadoHabitacion = "disponible" | "ocupada" | "limpieza" | "mantenimiento" | "bloqueada";
 export type MetodoPago = "qr" | "tarjeta" | "efectivo";
 export type EstadoVerificacionPago = "por_verificar" | "aprobada" | "rechazada";
 export type TransaccionTipo = "pago" | "reembolso_50" | "reembolso_total";
@@ -173,24 +172,6 @@ export type BloqueoFecha = {
   created_at: string;
 };
 
-export type EstadoHabitacionRow = {
-  id: string;
-  habitacion_id: string;
-  estado: EstadoHabitacion;
-  cambiado_por: string;
-  notas: string | null;
-  changed_at: string;
-};
-
-export type LogEstadoHabitacion = {
-  id: string;
-  habitacion_id: string;
-  estado_anterior: EstadoHabitacion | null;
-  estado_nuevo: EstadoHabitacion | null;
-  cambiado_por: string;
-  created_at: string;
-};
-
 export type ConfiguracionHostal = {
   id: string;
   clave: string;
@@ -338,18 +319,6 @@ export type Database = {
         WithGeneratedId<BloqueoFecha> &
           Pick<BloqueoFecha, "fecha_inicio" | "fecha_fin" | "motivo" | "creado_por"> &
           Partial<Pick<BloqueoFecha, "habitacion_id" | "created_at">>
-      >;
-      estado_habitaciones: DbTable<
-        EstadoHabitacionRow,
-        WithGeneratedId<EstadoHabitacionRow> &
-          Pick<EstadoHabitacionRow, "habitacion_id" | "estado" | "cambiado_por"> &
-          Partial<Pick<EstadoHabitacionRow, "notas" | "changed_at">>
-      >;
-      log_estados_habitacion: DbTable<
-        LogEstadoHabitacion,
-        WithGeneratedId<LogEstadoHabitacion> &
-          Pick<LogEstadoHabitacion, "habitacion_id" | "cambiado_por"> &
-          Partial<Pick<LogEstadoHabitacion, "estado_anterior" | "estado_nuevo" | "created_at">>
       >;
       configuracion_hostal: DbTable<
         ConfiguracionHostal,

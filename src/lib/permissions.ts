@@ -15,7 +15,6 @@ export type AdminModule =
   | "comprobantes"
   | "qr"
   | "bloqueos"
-  | "estado-habitaciones"
   | "notificaciones"
   | "configuracion"
   | "auditoria"
@@ -35,7 +34,6 @@ const permissions: Record<UserRole, AdminModule[]> = {
     "comprobantes",
     "qr",
     "bloqueos",
-    "estado-habitaciones",
     "notificaciones",
     "configuracion",
     "auditoria",
@@ -53,11 +51,10 @@ const permissions: Record<UserRole, AdminModule[]> = {
     "comprobantes",
     "qr",
     "bloqueos",
-    "estado-habitaciones",
     "notificaciones",
     "usuarios",
   ],
-  limpieza: ["dashboard", "habitaciones", "estado-habitaciones"],
+  limpieza: ["dashboard", "habitaciones"],
   cliente: [],
 };
 

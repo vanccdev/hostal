@@ -86,8 +86,6 @@ export const searchableColumnsByTable: Partial<Record<TableName, string[]>> = {
   cancelaciones: ["id", "reserva_id", "motivo", "politica_aplicada", "gestionado_por"],
   comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "pdf_url", "uploaded_by"],
   bloqueos_fechas: ["id", "habitacion_id", "motivo", "creado_por"],
-  estado_habitaciones: ["id", "habitacion_id", "estado", "cambiado_por", "notas"],
-  log_estados_habitacion: ["id", "habitacion_id", "estado_anterior", "estado_nuevo", "cambiado_por"],
   configuracion_hostal: ["id", "clave", "valor", "descripcion"],
   notificaciones: ["id", "tipo", "reserva_id", "usuario_id", "mensaje", "destinatario_rol"],
 };
@@ -110,8 +108,6 @@ export const sortableColumnsByTable: Partial<Record<TableName, string[]>> = {
   ],
   comprobantes: ["numero_comprobante", "emitido_at", "created_at"],
   bloqueos_fechas: ["fecha_inicio", "fecha_fin", "created_at"],
-  estado_habitaciones: ["estado", "changed_at"],
-  log_estados_habitacion: ["created_at"],
   configuracion_hostal: ["clave", "updated_at"],
   notificaciones: ["tipo", "leida", "destinatario_rol", "created_at"],
 };

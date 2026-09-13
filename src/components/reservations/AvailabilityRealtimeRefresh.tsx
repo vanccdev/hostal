@@ -97,7 +97,6 @@ export const AvailabilityRealtimeRefresh = ({
       .on("postgres_changes", { event: "*", schema: "public", table: "reservas" }, () => refresh(true))
       .on("postgres_changes", { event: "*", schema: "public", table: "bloqueos_fechas" }, () => refresh(true))
       .on("postgres_changes", { event: "*", schema: "public", table: "habitaciones" }, () => refresh(true))
-      .on("postgres_changes", { event: "*", schema: "public", table: "estado_habitaciones" }, () => refresh(true))
       .subscribe();
     const intervalId = window.setInterval(checkAvailabilityVersion, intervalMs);
     const handleVisibilityChange = () => {

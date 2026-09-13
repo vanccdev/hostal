@@ -86,15 +86,8 @@ export const bloqueoSchema = z
     message: "Selecciona solo una habitación para este alcance.",
   });
 
-export const estadoHabitacionSchema = z.object({
-  habitacionId: z.uuid("Habitación inválida"),
-  estado: z.enum(["disponible", "ocupada", "limpieza", "mantenimiento", "bloqueada"], "Selecciona un estado"),
-  notas: z.string().max(400, "Usa 400 caracteres o menos").optional(),
-});
-
 export type HabitacionInput = z.infer<typeof habitacionSchema>;
 export type HuespedInput = z.infer<typeof huespedSchema>;
 export type TarifaInput = z.infer<typeof tarifaSchema>;
 export type StaySettingsInput = z.infer<typeof staySettingsSchema>;
 export type BloqueoInput = z.infer<typeof bloqueoSchema>;
-export type EstadoHabitacionInput = z.infer<typeof estadoHabitacionSchema>;

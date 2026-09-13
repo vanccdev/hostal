@@ -187,8 +187,6 @@ const schemaColumns: Partial<Record<TableName, string[]>> = {
   ],
   comprobantes: ["id", "reserva_id", "transaccion_id", "numero_comprobante", "emitido_at", "pdf_url", "uploaded_by", "created_at"],
   bloqueos_fechas: ["id", "habitacion_id", "fecha_inicio", "fecha_fin", "motivo", "creado_por", "created_at"],
-  estado_habitaciones: ["id", "habitacion_id", "estado", "cambiado_por", "notas", "changed_at"],
-  log_estados_habitacion: ["id", "habitacion_id", "estado_anterior", "estado_nuevo", "cambiado_por", "created_at"],
   configuracion_hostal: ["id", "clave", "valor", "descripcion", "updated_at"],
   audit_log: [
     "id",

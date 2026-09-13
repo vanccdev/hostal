@@ -15,8 +15,6 @@ const databaseTables = [
   "comprobantes",
   "cancelaciones",
   "bloqueos_fechas",
-  "estado_habitaciones",
-  "log_estados_habitacion",
   "configuracion_hostal",
   "audit_log",
   "notificaciones",

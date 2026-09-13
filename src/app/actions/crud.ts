@@ -14,13 +14,12 @@ import {
 } from "@/lib/stay-settings";
 import {
   bloqueoSchema,
-  estadoHabitacionSchema,
   habitacionSchema,
   huespedSchema,
   staySettingsSchema,
   tarifaSchema,
 } from "@/schemas/crud";
-import type { BloqueoInput, EstadoHabitacionInput } from "@/schemas/crud";
+import type { BloqueoInput } from "@/schemas/crud";
 import type { ActionState } from "@/app/actions/types";
 import {
   duplicatedGuestDocumentState,
@@ -87,10 +86,6 @@ const validateRoomImageFiles = (files: File[]) => {
 
 type BloqueoActionData = {
   values?: BloqueoInput;
-};
-
-type EstadoHabitacionActionData = {
-  values?: EstadoHabitacionInput;
 };
 
 type ActiveReservationForBlock = {
@@ -640,125 +635,6 @@ export const deleteBloqueoFechasAction = async (
   });
 
   return { ok: true, message: "Fechas desbloqueadas." };
-};
-
-export const updateEstadoHabitacionAction = async (
-  _state: ActionState,
-  formData: FormData,
-): Promise<ActionState<EstadoHabitacionActionData>> => {
-  const currentUser = await getCurrentUser();
-  const rawValues = {
-    habitacionId: formValue(formData, "habitacionId"),
-    estado: formValue(formData, "estado"),
-    notas: formValue(formData, "notas"),
-  };
-
-  if (
-    !currentUser?.profile ||
-    !canAccessAdminModule(currentUser.profile.rol, "estado-habitaciones")
-  ) {
-    return {
-      ok: false,
-      message: "No tienes permiso para cambiar el estado de habitaciones.",
-      data: { values: rawValues as EstadoHabitacionInput },
-    };
-  }
-
-  const parsed = estadoHabitacionSchema.safeParse(rawValues);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      errors: validationErrors(parsed.error),
-      data: { values: rawValues as EstadoHabitacionInput },
-    };
-  }
-
-  const admin = createSupabaseAdminClient();
-  const { data: habitacion, error: habitacionError } = await admin
-    .from("habitaciones")
-    .select("id,numero")
-    .eq("id", parsed.data.habitacionId)
-    .maybeSingle();
-
-  if (habitacionError || !habitacion) {
-    return {
-      ok: false,
-      message: habitacionError?.message ?? "La habitación no existe.",
-      data: { values: parsed.data },
-    };
-  }
-
-  const { data: currentStates, error: currentStateError } = await admin
-    .from("estado_habitaciones")
-    .select("id,estado")
-    .eq("habitacion_id", parsed.data.habitacionId)
-    .order("changed_at", { ascending: false })
-    .limit(1);
-
-  if (currentStateError) {
-    return {
-      ok: false,
-      message: currentStateError.message,
-      data: { values: parsed.data },
-    };
-  }
-
-  const previousState = currentStates?.[0]?.estado ?? null;
-  const payload = {
-    habitacion_id: parsed.data.habitacionId,
-    estado: parsed.data.estado,
-    cambiado_por: currentUser.authUserId,
-    notas: parsed.data.notas || null,
-    changed_at: new Date().toISOString(),
-  };
-  const existingStateId = currentStates?.[0]?.id;
-  const { error } = existingStateId
-    ? await admin
-        .from("estado_habitaciones")
-        .update(payload)
-        .eq("id", existingStateId)
-    : await admin.from("estado_habitaciones").insert(payload);
-
-  if (error) {
-    return { ok: false, message: error.message, data: { values: parsed.data } };
-  }
-
-  const { error: logError } = await admin
-    .from("log_estados_habitacion")
-    .insert({
-      habitacion_id: parsed.data.habitacionId,
-      estado_anterior: previousState,
-      estado_nuevo: parsed.data.estado,
-      cambiado_por: currentUser.authUserId,
-    });
-
-  if (logError) {
-    return {
-      ok: false,
-      message: logError.message,
-      data: { values: parsed.data },
-    };
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/estado-habitaciones");
-
-  await emitEvent(admin, {
-    event: "habitacion.estado_actualizado",
-    title: "Estado de habitación actualizado",
-    message: `Habitación ${habitacion.numero} marcada como ${parsed.data.estado}.`,
-    actorId: currentUser.authUserId,
-    entity: "estado_habitaciones",
-    entityId: existingStateId,
-    payload: {
-      habitacion_id: parsed.data.habitacionId,
-      estado_anterior: previousState,
-      estado_nuevo: parsed.data.estado,
-    },
-  });
-
-  return { ok: true, message: "Estado actualizado." };
 };
 
 export const upsertHuespedAction = async (

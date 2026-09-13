@@ -42,7 +42,6 @@ const items: { href: string; label: string; module: AdminModule; icon: React.Com
   { href: "/admin/comprobantes", label: "Comprobantes", module: "comprobantes", icon: FileCheck },
   { href: "/admin/cancelaciones", label: "Cancelaciones", module: "cancelaciones", icon: LockKeyhole },
   { href: "/admin/bloqueos", label: "Bloqueos", module: "bloqueos", icon: LockKeyhole },
-  { href: "/admin/estado-habitaciones", label: "Estado", module: "estado-habitaciones", icon: BedDouble },
   { href: "/admin/notificaciones", label: "Notificaciones", module: "notificaciones", icon: Bell },
   { href: "/admin/configuracion", label: "Configuración", module: "configuracion", icon: Settings },
   { href: "/admin/auditoria", label: "Auditoría", module: "auditoria", icon: History },

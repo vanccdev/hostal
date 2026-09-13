@@ -324,7 +324,5 @@ public.notificaciones
 public.cancelaciones
 public.huespedes_reserva
 public.bloqueos_fechas
-public.estado_habitaciones
-public.log_estados_habitacion
 public.audit_log
 ```

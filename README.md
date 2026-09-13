@@ -221,7 +221,7 @@ Pendiente o siguiente iteracion:
 
 - Seguir validando nombres/tipos exactos de columnas contra la instancia Supabase local/self-hosted.
 - Comparar `src/types/database.ts` con tipos generados desde Supabase cuando el CLI este disponible.
-- Completar CRUD avanzado restante para transacciones, comprobantes, cancelaciones, bloqueos, estado de habitaciones y configuracion; en usuarios ya existe creacion de personal y reset de clientes, falta edicion/desactivacion controlada.
+- Completar CRUD avanzado restante para transacciones, comprobantes, cancelaciones, bloqueos y configuracion; en usuarios ya existe creacion de personal y reset de clientes, falta edicion/desactivacion controlada.
 - Definir estrategia de backup programado en produccion y almacenamiento externo cifrado.
 - Implementar busqueda avanzada de cliente por nombre, email, telefono y documento en `/admin/reservas/nueva`.
 - Implementar flujo combinado "crear cliente nuevo + crear reserva" desde `/admin/reservas/nueva`.
@@ -333,7 +333,7 @@ Notas de esquema:
 - Limpieza local de predespliegue realizada:
   - Se preservo `admin@admin.com` como unico usuario en `auth.users` y `public.usuarios`.
   - Se preservaron `public.habitaciones`, `public.img_habitaciones`, Storage bucket `habitaciones`, `public.tarifas` y `public.configuracion_hostal`.
-  - Quedaron vacias `public.huespedes`, `public.reservas`, `public.transacciones`, `public.comprobantes`, `public.notificaciones`, `public.cancelaciones`, `public.huespedes_reserva`, `public.bloqueos_fechas`, `public.estado_habitaciones`, `public.log_estados_habitacion` y `public.audit_log`.
+  - Quedaron vacias `public.huespedes`, `public.reservas`, `public.transacciones`, `public.comprobantes`, `public.notificaciones`, `public.cancelaciones`, `public.huespedes_reserva`, `public.bloqueos_fechas` y `public.audit_log`.
   - Conteos finales verificados: `habitaciones = 10`, `img_habitaciones = 21`, Storage `habitaciones = 21`, `tarifas = 15`, `configuracion_hostal = 5`, `auth.users = 1`, `public.usuarios = 1`.
 
 ## Desarrollo

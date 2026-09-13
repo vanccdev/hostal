@@ -30,7 +30,6 @@ const notificationByEvent: Partial<
   "pago.rechazado": { tipo: "pago", destinatario_rol: "todos" },
   "habitacion.guardada": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "habitacion.imagen_eliminada": { tipo: "habitacion", destinatario_rol: "recepcionista" },
-  "habitacion.estado_actualizado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "bloqueo_fechas.creado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "bloqueo_fechas.eliminado": { tipo: "habitacion", destinatario_rol: "recepcionista" },
   "huesped.actualizado": { tipo: "huesped", destinatario_rol: "recepcionista" },
