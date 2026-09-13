@@ -41,7 +41,6 @@ export const useFileUpload = ({
   const isAccepted = useCallback(
     (file: File) => {
       if (accept === "*") return true;
-      if (accept.includes("image/") && !file.type.startsWith("image/")) return false;
       const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
       return accept.split(",").some((candidate) => {
         const value = candidate.trim().toLowerCase();
@@ -110,6 +109,7 @@ export const useFileUpload = ({
   const handleDrop = useCallback((event: DragEvent<HTMLElement>) => {
     event.preventDefault();
     setIsDragging(false);
+    if (inputRef.current?.disabled) return;
     if (event.dataTransfer.files.length > 0) addFiles(event.dataTransfer.files);
   }, [addFiles]);
 
