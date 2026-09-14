@@ -138,7 +138,7 @@ Implementado:
   - `/admin/configuracion` administra check-in, check-out y espera de comprobante.
   - `configuracion_hostal.reserva_comprobante_espera_minutos` define cuantos minutos se espera el comprobante antes de cancelar una reserva `pendiente_pago`.
   - Valor `0` desactiva la cancelacion automatica.
-  - Tambien administra politica de cancelacion: `cancelacion_reembolso_horas` y `cancelacion_retencion_porcentaje`.
+  - Tambien administra politica de cancelacion: con 48 horas o mas se devuelve el 20% y el hostal retiene el 80%; con menos de 48 horas no hay reembolso y el hostal retiene el 100%.
   - Endpoint protegido para cron: `/api/jobs/cancelar-reservas-vencidas`, con `Authorization: Bearer <CRON_SECRET>`.
   - La cancelacion automatica solo afecta reservas `pendiente_pago` vencidas sin comprobante, sin `comprobante_url` y sin transaccion aprobada.
   - La disponibilidad se refresca con `/api/availability/version`, Realtime y revalidacion client-side para liberar habitaciones en navegadores abiertos.
@@ -315,6 +315,7 @@ Notas de esquema:
 - `supabase/migrations/202607190009_manual_cancellation_accounting_rpc.sql` agrega RPC atomico para cancelacion manual con contabilidad.
 - `supabase/migrations/202607190010_add_cancellation_accounting_snapshot.sql` agrega snapshot de monto pagado aprobado y porcentaje aplicado en `public.cancelaciones`.
 - `supabase/migrations/202607200001_normalize_metodo_pago_values.sql` normaliza `transacciones.metodo_pago` a `qr`, `tarjeta`, `efectivo` y reemplaza el constraint `transacciones_metodo_pago_check`.
+- `supabase/migrations/202609130004_normalize_cancellation_policy.sql` fija la política de cancelación en 48 horas y 20% de reembolso, dejando sin uso el parámetro legado de 24 horas.
 - Endpoints protegidos recientes:
   - `/api/admin/payment-verification/pending`: usado por el sidebar admin para saber si hay pagos por verificar.
   - `/api/app/reservas/[id]/status`: usado por la pantalla cliente de reserva para sincronizar estado de reserva, comprobante y verificacion de pago.

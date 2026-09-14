@@ -295,6 +295,13 @@ export default async function Home() {
                   <span>CALLE GRAU 13</span>
                 </p>
                 <a
+                  href="tel:+59173790380"
+                  className="flex items-center gap-2 text-[#66736a] transition-colors hover:text-[#18221b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:text-[#b7c0b4] dark:hover:text-zinc-100"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-[#c7a35a]" aria-hidden="true" />
+                  <span>+591 73790380</span>
+                </a>
+                <a
                   href="tel:+59175453686"
                   className="flex items-center gap-2 text-[#66736a] transition-colors hover:text-[#18221b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7a35a] dark:text-[#b7c0b4] dark:hover:text-zinc-100"
                 >

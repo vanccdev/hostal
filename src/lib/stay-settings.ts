@@ -9,7 +9,6 @@ export const staySettingKeys = {
   timezone: "reserva_timezone",
   paymentProofTimeoutMinutes: "reserva_comprobante_espera_minutos",
   cancellationPartialRefundHours: "cancelacion_reembolso_parcial_horas",
-  cancellationNoRefundHours: "cancelacion_sin_reembolso_horas",
   cancellationPartialRefundPercent: "cancelacion_reembolso_parcial_porcentaje",
 } as const;
 
@@ -20,7 +19,6 @@ export type StaySettings = {
   timezone: string;
   paymentProofTimeoutMinutes: number;
   cancellationPartialRefundHours: number;
-  cancellationNoRefundHours: number;
   cancellationPartialRefundPercent: number;
 };
 
@@ -31,7 +29,6 @@ export const defaultStaySettings: StaySettings = {
   timezone: APP_TIME_ZONE,
   paymentProofTimeoutMinutes: 120,
   cancellationPartialRefundHours: 48,
-  cancellationNoRefundHours: 24,
   cancellationPartialRefundPercent: 20,
 };
 
@@ -105,10 +102,6 @@ export const getStaySettings = async (supabase: SupabaseClient<Database>): Promi
       values.get(staySettingKeys.cancellationPartialRefundHours),
       defaultStaySettings.cancellationPartialRefundHours,
     ),
-    cancellationNoRefundHours: validHours(
-      values.get(staySettingKeys.cancellationNoRefundHours),
-      defaultStaySettings.cancellationNoRefundHours,
-    ),
     cancellationPartialRefundPercent: validPercent(
       values.get(staySettingKeys.cancellationPartialRefundPercent),
       defaultStaySettings.cancellationPartialRefundPercent,
@@ -129,5 +122,5 @@ export const stayPolicyText = (settings: StaySettings) =>
 export const cancellationPolicyText = (settings: StaySettings) => {
   const retainedPercent = 100 - settings.cancellationPartialRefundPercent;
 
-  return `Más de ${settings.cancellationPartialRefundHours} horas antes del check-in: reembolso del ${settings.cancellationPartialRefundPercent}% del importe pagado. Entre ${settings.cancellationPartialRefundHours} y ${settings.cancellationNoRefundHours} horas antes: sin reembolso. Menos de ${settings.cancellationNoRefundHours} horas antes o no presentación: sin reembolso. En el primer caso, el hostal retiene el ${retainedPercent}% del importe pagado.`;
+  return `Con ${settings.cancellationPartialRefundHours} horas o más de anticipación al check-in: se devuelve el ${settings.cancellationPartialRefundPercent}% del importe pagado y el hostal retiene el ${retainedPercent}%. Con menos de ${settings.cancellationPartialRefundHours} horas de anticipación (por ejemplo, 47:59): no hay reembolso y el hostal retiene el 100%.`;
 };

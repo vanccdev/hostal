@@ -161,18 +161,18 @@ Las pantallas de disponibilidad usan `/api/availability/version` como respaldo. 
 Las claves usadas son:
 
 ```text
-cancelacion_reembolso_horas
-cancelacion_retencion_porcentaje
+cancelacion_reembolso_parcial_horas
+cancelacion_reembolso_parcial_porcentaje
 ```
 
 Ejemplo:
 
 ```text
-cancelacion_reembolso_horas = 24
-cancelacion_retencion_porcentaje = 20
+cancelacion_reembolso_parcial_horas = 48
+cancelacion_reembolso_parcial_porcentaje = 20
 ```
 
-Significa que si el check-in programado es a las 13:00, el huesped tiene hasta las 01:00 de ese mismo dia para cancelar con reembolso total. Desde las 01:01 se aplica la retencion configurada sobre el monto efectivamente pagado y aprobado.
+Significa que con 48:00 horas o más de anticipación al check-in se devuelve el 20% del importe pagado y el hostal retiene el 80%. Con menos de 48:00 horas, por ejemplo 47:59, no se realiza reembolso y el hostal retiene el 100% del importe pagado y aprobado.
 
 Esta politica se muestra al reservar en el catalogo publico, en `/app`, en `/app/reservas/nueva` y en `/admin/reservas/nueva`.
 

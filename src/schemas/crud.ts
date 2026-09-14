@@ -44,11 +44,6 @@ export const staySettingsSchema = z
       .int("Ingresa horas completas")
       .min(0, "Usa 0 o una cantidad válida de horas")
       .max(8760, "El máximo es 8760 horas"),
-    cancellationNoRefundHours: z.coerce
-      .number()
-      .int("Ingresa horas completas")
-      .min(0, "Usa 0 o una cantidad válida de horas")
-      .max(8760, "El máximo es 8760 horas"),
     cancellationPartialRefundPercent: z.coerce
       .number()
       .int("Ingresa un porcentaje completo")
@@ -58,10 +53,6 @@ export const staySettingsSchema = z
   .refine((value) => calculateTurnoverMinutes(value.checkoutTime, value.checkinTime) >= 1, {
     path: ["checkinTime"],
     message: "El check-in debe ser posterior al check-out por al menos 1 minuto.",
-  })
-  .refine((value) => value.cancellationNoRefundHours <= value.cancellationPartialRefundHours, {
-    path: ["cancellationNoRefundHours"],
-    message: "El límite sin reembolso debe ser menor o igual al límite de reembolso parcial.",
   });
 
 export const bloqueoSchema = z

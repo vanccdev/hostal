@@ -812,7 +812,6 @@ export const updateStaySettingsAction = async (
       formData,
       "cancellationPartialRefundHours",
     ),
-    cancellationNoRefundHours: formValue(formData, "cancellationNoRefundHours"),
     cancellationPartialRefundPercent: formValue(
       formData,
       "cancellationPartialRefundPercent",
@@ -866,12 +865,6 @@ export const updateStaySettingsAction = async (
         "Horas mínimas antes del check-in para aplicar el reembolso parcial.",
     },
     {
-      clave: staySettingKeys.cancellationNoRefundHours,
-      valor: String(parsed.data.cancellationNoRefundHours),
-      descripcion:
-        "Horas antes del check-in por debajo de las cuales no se realiza reembolso.",
-    },
-    {
       clave: staySettingKeys.cancellationPartialRefundPercent,
       valor: String(parsed.data.cancellationPartialRefundPercent),
       descripcion:
@@ -906,7 +899,6 @@ export const updateStaySettingsAction = async (
       payment_proof_timeout_minutes: parsed.data.paymentProofTimeoutMinutes,
       cancellation_partial_refund_hours:
         parsed.data.cancellationPartialRefundHours,
-      cancellation_no_refund_hours: parsed.data.cancellationNoRefundHours,
       cancellation_partial_refund_percent:
         parsed.data.cancellationPartialRefundPercent,
     },

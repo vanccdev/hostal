@@ -8,7 +8,7 @@ type CancellationPolicyInput = {
   fallbackDate: string;
   settings: Pick<
     StaySettings,
-    "checkinTime" | "cancellationPartialRefundHours" | "cancellationNoRefundHours" | "cancellationPartialRefundPercent"
+    "checkinTime" | "cancellationPartialRefundHours" | "cancellationPartialRefundPercent"
   >;
   now?: Date;
 };
@@ -62,7 +62,7 @@ export const calculateCancellationPolicy = ({
     };
   }
 
-  if (hoursUntilCheckin > settings.cancellationPartialRefundHours) {
+  if (now.getTime() <= cutoffTime) {
     const refundAmount = money(safePaidAmount * (settings.cancellationPartialRefundPercent / 100));
     const retainedAmount = money(safePaidAmount - refundAmount);
 
@@ -88,5 +88,5 @@ export const calculateCancellationPolicy = ({
   };
 };
 
-export const cancellationPolicyText = (settings: Pick<StaySettings, "checkinTime" | "cancellationPartialRefundHours" | "cancellationNoRefundHours" | "cancellationPartialRefundPercent">) =>
-  `Más de ${settings.cancellationPartialRefundHours} horas antes del check-in: reembolso del ${settings.cancellationPartialRefundPercent}% del importe pagado. Entre ${settings.cancellationPartialRefundHours} y ${settings.cancellationNoRefundHours} horas antes: sin reembolso. Menos de ${settings.cancellationNoRefundHours} horas antes o no presentación: sin reembolso.`;
+export const cancellationPolicyText = (settings: Pick<StaySettings, "checkinTime" | "cancellationPartialRefundHours" | "cancellationPartialRefundPercent">) =>
+  `Con ${settings.cancellationPartialRefundHours} horas o más de anticipación al check-in: se devuelve el ${settings.cancellationPartialRefundPercent}% del importe pagado y el hostal retiene el ${100 - settings.cancellationPartialRefundPercent}%. Con menos de ${settings.cancellationPartialRefundHours} horas de anticipación (por ejemplo, 47:59): no hay reembolso y el hostal retiene el 100%.`;

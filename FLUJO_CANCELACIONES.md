@@ -75,20 +75,18 @@ La politica se configura desde:
 Claves:
 
 ```text
-cancelacion_reembolso_horas
-cancelacion_retencion_porcentaje
+cancelacion_reembolso_parcial_horas
+cancelacion_reembolso_parcial_porcentaje
 ```
 
 Ejemplo:
 
 ```text
-cancelacion_reembolso_horas = 12
-cancelacion_retencion_porcentaje = 20
+cancelacion_reembolso_parcial_horas = 48
+cancelacion_reembolso_parcial_porcentaje = 20
 ```
 
-Si el check-in programado es a las `13:00`, el limite para cancelar con reembolso total es a la `01:00` del mismo dia.
-
-Desde la `01:01`, el sistema aplica el porcentaje configurado sobre el monto pagado aprobado.
+Con la política vigente, si el check-in programado es a las `13:00`, el corte de reembolso parcial es a las `13:00` del día anterior. Con `48:00` horas o más de anticipación se devuelve el `20%` del importe pagado y el hostal retiene el `80%`. Con `47:59` o menos no hay reembolso y el hostal retiene el `100%`.
 
 ## Calculo
 
@@ -104,8 +102,8 @@ monto_reembolso = monto_pagado_aprobado - monto_retenido
 Reglas:
 
 - Si no hay pago aprobado, todo queda en `0`.
-- Si se cancela antes o en el limite configurado, `monto_retenido = 0`.
-- Si se cancela despues del limite, `monto_retenido` se calcula con el porcentaje configurado.
+- Si se cancela con el límite configurado o más anticipación, `monto_reembolso` se calcula con el porcentaje configurado y `monto_retenido` conserva el resto.
+- Si se cancela con menos anticipación que el límite configurado, `monto_reembolso = 0` y `monto_retenido` conserva el `100%` del pago aprobado.
 - Los montos se redondean a 2 decimales.
 
 Ejemplo con reserva pagada de `400 BOB` y retencion `20%`:

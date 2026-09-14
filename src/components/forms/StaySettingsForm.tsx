@@ -42,14 +42,12 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
       checkoutTime: settings.checkoutTime,
       paymentProofTimeoutMinutes: settings.paymentProofTimeoutMinutes,
       cancellationPartialRefundHours: settings.cancellationPartialRefundHours,
-      cancellationNoRefundHours: settings.cancellationNoRefundHours,
       cancellationPartialRefundPercent: settings.cancellationPartialRefundPercent,
     },
   });
   const [checkinTime, setCheckinTime] = useState(settings.checkinTime);
   const [checkoutTime, setCheckoutTime] = useState(settings.checkoutTime);
   const cancellationPartialRefundHours = useWatch({ control: form.control, name: "cancellationPartialRefundHours" });
-  const cancellationNoRefundHours = useWatch({ control: form.control, name: "cancellationNoRefundHours" });
   const cancellationPartialRefundPercent = useWatch({ control: form.control, name: "cancellationPartialRefundPercent" });
   const turnoverMinutes = calculateTurnoverMinutes(checkoutTime, checkinTime);
   const validSchedule = hasValidStaySchedule(checkoutTime, checkinTime);
@@ -58,7 +56,6 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
     checkinTime,
     checkoutTime,
     cancellationPartialRefundHours: Number(cancellationPartialRefundHours),
-    cancellationNoRefundHours: Number(cancellationNoRefundHours),
     cancellationPartialRefundPercent: Number(cancellationPartialRefundPercent),
   };
 
@@ -121,22 +118,6 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
           <FormMessage state={state} field="cancellationPartialRefundHours" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cancellationNoRefundHours">Límite sin reembolso (horas)</Label>
-          <Input
-            id="cancellationNoRefundHours"
-            type="number"
-            min={0}
-            max={8760}
-            step={1}
-            {...form.register("cancellationNoRefundHours")}
-            name="cancellationNoRefundHours"
-          />
-          <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-            Entre este límite y el anterior no hay reembolso.
-          </p>
-          <FormMessage state={state} field="cancellationNoRefundHours" />
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="cancellationPartialRefundPercent">Reembolso parcial (%)</Label>
           <Input
             id="cancellationPartialRefundPercent"
@@ -148,7 +129,7 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
             name="cancellationPartialRefundPercent"
           />
           <p className="text-xs font-medium text-[#66736a] dark:text-[#b7c0b4]">
-            Porcentaje del importe pagado que se devuelve con más de 48 horas.
+            Porcentaje del importe pagado que se devuelve con 48 horas o más. Con menos de 48 horas no hay reembolso.
           </p>
           <FormMessage state={state} field="cancellationPartialRefundPercent" />
         </div>

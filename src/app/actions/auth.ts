@@ -48,6 +48,24 @@ const authErrorMessage = (error: { message?: string } | null | undefined, fallba
   return message && message !== "{}" ? message : fallback;
 };
 
+const changePasswordErrorMessage = (message: string) => {
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes("same") || normalizedMessage.includes("different")) {
+    return "La nueva contraseña debe ser diferente de la contraseña anterior.";
+  }
+
+  if (normalizedMessage.includes("password") && normalizedMessage.includes("at least")) {
+    return "La nueva contraseña debe tener al menos 8 caracteres.";
+  }
+
+  if (normalizedMessage.includes("session") || normalizedMessage.includes("jwt")) {
+    return "Tu sesión expiró. Inicia sesión nuevamente para cambiar la contraseña.";
+  }
+
+  return "No se pudo actualizar la contraseña. Intenta nuevamente.";
+};
+
 const validateGuestDocumentAvailableForUser = async <T = unknown>(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   numeroDocumento: string,
@@ -492,7 +510,7 @@ export const changePasswordAction = async (
   });
 
   if (error) {
-    return { ok: false, message: error.message };
+    return { ok: false, message: changePasswordErrorMessage(error.message) };
   }
 
   const admin = createSupabaseAdminClient();
@@ -502,7 +520,10 @@ export const changePasswordAction = async (
     .eq("id", currentUser.authUserId);
 
   if (profileError) {
-    return { ok: false, message: profileError.message };
+    return {
+      ok: false,
+      message: "La contraseña se actualizó, pero no se pudo completar el cambio de estado de la cuenta. Contacta al administrador.",
+    };
   }
 
   revalidatePath("/app");

@@ -581,7 +581,7 @@ export const ReservaForm = ({
       <input name="tarifaId" type="hidden" value={selectedTarifa?.id ?? ""} readOnly />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div ref={roomsSectionRef} className="scroll-mt-24 space-y-4">
+        <div ref={roomsSectionRef} className="order-2 scroll-mt-24 space-y-4 lg:order-1">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-[#18221b] dark:text-zinc-100">Habitaciones disponibles</h2>
@@ -625,7 +625,7 @@ export const ReservaForm = ({
           <FormMessage state={state} field="tarifaId" />
         </div>
 
-        <aside className="h-fit rounded-2xl border border-[#d8d4c8] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d]">
+        <aside className="order-1 h-fit rounded-2xl border border-[#d8d4c8] bg-white p-5 shadow-[0_8px_28px_rgba(0,0,0,0.08)] dark:border-[#314237] dark:bg-[#18251d] lg:order-2">
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold text-[#18221b] dark:text-zinc-100">Resumen</h2>
