@@ -213,6 +213,10 @@ Implementado:
   - El menu admin incluye "Verificar pagos" hacia `/admin/verificar-comprobantes`.
   - El menu movil admin se cierra al seleccionar una ruta.
   - El layout admin aplica grid solo desde `md` para evitar que el contenido quede visualmente centrado en movil.
+- Proteccion frente a clientes de despliegues anteriores:
+  - `NEXT_DEPLOYMENT_ID` debe cambiar en cada build de produccion.
+  - `src/components/system/DeploymentVersionGuard.tsx` no realiza polling; escucha el error especifico de Server Action desconocida que expone Next.js.
+  - Si una accion falla porque la pestaña pertenece a otro despliegue, realiza una unica recarga completa sin borrar cookies ni cerrar la sesion.
 
 Pendiente o siguiente iteracion:
 

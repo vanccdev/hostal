@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { PublicAnalyticsTracker } from "@/components/analytics/PublicAnalyticsTracker";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { WhatsAppFloatingButton } from "@/components/public/WhatsAppFloatingButton";
+import { DeploymentVersionGuard } from "@/components/system/DeploymentVersionGuard";
 import { Toaster } from "@/components/ui/sonner";
 import { siteDescription, siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -86,6 +87,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <DeploymentVersionGuard />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ThemeToggle />
           <WhatsAppFloatingButton />

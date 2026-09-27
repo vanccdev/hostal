@@ -9,7 +9,9 @@ services:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID}
+        # Debe cambiar en cada despliegue y ser el mismo para todas las réplicas.
+        # Compose falla si Dokploy no lo entrega durante la construcción.
+        NEXT_DEPLOYMENT_ID: ${NEXT_DEPLOYMENT_ID:?NEXT_DEPLOYMENT_ID debe configurarse como variable de construcción}
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
