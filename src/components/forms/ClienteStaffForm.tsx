@@ -56,7 +56,7 @@ export const ClienteStaffForm = () => {
         </Alert>
       ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
+        <div data-tour="client-contact" className="space-y-2 sm:col-span-2">
           <Label htmlFor="nombreCompleto">Nombre completo</Label>
           <Input id="nombreCompleto" {...form.register("nombreCompleto")} />
           <FormMessage state={state} field="nombreCompleto" />
@@ -71,7 +71,7 @@ export const ClienteStaffForm = () => {
           <Input id="telefono" {...form.register("telefono")} />
           <FormMessage state={state} field="telefono" />
         </div>
-        <div className="space-y-2">
+        <div data-tour="client-document" className="space-y-2">
           <Label htmlFor="tipoDocumento">Tipo documento</Label>
           <Controller
             control={form.control}
@@ -109,7 +109,7 @@ export const ClienteStaffForm = () => {
         </div>
       </div>
       <FormMessage state={state} />
-      <Button type="submit" disabled={pending}>
+      <Button data-tour="client-save" type="submit" disabled={pending}>
         <UserPlus className="h-4 w-4" aria-hidden="true" />
         Crear cliente
       </Button>

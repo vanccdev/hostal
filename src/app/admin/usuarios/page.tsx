@@ -51,7 +51,7 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
         </p>
       </div>
       {currentUser.profile!.rol === "admin" ? (
-        <Card>
+        <Card data-tour="user-create">
           <CardHeader>
             <CardTitle>Crear usuario del sistema</CardTitle>
           </CardHeader>
@@ -80,7 +80,7 @@ export default async function UsuariosPage({ searchParams }: { searchParams: Pro
                   <div className="flex flex-wrap items-center gap-2">
                     {row.rol === "cliente" ? (
                       <Button asChild variant="outline" size="sm">
-                        <Link href={`/admin/usuarios/${row.id}/reset-password`}>
+                        <Link data-tour="user-reset" href={`/admin/usuarios/${row.id}/reset-password`}>
                           <KeyRound className="h-4 w-4" aria-hidden="true" />
                           Reset
                         </Link>

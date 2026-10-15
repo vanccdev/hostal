@@ -172,7 +172,7 @@ export default async function TransaccionesPage({ searchParams }: { searchParams
         </p>
       </div>
 
-      <form className="flex flex-col gap-3 rounded-lg border border-[#d8d4c8] bg-white p-4 dark:border-[#314237] dark:bg-[#18251d] sm:flex-row">
+      <form data-tour="page-search" className="flex flex-col gap-3 rounded-lg border border-[#d8d4c8] bg-white p-4 dark:border-[#314237] dark:bg-[#18251d] sm:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
           <Input
@@ -193,7 +193,7 @@ export default async function TransaccionesPage({ searchParams }: { searchParams
         ) : null}
       </form>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div data-tour="page-metrics" className="grid gap-4 sm:grid-cols-3">
         <MetricCard label="Aprobado en esta página" value={formatMoney(approvedAmount)} />
         <MetricCard label="Por verificar" value={String(pendingCount)} />
         <MetricCard label="Rechazadas" value={String(rejectedCount)} />
@@ -213,7 +213,7 @@ export default async function TransaccionesPage({ searchParams }: { searchParams
         </div>
       )}
 
-      <div className="flex flex-col gap-4 rounded-lg border border-[#d8d4c8] bg-white p-4 text-sm dark:border-[#314237] dark:bg-[#18251d] md:flex-row md:items-center md:justify-between">
+      <div data-tour="pagination" className="flex flex-col gap-4 rounded-lg border border-[#d8d4c8] bg-white p-4 text-sm dark:border-[#314237] dark:bg-[#18251d] md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="font-medium text-[#18221b] dark:text-zinc-100">
             Mostrando {pageFrom}-{pageTo} de {total} transacciones
@@ -301,7 +301,7 @@ const TransactionCard = ({ item }: { item: TransactionCardItem }) => {
   const clienteContacto = [contacto?.email, contacto?.telefono].filter(Boolean).join(" · ") || "Sin contacto";
 
   return (
-    <Card className="overflow-hidden rounded-lg">
+    <Card data-tour="record-card" className="overflow-hidden rounded-lg">
       <CardContent className="space-y-5 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">

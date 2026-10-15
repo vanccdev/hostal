@@ -252,7 +252,7 @@ export default async function ReservaDetallePage({
             Vista paginada por tarjetas con reserva, cliente, habitación, pagos, comprobantes y seguimiento.
           </p>
         </div>
-        <form action="/admin/reserva-detalle" className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row">
+        <form data-tour="page-search" action="/admin/reserva-detalle" className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row">
           <input type="hidden" name="pageSize" value={query.pageSize} />
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" aria-hidden="true" />
@@ -262,7 +262,7 @@ export default async function ReservaDetallePage({
         </form>
       </div>
 
-      <div className="space-y-5">
+      <div data-tour="reservation-records" className="space-y-5">
         {items.length === 0 ? (
           <div className="rounded-lg border border-dashed border-[#d8d4c8] bg-white p-8 text-center dark:border-[#314237] dark:bg-[#18251d]">
             <p className="text-sm font-medium text-[#66736a] dark:text-[#b7c0b4]">No hay reservas para mostrar.</p>

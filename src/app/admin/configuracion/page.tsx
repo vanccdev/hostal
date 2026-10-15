@@ -25,7 +25,7 @@ export default async function ConfiguracionPage() {
         </p>
       </div>
 
-      <Card>
+      <Card data-tour="settings-form">
         <CardHeader>
           <CardTitle>Reglas de estadía</CardTitle>
           <CardDescription>
@@ -37,7 +37,7 @@ export default async function ConfiguracionPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="settings-summary">
         <CardHeader>
           <CardTitle>Asociación con reservas</CardTitle>
           <CardDescription>

@@ -33,6 +33,12 @@ Implementado:
   - `src/app/actions/usuarios.ts`
   - `src/app/actions/crud.ts`
 - Panel admin con rutas principales bajo `/admin`.
+- Tutoriales guiados con Driver.js en las 17 páginas del menú administrativo:
+  - Cada página incluye el botón **Ver tutorial**, con pasos en español sobre sus controles y flujos.
+  - Permiten avanzar, retroceder, cerrar con Escape y repetir la guía; no guardan datos ni ejecutan acciones.
+  - Respetan los permisos del rol y omiten controles ocultos o ausentes en listados vacíos.
+  - `src/lib/admin-navigation.ts` comparte las rutas del sidebar y `src/lib/admin-tutorials.ts` define sus recorridos.
+  - Los destinos usan atributos `data-tour`; al cambiar un control, mantener su ancla y revisar el texto de la guía.
 - Notificaciones administrativas en `/admin/notificaciones`:
   - Ya no usa tabla generica; muestra un feed tipo notificaciones con tarjetas ordenadas por fecha.
   - Las notificaciones no leidas usan fondo destacado; al abrir "Ver detalle" se marcan como leidas y cambian al estilo normal.

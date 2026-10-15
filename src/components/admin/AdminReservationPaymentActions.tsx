@@ -160,7 +160,7 @@ export const AdminReservationPaymentActions = ({
   }, []);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div data-tour="reservation-payment" className="flex flex-wrap gap-2">
       <ActionToast
         state={uploadState}
         successTitle="Comprobante registrado"

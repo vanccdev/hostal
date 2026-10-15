@@ -150,7 +150,7 @@ export default async function BloqueosPage({ searchParams }: { searchParams: Pro
         </p>
       </div>
 
-      <form className="flex flex-col gap-3 rounded-lg border border-[#d8d4c8] bg-white p-4 dark:border-[#314237] dark:bg-[#18251d] sm:flex-row">
+      <form data-tour="page-search" className="flex flex-col gap-3 rounded-lg border border-[#d8d4c8] bg-white p-4 dark:border-[#314237] dark:bg-[#18251d] sm:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
           <Input
@@ -171,7 +171,7 @@ export default async function BloqueosPage({ searchParams }: { searchParams: Pro
         ) : null}
       </form>
 
-      <Card className="rounded-lg">
+      <Card data-tour="block-create" className="rounded-lg">
         <CardHeader>
           <CardTitle>Crear bloqueo</CardTitle>
         </CardHeader>
@@ -180,7 +180,7 @@ export default async function BloqueosPage({ searchParams }: { searchParams: Pro
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div data-tour="page-metrics" className="grid gap-4 sm:grid-cols-3">
         <MetricCard label="Activos" value={String(activeCount)} />
         <MetricCard label="Programados" value={String(scheduledCount)} />
         <MetricCard label="Días bloqueados" value={String(totalBlockedDays)} />
@@ -231,7 +231,7 @@ const BlockCard = ({ item }: { item: BlockCardItem }) => {
   const roomDetail = habitacion ? `${habitacion.tipo} · Piso ${habitacion.piso} · Capacidad ${habitacion.capacidad_max}` : "Aplica al calendario general";
 
   return (
-    <Card className="overflow-hidden rounded-lg">
+    <Card data-tour="record-card" className="overflow-hidden rounded-lg">
       <CardContent className="space-y-5 p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
@@ -345,7 +345,7 @@ const Pagination = ({
   total: number;
   totalPages: number;
 }) => (
-  <div className="flex flex-col gap-4 rounded-lg border border-[#d8d4c8] bg-white p-4 text-sm dark:border-[#314237] dark:bg-[#18251d] md:flex-row md:items-center md:justify-between">
+  <div data-tour="pagination" className="flex flex-col gap-4 rounded-lg border border-[#d8d4c8] bg-white p-4 text-sm dark:border-[#314237] dark:bg-[#18251d] md:flex-row md:items-center md:justify-between">
     <div className="space-y-2">
       <p className="font-medium text-[#18221b] dark:text-zinc-100">
         Mostrando {pageFrom}-{pageTo} de {total} bloqueos

@@ -22,7 +22,7 @@ export const HabitacionEditDialog = ({ habitacion, tarifas }: HabitacionEditDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
+        <Button data-tour="room-edit" type="button" variant="outline" size="sm">
           <Pencil className="h-4 w-4" aria-hidden="true" />
           Editar
         </Button>

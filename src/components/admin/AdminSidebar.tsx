@@ -22,32 +22,20 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { adminNavigation } from "@/lib/admin-navigation";
 import { logoutAction } from "@/app/actions/auth";
 import { NotificationsNavBadge } from "@/components/admin/NotificationsNavBadge";
 import { PaymentVerificationNavBadge } from "@/components/admin/PaymentVerificationNavBadge";
 import { canAccessAdminModule, type AdminModule } from "@/lib/permissions";
 import type { UserRole } from "@/types/database";
 
-const items: { href: string; label: string; module: AdminModule; icon: React.ComponentType<{ className?: string }> }[] = [
-  { href: "/admin", label: "Panel", module: "dashboard", icon: Home },
-  { href: "/admin/habitaciones", label: "Habitaciones", module: "habitaciones", icon: BedDouble },
-  { href: "/admin/huespedes", label: "Huéspedes", module: "huespedes", icon: Users },
-  { href: "/admin/clientes/nuevo", label: "Nuevo cliente", module: "clientes", icon: UserPlus },
-  // { href: "/admin/reservas", label: "Reservas", module: "reservas", icon: CalendarDays },
-  { href: "/admin/reserva-detalle", label: "Reserva detalle", module: "reservas", icon: CalendarDays },
-  { href: "/admin/verificar-comprobantes", label: "Verificar pagos", module: "comprobantes", icon: FileCheck },
-  { href: "/admin/qr", label: "QR de pago", module: "qr", icon: QrCode },
-  { href: "/admin/tarifas", label: "Tarifas", module: "tarifas", icon: ClipboardList },
-  { href: "/admin/transacciones", label: "Transacciones", module: "transacciones", icon: Banknote },
-  { href: "/admin/comprobantes", label: "Comprobantes", module: "comprobantes", icon: FileCheck },
-  { href: "/admin/cancelaciones", label: "Cancelaciones", module: "cancelaciones", icon: LockKeyhole },
-  { href: "/admin/bloqueos", label: "Bloqueos", module: "bloqueos", icon: LockKeyhole },
-  { href: "/admin/notificaciones", label: "Notificaciones", module: "notificaciones", icon: Bell },
-  { href: "/admin/configuracion", label: "Configuración", module: "configuracion", icon: Settings },
-  { href: "/admin/auditoria", label: "Auditoría", module: "auditoria", icon: History },
-  { href: "/admin/backups", label: "Backups", module: "backups", icon: HardDriveDownload },
-  { href: "/admin/usuarios", label: "Usuarios", module: "usuarios", icon: Users },
-];
+const moduleIcons: Record<AdminModule, React.ComponentType<{ className?: string }>> = {
+  dashboard: Home, habitaciones: BedDouble, huespedes: Users, clientes: UserPlus,
+  reservas: CalendarDays, comprobantes: FileCheck, qr: QrCode, tarifas: ClipboardList,
+  transacciones: Banknote, cancelaciones: LockKeyhole, bloqueos: LockKeyhole,
+  notificaciones: Bell, configuracion: Settings, auditoria: History,
+  backups: HardDriveDownload, usuarios: Users,
+};
 
 type AdminSidebarProps = {
   role: UserRole;
@@ -56,12 +44,12 @@ type AdminSidebarProps = {
 export const AdminSidebar = ({ role }: AdminSidebarProps) => {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const visibleItems = items.filter((item) => canAccessAdminModule(role, item.module));
+  const visibleItems = adminNavigation.filter((item) => canAccessAdminModule(role, item.module));
 
   const renderNav = (closeOnSelect: boolean) => (
     <nav aria-label="Administración" className="grid gap-1">
       {visibleItems.map((item) => {
-        const Icon = item.icon;
+        const Icon = moduleIcons[item.module];
         const active = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <Link

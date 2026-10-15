@@ -17,7 +17,7 @@ export const TarifaEditDialog = ({ tarifa }: TarifaEditDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
+        <Button data-tour="rate-edit" type="button" variant="outline" size="sm">
           <Pencil className="h-4 w-4" aria-hidden="true" />
           Editar
         </Button>

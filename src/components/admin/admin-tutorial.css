@@ -1,0 +1,90 @@
+.driver-popover.hostal-tutorial {
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 24px));
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--foreground);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 22%);
+  font-family: var(--font-sans);
+}
+
+.hostal-tutorial .driver-popover-title {
+  padding-right: 20px;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.hostal-tutorial .driver-popover-description {
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.hostal-tutorial .driver-popover-close-btn {
+  width: 36px;
+  height: 36px;
+  color: var(--foreground);
+}
+
+.hostal-tutorial .driver-popover-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.hostal-tutorial .driver-popover-progress-text {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hostal-tutorial .driver-popover-navigation-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.hostal-tutorial .driver-popover-footer button {
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.hostal-tutorial .driver-popover-footer .driver-popover-next-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.hostal-tutorial button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.hostal-tutorial .driver-popover-arrow-side-left {
+  border-left-color: var(--panel);
+}
+.hostal-tutorial .driver-popover-arrow-side-right {
+  border-right-color: var(--panel);
+}
+.hostal-tutorial .driver-popover-arrow-side-top {
+  border-top-color: var(--panel);
+}
+.hostal-tutorial .driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--panel);
+}

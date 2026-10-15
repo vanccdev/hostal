@@ -93,7 +93,7 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
           </p>
         </div>
         <Button asChild>
-          <Link href="/admin/clientes/nuevo">Crear cliente</Link>
+          <Link data-tour="guest-create" href="/admin/clientes/nuevo">Crear cliente</Link>
         </Button>
       </div>
       <Card>
@@ -115,7 +115,7 @@ export default async function HuespedesPage({ searchParams }: { searchParams: Pr
                 header: "Crear reserva",
                 render: (row) => (
                   <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/reservas/nueva?huespedId=${row.id}`}>
+                    <Link data-tour="guest-reserve" href={`/admin/reservas/nueva?huespedId=${row.id}`}>
                       <CalendarPlus className="h-4 w-4" aria-hidden="true" />
                       Crear reserva
                     </Link>

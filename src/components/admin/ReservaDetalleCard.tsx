@@ -325,7 +325,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
             </div>
 
             {pendingPaymentProof ? (
-              <div className="flex flex-col gap-3 rounded-xl border border-[#d8d4c8] bg-[#f8f5ec] p-3 dark:border-[#314237] dark:bg-[#142019] lg:flex-row lg:items-center lg:justify-between">
+              <div data-tour="reservation-payment" className="flex flex-col gap-3 rounded-xl border border-[#d8d4c8] bg-[#f8f5ec] p-3 dark:border-[#314237] dark:bg-[#142019] lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#18221b] dark:text-zinc-100">Comprobante pendiente de verificación</p>
                   <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">
@@ -366,7 +366,7 @@ export const ReservaDetalleCard = ({ item }: ReservaDetalleCardProps) => {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap gap-2">
+            <div data-tour="reservation-details" className="flex flex-wrap gap-2">
               <DetailsDialog icon={CalendarDays} title="Reserva" description={reserva.codigo_reserva} rows={reservationRows} />
               <DetailsDialog icon={UserRound} title="Cliente" description={clienteNombre} rows={clientRows} />
               <DetailsDialog icon={BedDouble} title="Habitación y tarifa" description={habitacion ? `Habitación ${habitacion.numero}` : "Sin habitación"} rows={[...roomRows, ...rateRows]} />

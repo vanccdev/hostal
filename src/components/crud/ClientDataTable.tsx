@@ -256,7 +256,7 @@ export const ClientDataTable = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <form className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px_auto] lg:w-[660px]" onSubmit={applyServerSearch}>
+        <form data-tour="page-search" className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px_auto] lg:w-[660px]" onSubmit={applyServerSearch}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a] dark:text-[#b7c0b4]" aria-hidden="true" />
             <Input
@@ -290,7 +290,7 @@ export const ClientDataTable = ({
           </p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="h-10 rounded-md">
+              <Button data-tour="table-columns" type="button" variant="outline" size="sm" className="h-10 rounded-md">
                 <Settings2 className="h-4 w-4" aria-hidden="true" />
                 Columnas
               </Button>
@@ -324,7 +324,7 @@ export const ClientDataTable = ({
         </div>
       </div>
 
-      <Table>
+      <Table data-tour="table-records">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -355,7 +355,7 @@ export const ClientDataTable = ({
         </TableBody>
       </Table>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div data-tour="pagination" className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[#18221b] dark:text-zinc-100">Filas por página</span>
           <Select

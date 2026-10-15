@@ -84,7 +84,7 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
           onChange={setCheckoutTime}
         />
       </div>
-      <div className="space-y-2">
+      <div data-tour="settings-timeout" className="space-y-2">
         <Label htmlFor="paymentProofTimeoutMinutes">Espera de comprobante en minutos</Label>
         <Input
           id="paymentProofTimeoutMinutes"
@@ -100,7 +100,7 @@ export const StaySettingsForm = ({ settings }: StaySettingsFormProps) => {
         </p>
         <FormMessage state={state} field="paymentProofTimeoutMinutes" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div data-tour="settings-cancellation" className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="cancellationPartialRefundHours">Límite de reembolso parcial (horas)</Label>
           <Input

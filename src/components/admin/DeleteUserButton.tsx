@@ -29,7 +29,7 @@ export const DeleteUserButton = ({ userId, userName, disabled = false }: { userI
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="destructive" size="sm" disabled={disabled || pending}>
+        <Button data-tour="user-delete" type="button" variant="destructive" size="sm" disabled={disabled || pending}>
           <Trash2 className="h-4 w-4" aria-hidden="true" />
           Eliminar
         </Button>

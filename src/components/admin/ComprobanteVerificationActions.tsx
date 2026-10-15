@@ -15,7 +15,7 @@ export const ComprobanteVerificationActions = ({ reservaId }: ComprobanteVerific
   const [state, action, pending] = useActionState(verifyReservationProofAction, initialActionState);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div data-tour="verification-actions" className="flex flex-wrap gap-2">
       <ActionToast
         state={state}
         successTitle="Comprobante verificado"

@@ -438,12 +438,12 @@ export default async function AdminPage() {
         <h1 className="text-2xl font-semibold">Panel administrativo</h1>
         <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Resumen operativo y estadísticas del hostal.</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div data-tour="dashboard-metrics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metricCards.map((item) => (
           <MetricCard key={item.title} {...item} />
         ))}
       </div>
-      <section className="space-y-4" aria-labelledby="alcance-title">
+      <section data-tour="dashboard-reach" className="space-y-4" aria-labelledby="alcance-title">
         <div>
           <h2 id="alcance-title" className="text-xl font-semibold">Alcance del sitio</h2>
           <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">Acumulado desde la creación de la tabla de analítica hasta hoy.</p>
@@ -465,7 +465,7 @@ export default async function AdminPage() {
         </div>
         <p className="text-xs text-[#66736a] dark:text-[#b7c0b4]">El país depende de que el proxy del servidor envíe el código de país. Si no existe ese encabezado, se muestra como “No identificado”.</p>
       </section>
-      <div className="space-y-4">
+      <div data-tour="dashboard-revenue" className="space-y-4">
         <MountainChart points={monthlyPoints} />
         <div className="grid gap-4 lg:grid-cols-2">
           <BarChart items={channelSegments} title="Reservas por canal" subtitle="Origen de reservas registradas." />

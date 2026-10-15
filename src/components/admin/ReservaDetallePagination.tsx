@@ -38,7 +38,7 @@ export const ReservaDetallePagination = ({ page, pageSize, total, q }: ReservaDe
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex flex-col gap-4 border-t border-[#ece4d4] pt-5 dark:border-[#314237] md:flex-row md:items-center md:justify-between">
+    <div data-tour="pagination" className="flex flex-col gap-4 border-t border-[#ece4d4] pt-5 dark:border-[#314237] md:flex-row md:items-center md:justify-between">
       <div className="space-y-2">
         <p className="text-sm font-medium text-[#18221b] dark:text-zinc-100">
           Mostrando {from}-{to} de {total} reservas

@@ -110,7 +110,7 @@ export default async function BackupsPage() {
       </Alert>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
+        <Card data-tour="backup-database">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <CardTitle>Base de datos operativa</CardTitle>
@@ -129,7 +129,7 @@ export default async function BackupsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-tour="backup-images">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <CardTitle>Imagenes de habitaciones</CardTitle>
@@ -147,7 +147,7 @@ export default async function BackupsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-tour="backup-proofs">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <CardTitle>Imagenes de Comprobantes</CardTitle>
@@ -166,7 +166,7 @@ export default async function BackupsPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card data-tour="backup-migration">
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <HardDriveDownload className="h-5 w-5 text-[#9b6b12]" aria-hidden="true" />

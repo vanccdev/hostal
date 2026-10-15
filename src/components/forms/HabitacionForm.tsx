@@ -135,7 +135,7 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
           <Label htmlFor="descripcion">Descripción</Label>
           <Textarea id="descripcion" {...form.register("descripcion")} />
         </div>
-        <div className="min-w-0 basis-full space-y-2">
+        <div data-tour="room-rate" className="min-w-0 basis-full space-y-2">
           <Label htmlFor="tarifaId">Tarifa asociada</Label>
           {hasTarifas ? (
             <Select
@@ -192,6 +192,7 @@ export const HabitacionForm = ({ habitacion, existingImages = [], tarifas, onSuc
         </div>
         </div>
         <div
+          data-tour="room-images"
           className="flex w-full min-w-0 flex-none flex-col gap-2 overflow-hidden md:flex-1 md:basis-0"
         >
           <Label>Imágenes</Label>

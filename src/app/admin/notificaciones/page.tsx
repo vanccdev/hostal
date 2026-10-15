@@ -304,12 +304,12 @@ export default async function NotificacionesAdminPage() {
           <p className="text-sm text-[#66736a] dark:text-[#b7c0b4]">
             Actividad reciente del sistema: usuarios, reservas, pagos, estados y cambios operativos.
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div data-tour="notification-counts" className="mt-3 flex flex-wrap items-center gap-2">
             <Badge variant="default">{unread.length} nueva{unread.length === 1 ? "" : "s"}</Badge>
             <Badge variant="secondary">{notifications.length} total</Badge>
           </div>
         </div>
-        <form action={markAllNotificationsReadAction}>
+        <form data-tour="notification-read-all" action={markAllNotificationsReadAction}>
           <Button type="submit" variant="outline" disabled={unread.length === 0}>
             <Check className="h-4 w-4" aria-hidden="true" />
             Marcar todo como leído
@@ -317,12 +317,14 @@ export default async function NotificacionesAdminPage() {
         </form>
       </div>
 
-      <NotificationFeed
-        notifications={notifications}
-        usersById={usersById}
-        reservasById={reservasById}
-        userDetailsById={userDetailsById}
-      />
+      <div data-tour="notification-feed">
+        <NotificationFeed
+          notifications={notifications}
+          usersById={usersById}
+          reservasById={reservasById}
+          userDetailsById={userDetailsById}
+        />
+      </div>
     </section>
   );
 }

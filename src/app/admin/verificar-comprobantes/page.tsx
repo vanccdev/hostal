@@ -139,7 +139,7 @@ export default async function VerifyComprobantesPage({
   });
 
   return (
-    <section className="space-y-6">
+    <section data-tour="verification-queue" className="space-y-6">
       <RealtimePaymentVerificationRefresh />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -169,7 +169,7 @@ export default async function VerifyComprobantesPage({
       )}
 
       {totalPages > 1 ? (
-        <div className="flex items-center justify-between gap-3">
+        <div data-tour="pagination" className="flex items-center justify-between gap-3">
           <Button asChild variant="outline" size="sm" disabled={page <= 1}>
             <Link href={pageHref(Math.max(1, page - 1))}>
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -249,7 +249,7 @@ const VerificationCard = ({ item }: { item: VerificationItem }) => {
           ) : null}
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23]">
+        <div data-tour="verification-proof" className="overflow-hidden rounded-lg border border-[#d8d4c8] bg-[#f6f1e6] dark:border-[#314237] dark:bg-[#1d2c23]">
           {proofUrl ? (
             isPdfUrl(proofUrl) ? (
               <div className="h-80">

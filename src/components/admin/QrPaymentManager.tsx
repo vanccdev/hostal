@@ -51,7 +51,7 @@ export const QrPaymentManager = ({ qrPayments }: { qrPayments: QrPago[] }) => {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
-      <Card>
+      <Card data-tour="qr-create">
         <CardHeader>
           <CardTitle>Agregar QR</CardTitle>
           <CardDescription>
@@ -122,7 +122,7 @@ export const QrPaymentManager = ({ qrPayments }: { qrPayments: QrPago[] }) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-tour="qr-records">
         <CardHeader>
           <CardTitle>QR disponibles</CardTitle>
           <CardDescription>
@@ -174,7 +174,7 @@ const QrCard = ({ qr }: { qr: QrPago }) => (
         <p className="mt-1 text-sm text-muted-foreground">{qr.descripcion}</p>
       ) : null}
     </div>
-    <div className="flex flex-wrap gap-2">
+    <div data-tour="qr-actions" className="flex flex-wrap gap-2">
       {!qr.activa ? (
         <form
           action={async () => {
