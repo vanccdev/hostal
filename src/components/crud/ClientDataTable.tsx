@@ -174,8 +174,6 @@ export const ClientDataTable = ({
     [columns, isServerMode, navigateTable, serverSortableColumns, serverState?.dir, serverState?.sort],
   );
 
-  // TanStack Table intentionally returns function-bearing objects; keep this exception scoped to this hook.
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: rows,
     columns: tableColumns,

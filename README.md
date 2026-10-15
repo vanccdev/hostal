@@ -235,12 +235,12 @@ Pendiente o siguiente iteracion:
 
 ## Version de Next.js
 
-El requerimiento original pide Next.js 16.3. Actualmente `next@16.3.0` no existe en npm. El scaffold quedo con `next@16.2.10`, instalado por `create-next-app@latest`.
+El proyecto usa los rangos `next@^15.5.4`, `react@^19.1.1` y `react-dom@^19.1.1`, con `eslint-config-next@^15.5.4` y Tailwind CSS 4 (`@tailwindcss/postcss` y `@tailwindcss/turbopack`). `pnpm-lock.yaml` fija las versiones resueltas; los rangos con `^` permiten versiones compatibles posteriores.
 
-Cuando exista Next 16.3:
+Para validar cambios de dependencias:
 
 ```bash
-pnpm add next@16.3 eslint-config-next@16.3
+pnpm install
 pnpm lint
 pnpm exec tsc --noEmit
 pnpm build
