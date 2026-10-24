@@ -91,7 +91,7 @@ export const ClientDataTable = ({
     serverState?.sort ? [{ id: serverState.sort, desc: serverState.dir === "desc" }] : [],
   );
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({ id: false });
   const [globalSearch, setGlobalSearch] = React.useState(serverState?.q ?? "");
   const [searchColumn, setSearchColumn] = React.useState(serverState?.qColumn ?? allColumnsValue);
   const [columnSearch, setColumnSearch] = React.useState(serverState?.q ?? "");
